@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User account with linked services
+model User {
+  id              String    @id @default(cuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Discord identity
+  discordId       String?   @unique
+  discordUsername String?
+  discordAvatar   String?
+
+  // Start.gg identity
+  startggId       String?   @unique
+  startggSlug     String?
+  startggGamerTag String?
+  startggToken    String?   // Encrypted OAuth token
+
+  // Local identity (for users without Start.gg)
+  email           String?   @unique
+  displayName     String?
+
+  // Relations
+  registrations   Registration[]
+  matchPlayers    MatchPlayer[]
+  adminTournaments TournamentAdmin[]
+
+  @@index([discordId])
+  @@index([startggId])
+}
+
+// Tournament configuration
+model Tournament {
+  id              String    @id @default(cuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Start.gg reference
+  startggId       String    @unique
+  startggSlug     String
+
+  // Tournament info (cached from Start.gg)
+  name            String
+  startAt         DateTime?
+  endAt           DateTime?
+  state           TournamentState @default(CREATED)
+
+  // Discord configuration
+  discordGuildId  String?
+  discordChannelId String?  // Main announcement channel
+
+  // Settings
+  autoCreateThreads    Boolean @default(true)
+  requireCheckIn       Boolean @default(true)
+  checkInWindowMinutes Int     @default(10)
+  allowSelfReporting   Boolean @default(true)
+
+  // Relations
+  events          Event[]
+  registrations   Registration[]
+  admins          TournamentAdmin[]
+
+  // Polling state
+  lastPolledAt    DateTime?
+  pollIntervalMs  Int       @default(30000)
+
+  @@index([startggSlug])
+  @@index([discordGuildId])
+}
+
+enum TournamentState {
+  CREATED
+  REGISTRATION_OPEN
+  REGISTRATION_CLOSED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// Tournament events (e.g., different games/brackets)
+model Event {
+  id              String    @id @default(cuid())
+
+  // Start.gg reference
+  startggId       String    @unique
+
+  // Event info
+  name            String
+  numEntrants     Int       @default(0)
+  state           Int       @default(1)
+
+  // Relations
+  tournamentId    String
+  tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  matches         Match[]
+  registrations   Registration[]
+
+  @@index([tournamentId])
+}
+
+// Individual matches
+model Match {
+  id              String    @id @default(cuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Start.gg reference
+  startggSetId    String    @unique
+
+  // Match info
+  identifier      String    // e.g., "A1", "B3"
+  roundText       String    // e.g., "Winners Round 1"
+  round           Int
+  state           MatchState @default(NOT_STARTED)
+
+  // Discord thread
+  discordThreadId String?   @unique
+
+  // Check-in tracking
+  checkInDeadline DateTime?
+
+  // Relations
+  eventId         String
+  event           Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  players         MatchPlayer[]
+
+  @@index([eventId])
+  @@index([state])
+  @@index([discordThreadId])
+}
+
+enum MatchState {
+  NOT_STARTED
+  CALLED          // Players notified
+  CHECKED_IN      // Both players checked in
+  IN_PROGRESS
+  PENDING_CONFIRMATION // Score reported, awaiting confirm
+  COMPLETED
+  DISPUTED
+  DQ              // Disqualification
+}
+
+// Match participants
+model MatchPlayer {
+  id              String    @id @default(cuid())
+
+  // Player info
+  startggEntrantId String?
+  playerName      String    // Cached name
+
+  // Status
+  isCheckedIn     Boolean   @default(false)
+  checkedInAt     DateTime?
+  reportedScore   Int?
+  isWinner        Boolean?
+
+  // Relations
+  matchId         String
+  match           Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id])
+
+  @@unique([matchId, startggEntrantId])
+  @@index([userId])
+}
+
+// Tournament registrations
+model Registration {
+  id              String    @id @default(cuid())
+  createdAt       DateTime  @default(now())
+
+  // Start.gg reference
+  startggEntrantId String?
+
+  // Registration source
+  source          RegistrationSource @default(DISCORD)
+
+  // Status
+  status          RegistrationStatus @default(PENDING)
+
+  // For manual registrations without Start.gg
+  displayName     String?
+
+  // Relations
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  tournamentId    String
+  tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  eventId         String?
+  event           Event?    @relation(fields: [eventId], references: [id])
+
+  @@unique([userId, eventId])
+  @@index([tournamentId])
+}
+
+enum RegistrationSource {
+  STARTGG         // Registered via Start.gg
+  DISCORD         // Registered via Discord bot
+  MANUAL          // Admin added manually
+}
+
+enum RegistrationStatus {
+  PENDING         // Awaiting approval or Start.gg sync
+  CONFIRMED       // Confirmed in Start.gg
+  CANCELLED
+  DQ
+}
+
+// Tournament administrators
+model TournamentAdmin {
+  id              String    @id @default(cuid())
+
+  role            AdminRole @default(MODERATOR)
+
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  tournamentId    String
+  tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tournamentId])
+}
+
+enum AdminRole {
+  OWNER
+  ADMIN
+  MODERATOR
+}
+
+// Discord guild configuration
+model GuildConfig {
+  id              String    @id @default(cuid())
+
+  discordGuildId  String    @unique
+
+  // Default channels
+  announcementChannelId String?
+  matchChannelId  String?   // Where match threads are created
+
+  // Settings
+  prefix          String    @default("!")
+  locale          String    @default("en")
+  timezone        String    @default("UTC")
+
+  @@index([discordGuildId])
+}
