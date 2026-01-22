@@ -1,28 +1,25 @@
 'use client';
 
 import { signOut } from 'next-auth/react';
+import { Button } from '@fightrise/ui';
 
 interface SignOutButtonProps {
   callbackUrl?: string;
-  className?: string;
 }
 
-export function SignOutButton({ callbackUrl = '/', className }: SignOutButtonProps) {
+export function SignOutButton({ callbackUrl = '/' }: SignOutButtonProps) {
   return (
-    <button
+    <Button
+      variant="secondary"
+      size="sm"
       onClick={() => signOut({ callbackUrl })}
-      className={className}
       style={{
-        padding: '8px 16px',
         backgroundColor: 'transparent',
         color: '#666',
         border: '1px solid #ddd',
-        borderRadius: '4px',
-        fontSize: '14px',
-        cursor: 'pointer',
       }}
     >
       Sign out
-    </button>
+    </Button>
   );
 }

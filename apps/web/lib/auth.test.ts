@@ -32,8 +32,10 @@ describe('authOptions', () => {
     expect(authOptions.pages?.signIn).toBe('/auth/signin');
   });
 
-  it('should have adapter configured', () => {
-    expect(authOptions.adapter).toBeDefined();
+  it('should not have adapter (user management handled in signIn callback)', () => {
+    // We intentionally don't use an adapter to avoid conflicts between
+    // adapter and signIn callback user creation
+    expect(authOptions.adapter).toBeUndefined();
   });
 
   it('should have required callbacks', () => {
@@ -69,10 +71,16 @@ describe('session callback', () => {
       trigger: 'update',
     });
 
-    expect(result?.user?.id).toBe('user-123');
-    expect(result?.user?.discordId).toBe('discord-456');
-    expect(result?.user?.discordUsername).toBe('testuser');
-    expect(result?.user?.discordAvatar).toBe('avatar-hash');
+    const user = result?.user as {
+      id: string;
+      discordId: string;
+      discordUsername: string;
+      discordAvatar: string | null;
+    };
+    expect(user?.id).toBe('user-123');
+    expect(user?.discordId).toBe('discord-456');
+    expect(user?.discordUsername).toBe('testuser');
+    expect(user?.discordAvatar).toBe('avatar-hash');
   });
 });
 

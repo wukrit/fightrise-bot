@@ -1,118 +1,15 @@
 import { prisma } from '@fightrise/database';
 import type { NextAuthOptions } from 'next-auth';
-import type { Adapter, AdapterUser, AdapterAccount } from 'next-auth/adapters';
 import DiscordProvider from 'next-auth/providers/discord';
 
-// Helper to convert DB user to AdapterUser
-function toAdapterUser(user: {
-  id: string;
-  email: string | null;
-  discordUsername: string | null;
-  discordAvatar: string | null;
-}): AdapterUser {
-  return {
-    id: user.id,
-    email: user.email ?? '',
-    emailVerified: null,
-    name: user.discordUsername,
-    image: user.discordAvatar,
-  };
-}
-
-// Custom adapter to work with our existing User model
-function PrismaAdapter(): Adapter {
-  return {
-    async createUser(user: Omit<AdapterUser, 'id'>): Promise<AdapterUser> {
-      const created = await prisma.user.create({
-        data: {
-          email: user.email,
-          discordUsername: user.name,
-          discordAvatar: user.image,
-        },
-      });
-      return toAdapterUser(created);
-    },
-
-    async getUser(id: string): Promise<AdapterUser | null> {
-      const user = await prisma.user.findUnique({ where: { id } });
-      if (!user) return null;
-      return toAdapterUser(user);
-    },
-
-    async getUserByEmail(email: string): Promise<AdapterUser | null> {
-      if (!email) return null;
-      const user = await prisma.user.findUnique({ where: { email } });
-      if (!user) return null;
-      return toAdapterUser(user);
-    },
-
-    async getUserByAccount({
-      providerAccountId,
-      provider,
-    }: Pick<AdapterAccount, 'provider' | 'providerAccountId'>): Promise<AdapterUser | null> {
-      if (provider !== 'discord') return null;
-      const user = await prisma.user.findUnique({
-        where: { discordId: providerAccountId },
-      });
-      if (!user) return null;
-      return toAdapterUser(user);
-    },
-
-    async updateUser(
-      user: Partial<AdapterUser> & Pick<AdapterUser, 'id'>
-    ): Promise<AdapterUser> {
-      const updated = await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          email: user.email ?? undefined,
-          discordUsername: user.name ?? undefined,
-          discordAvatar: user.image ?? undefined,
-        },
-      });
-      return toAdapterUser(updated);
-    },
-
-    async linkAccount(account: AdapterAccount): Promise<void> {
-      if (account.provider === 'discord') {
-        await prisma.user.update({
-          where: { id: account.userId },
-          data: { discordId: account.providerAccountId },
-        });
-      }
-    },
-
-    async createSession(): Promise<never> {
-      // We use JWT strategy, so sessions are not stored in database
-      throw new Error('createSession not implemented - using JWT strategy');
-    },
-
-    async getSessionAndUser(): Promise<never> {
-      // We use JWT strategy, so sessions are not stored in database
-      throw new Error('getSessionAndUser not implemented - using JWT strategy');
-    },
-
-    async updateSession(): Promise<never> {
-      // We use JWT strategy, so sessions are not stored in database
-      throw new Error('updateSession not implemented - using JWT strategy');
-    },
-
-    async deleteSession(): Promise<void> {
-      // We use JWT strategy, so sessions are not stored in database
-      // No-op for JWT strategy
-    },
-
-    async unlinkAccount(): Promise<void> {
-      // Not implementing account unlinking for now
-    },
-
-    async deleteUser(): Promise<void> {
-      // Not implementing user deletion for now
-    },
-  };
-}
+// Note: We intentionally don't use an adapter here because:
+// 1. We're using JWT sessions (not database sessions)
+// 2. We handle user creation/updates directly in the signIn callback
+// 3. Using both adapter and signIn callback for user management causes conflicts
+//    (duplicate user creation with unique constraint violations)
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(),
+  // No adapter - we manage users directly in signIn callback
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -154,7 +51,7 @@ export const authOptions: NextAuthOptions = {
           // Set the user ID for the JWT
           user.id = existingUser.id;
         } else {
-          // Create new user
+          // Create new user with Discord data
           const newUser = await prisma.user.create({
             data: {
               discordId: discordProfile.id,

@@ -29,7 +29,12 @@
 
 - [x] 5.1 Write unit tests for auth configuration
 - [x] 5.2 Write unit tests for middleware route matching
-- [x] 5.3 Verify auth flow works end-to-end locally (build successful)
+- [x] 5.3 TypeScript type checking passes
+- [ ] 5.4 E2E verification (blocked by Node.js version - requires >= 18.17.0)
+  - Verify sign-in page renders at /auth/signin
+  - Verify Discord OAuth redirect works
+  - Verify protected routes redirect to sign-in
+  - Verify session persists after sign-in
 
 ## 6. Documentation
 
