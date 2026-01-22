@@ -16,6 +16,7 @@ export async function loadEvents(client: Client): Promise<void> {
     eventFiles = readdirSync(eventsPath).filter(
       (file) =>
         (file.endsWith('.js') || file.endsWith('.ts')) &&
+        !file.endsWith('.d.ts') &&
         !file.includes('.test.') &&
         !file.includes('.spec.')
     );

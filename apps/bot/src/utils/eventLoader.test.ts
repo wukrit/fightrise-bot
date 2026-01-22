@@ -41,11 +41,12 @@ describe('eventLoader', () => {
       await expect(loadEvents(mockClient)).resolves.toBeUndefined();
     });
 
-    it('should filter non-ts/js files and test files', async () => {
-      const files = ['ready.ts', 'ready.test.ts', 'notes.md', 'config.json', 'error.js', 'error.spec.js'];
+    it('should filter non-ts/js files, test files, and declaration files', async () => {
+      const files = ['ready.ts', 'ready.test.ts', 'ready.d.ts', 'notes.md', 'config.json', 'error.js', 'error.spec.js'];
       const filtered = files.filter(
         (file) =>
           (file.endsWith('.js') || file.endsWith('.ts')) &&
+          !file.endsWith('.d.ts') &&
           !file.includes('.test.') &&
           !file.includes('.spec.')
       );

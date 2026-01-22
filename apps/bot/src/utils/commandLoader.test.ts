@@ -40,20 +40,22 @@ describe('commandLoader', () => {
       expect(commands.size).toBe(0);
     });
 
-    it('should filter non-ts/js files and test files', async () => {
+    it('should filter non-ts/js files, test files, and declaration files', async () => {
       const fs = await import('fs');
       vi.mocked(fs.readdirSync).mockReturnValue([
         'command.ts',
         'command.test.ts',
+        'command.d.ts',
         'readme.md',
         'config.json',
       ] as unknown as ReturnType<typeof fs.readdirSync>);
 
       // This test verifies the filtering logic
-      const files = ['command.ts', 'command.test.ts', 'readme.md', 'config.json', 'other.spec.ts'];
+      const files = ['command.ts', 'command.test.ts', 'command.d.ts', 'readme.md', 'config.json', 'other.spec.ts'];
       const filtered = files.filter(
         (file) =>
           (file.endsWith('.js') || file.endsWith('.ts')) &&
+          !file.endsWith('.d.ts') &&
           !file.includes('.test.') &&
           !file.includes('.spec.')
       );

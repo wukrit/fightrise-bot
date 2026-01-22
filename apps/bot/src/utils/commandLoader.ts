@@ -17,6 +17,7 @@ export async function loadCommands(): Promise<Collection<string, Command>> {
     commandFiles = readdirSync(commandsPath).filter(
       (file) =>
         (file.endsWith('.js') || file.endsWith('.ts')) &&
+        !file.endsWith('.d.ts') &&
         !file.includes('.test.') &&
         !file.includes('.spec.')
     );
