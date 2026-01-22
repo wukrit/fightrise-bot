@@ -108,7 +108,7 @@ Copy `.env.example` to `.env` and configure:
 
 ## Package Dependencies
 
-Internal packages use `workspace:*` protocol. Run `npm install` at root to link them.
+Internal packages use `*` version specifier with npm workspaces. Run `npm install` at root to link them.
 
 Bot dependencies: `discord.js`, `bullmq`, `ioredis`, `@fightrise/database`, `@fightrise/startgg-client`
 Web dependencies: `next`, `react`, `next-auth`, `@fightrise/database`, `@fightrise/ui`
