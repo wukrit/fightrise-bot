@@ -112,3 +112,87 @@ Internal packages use `workspace:*` protocol. Run `npm install` at root to link 
 
 Bot dependencies: `discord.js`, `bullmq`, `ioredis`, `@fightrise/database`, `@fightrise/startgg-client`
 Web dependencies: `next`, `react`, `next-auth`, `@fightrise/database`, `@fightrise/ui`
+
+---
+
+## Agentic Workflow (MANDATORY)
+
+When working on GitHub issues, you MUST follow this workflow. **Do not skip steps or proceed until each step is fully complete.**
+
+Use `/issue <url-or-number>` to start working on an issue, which will guide you through this process.
+
+### Step 1: Branch Creation
+- Fetch the GitHub issue details using `gh issue view`
+- Create a new branch from `main` with format: `issue-<number>-<short-description>`
+- Example: `issue-42-add-match-notifications`
+
+### Step 2: OpenSpec Proposal
+- Create an OpenSpec proposal in `openspec/changes/<change-id>/`
+- The change-id should match the branch name or be descriptive of the change
+- Required files:
+  - `proposal.md` - Why, what changes, impact
+  - `tasks.md` - Implementation checklist with testable items
+  - `specs/<capability>/spec.md` - Delta specs if adding/modifying behavior
+- Run `openspec validate <change-id> --strict` to validate
+- **STOP and get user approval before proceeding**
+
+### Step 3: Implementation
+- Implement the changes according to `tasks.md`
+- Mark tasks complete as you go: `- [x]`
+- Follow existing code patterns and conventions from `openspec/project.md`
+- Commit incrementally with clear messages
+
+### Step 4: Testing
+- Write unit tests for all new functions/services (Vitest)
+- Write integration tests for API endpoints and Discord commands
+- Ensure all tests pass: `npm run test`
+- Ensure linting passes: `npm run lint`
+- **Do not proceed if any tests fail**
+
+### Step 5: End-to-End Verification
+- Start the application locally if needed
+- For web features: Use Playwright MCP tools to verify UI behavior
+  - `mcp__playwright__browser_navigate` to load pages
+  - `mcp__playwright__browser_snapshot` to verify content
+  - `mcp__playwright__browser_click` to test interactions
+- For bot features: Verify command registration and response structure
+- For database changes: Verify migrations work with `npm run db:push`
+- Document any manual verification steps performed
+
+### Step 6: Pull Request
+- Push the branch to origin
+- Create PR using `gh pr create` with:
+  - Title: Reference the issue (e.g., "Fix match notifications #42")
+  - Body must include:
+    - **Summary**: Link to the OpenSpec proposal
+    - **Changes**: Key implementation details
+    - **Testing**: What was tested and how
+    - **Checklist**: Confirmation that all workflow steps were completed
+- Link the PR to the issue
+
+### Workflow Enforcement
+
+**CRITICAL RULES:**
+1. Never write implementation code before the proposal is approved
+2. Never create a PR before all tests pass
+3. Never skip end-to-end verification
+4. Always update `tasks.md` to reflect actual completion status
+5. If blocked at any step, stop and communicate the blocker to the user
+
+### Quick Reference
+
+```bash
+# Start working on an issue
+/issue 42
+/issue https://github.com/owner/repo/issues/42
+
+# Validate proposal
+openspec validate <change-id> --strict
+
+# Run tests
+npm run test
+npm run lint
+
+# Create PR
+gh pr create --title "Title #42" --body "..."
+```

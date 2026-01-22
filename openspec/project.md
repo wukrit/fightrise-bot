@@ -58,9 +58,28 @@ FightRise is a Discord bot and web portal for running Start.gg fighting game tou
 
 ### Git Workflow
 - Main branch: `main`
+- Issue branches: `issue-<number>-<short-description>` (e.g., `issue-42-add-notifications`)
 - Feature branches: `feature/<description>` or `<change-id>` from OpenSpec
 - Commit messages: imperative mood, concise subject line
 - PRs require passing CI checks before merge
+
+### Agentic Development Workflow (MANDATORY)
+
+When AI agents work on GitHub issues, they MUST follow this strict workflow:
+
+1. **Branch** - Create `issue-<number>-<description>` from `main`
+2. **Proposal** - Create OpenSpec proposal, validate, and get user approval
+3. **Implement** - Code changes per `tasks.md`, commit incrementally
+4. **Test** - All tests must pass (`npm run test && npm run lint`)
+5. **Verify** - E2E verification using Playwright MCP or manual testing
+6. **PR** - Create PR linking issue, proposal, and test summary
+
+**Critical rules:**
+- Never implement before proposal approval
+- Never create PR before tests pass
+- Stop and communicate blockers immediately
+
+See `CLAUDE.md` for full workflow details. Use `/issue <number>` to start.
 
 ## Domain Context
 
