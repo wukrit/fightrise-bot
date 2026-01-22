@@ -9,9 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@fightrise/database": "workspace:*",
-    "@fightrise/shared": "workspace:*",
-    "@fightrise/ui": "workspace:*",
+    "@fightrise/database": "*",
+    "@fightrise/shared": "*",
+    "@fightrise/ui": "*",
     "next": "^14.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
