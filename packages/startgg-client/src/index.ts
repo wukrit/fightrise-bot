@@ -58,7 +58,6 @@ export class StartGGClient {
           return await this.client.request<T>(query, variables);
         } catch (error) {
           this.handleError(error);
-          throw error; // Re-throw after handling
         }
       },
       this.retryConfig
