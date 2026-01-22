@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { SessionProvider } from '@/components/auth';
 
 export const metadata: Metadata = {
   title: 'FightRise - Tournament Management',
@@ -12,7 +13,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <SessionProvider>{children}</SessionProvider>
+      </body>
     </html>
   );
 }

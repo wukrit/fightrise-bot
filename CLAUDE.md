@@ -113,6 +113,26 @@ Internal packages use `*` version specifier with npm workspaces. Run `npm instal
 Bot dependencies: `discord.js`, `bullmq`, `ioredis`, `@fightrise/database`, `@fightrise/startgg-client`
 Web dependencies: `next`, `react`, `next-auth`, `@fightrise/database`, `@fightrise/ui`
 
+## Frontend Development (MANDATORY)
+
+When working on frontend features in `apps/web/`:
+
+### Use Shared UI Components
+- **Always** use components from `packages/ui/` for consistency across the application
+- If a needed component doesn't exist, add it to `packages/ui/` rather than creating app-specific components
+- Avoid inline styles - use the shared styling system from `packages/ui/`
+- Exception: One-off components that are truly page-specific and won't be reused
+
+### Use the /frontend-design Skill
+- **Always** use `/frontend-design` when creating or modifying UI components, pages, or layouts
+- This skill ensures high design quality and avoids generic AI aesthetics
+- Invoke it at the start of frontend work, not after writing code
+
+### Component Guidelines
+- Keep components in `packages/ui/` generic and reusable
+- App-specific wiring (e.g., NextAuth integration) belongs in `apps/web/components/`
+- Document component props with TypeScript interfaces
+
 ---
 
 ## Agentic Workflow (MANDATORY)
