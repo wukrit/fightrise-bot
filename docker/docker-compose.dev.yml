@@ -1,3 +1,11 @@
+# Development Docker Compose configuration
+# Usage: docker compose -f docker/docker-compose.dev.yml up
+#
+# This extends the base configuration with:
+# - Development Dockerfile stages (hot-reload enabled)
+# - Source code volume mounts for live editing
+# - Anonymous volumes to preserve container node_modules
+
 services:
   postgres:
     image: postgres:15-alpine
@@ -31,18 +39,27 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.bot
+      target: dev
     environment:
       DATABASE_URL: postgresql://fightrise:${DB_PASSWORD:-devpassword}@postgres:5432/fightrise
       REDIS_URL: redis://redis:6379
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
       STARTGG_API_KEY: ${STARTGG_API_KEY}
+    volumes:
+      # Mount source code for hot-reload
+      - ../apps/bot/src:/app/apps/bot/src:ro
+      - ../packages/shared/src:/app/packages/shared/src:ro
+      - ../packages/startgg-client/src:/app/packages/startgg-client/src:ro
+      - ../packages/database/src:/app/packages/database/src:ro
+      # Preserve container node_modules
+      - /app/node_modules
+      - /app/apps/bot/node_modules
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "process.exit(0)"]
       interval: 30s
@@ -54,14 +71,27 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.web
+      target: dev
     environment:
       DATABASE_URL: postgresql://fightrise:${DB_PASSWORD:-devpassword}@postgres:5432/fightrise
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-dev-secret-change-in-production}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
       DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
     ports:
       - "3000:3000"
+    volumes:
+      # Mount source code for hot-reload
+      - ../apps/web/src:/app/apps/web/src:ro
+      - ../apps/web/app:/app/apps/web/app:ro
+      - ../apps/web/public:/app/apps/web/public:ro
+      - ../packages/shared/src:/app/packages/shared/src:ro
+      - ../packages/ui/src:/app/packages/ui/src:ro
+      - ../packages/database/src:/app/packages/database/src:ro
+      # Preserve container node_modules
+      - /app/node_modules
+      - /app/apps/web/node_modules
+      - /app/apps/web/.next
     depends_on:
       postgres:
         condition: service_healthy
@@ -70,7 +100,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
 
 volumes:
   postgres_data:
