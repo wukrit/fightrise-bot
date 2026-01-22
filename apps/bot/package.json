@@ -12,9 +12,9 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@fightrise/database": "workspace:*",
-    "@fightrise/startgg-client": "workspace:*",
-    "@fightrise/shared": "workspace:*",
+    "@fightrise/database": "*",
+    "@fightrise/startgg-client": "*",
+    "@fightrise/shared": "*",
     "discord.js": "^14.14.0",
     "bullmq": "^5.0.0",
     "ioredis": "^5.3.0",
