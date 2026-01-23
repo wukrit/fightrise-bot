@@ -47,8 +47,11 @@ npm run db:migrate             # Run migrations (production)
 npm run test                   # Run tests via vitest
 npm run lint                   # Run ESLint
 
-# Docker (for local Postgres & Redis)
+# Docker (for local Postgres & Redis only)
 docker compose -f docker/docker-compose.yml up -d postgres redis
+
+# Docker Development (full stack with hot-reload - recommended)
+docker compose -f docker/docker-compose.dev.yml up
 ```
 
 ## Architecture
