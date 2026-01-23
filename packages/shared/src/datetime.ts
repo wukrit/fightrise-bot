@@ -100,25 +100,37 @@ export function isWithinWindow(
 }
 
 /**
- * Get remaining time in a window
+ * Window status for getWindowRemaining
+ */
+export type WindowStatus =
+  | { status: 'not_started'; startsInMs: number }
+  | { status: 'active'; remainingMs: number }
+  | { status: 'expired' };
+
+/**
+ * Get remaining time in a window with explicit status
  * @param windowStartMs Window start time in milliseconds
  * @param windowMinutes Window duration in minutes
  * @param nowMs Current time in milliseconds
- * @returns Remaining time in milliseconds, or 0 if expired, or -1 if not started
+ * @returns WindowStatus object with explicit state
  */
 export function getWindowRemaining(
   windowStartMs: number,
   windowMinutes: number,
   nowMs: number = Date.now()
-): number {
+): WindowStatus {
   if (nowMs < windowStartMs) {
-    return -1; // Window hasn't started
+    return { status: 'not_started', startsInMs: windowStartMs - nowMs };
   }
 
   const windowEndMs = windowStartMs + windowMinutes * 60 * 1000;
   const remaining = windowEndMs - nowMs;
 
-  return Math.max(0, remaining);
+  if (remaining <= 0) {
+    return { status: 'expired' };
+  }
+
+  return { status: 'active', remainingMs: remaining };
 }
 
 /**

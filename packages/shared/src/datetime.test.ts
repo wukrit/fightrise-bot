@@ -124,29 +124,37 @@ describe('isWithinWindow', () => {
 });
 
 describe('getWindowRemaining', () => {
-  it('should return remaining time in window', () => {
+  it('should return active status with remaining time when in window', () => {
     const windowStart = 1000;
     const windowMinutes = 10;
     const now = windowStart + 5 * 60 * 1000; // 5 minutes in
 
-    const remaining = getWindowRemaining(windowStart, windowMinutes, now);
-    expect(remaining).toBe(5 * 60 * 1000); // 5 minutes remaining
+    const result = getWindowRemaining(windowStart, windowMinutes, now);
+    expect(result).toEqual({
+      status: 'active',
+      remainingMs: 5 * 60 * 1000, // 5 minutes remaining
+    });
   });
 
-  it('should return 0 when window expired', () => {
+  it('should return expired status when window has passed', () => {
     const windowStart = 1000;
     const windowMinutes = 10;
     const now = windowStart + 15 * 60 * 1000; // Past window
 
-    expect(getWindowRemaining(windowStart, windowMinutes, now)).toBe(0);
+    const result = getWindowRemaining(windowStart, windowMinutes, now);
+    expect(result).toEqual({ status: 'expired' });
   });
 
-  it('should return -1 when window has not started', () => {
+  it('should return not_started status with time until start when window has not started', () => {
     const windowStart = 10000;
     const windowMinutes = 10;
     const now = 5000;
 
-    expect(getWindowRemaining(windowStart, windowMinutes, now)).toBe(-1);
+    const result = getWindowRemaining(windowStart, windowMinutes, now);
+    expect(result).toEqual({
+      status: 'not_started',
+      startsInMs: 5000, // 5 seconds until window starts
+    });
   });
 });
 

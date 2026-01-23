@@ -52,3 +52,4 @@ export {
   toUnixSeconds,
   fromUnixSeconds,
 } from './datetime.js';
+export type { WindowStatus } from './datetime.js';
