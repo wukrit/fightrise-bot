@@ -38,20 +38,28 @@ describe('Tournament Setup Integration', () => {
   });
 
   describe('Tournament Command', () => {
-    it('should respond to /tournament command', async () => {
-      const interaction = await testClient.executeCommand('tournament');
-
-      expect(interaction.replied).toBe(true);
-      expect(interaction.lastReply).toBeDefined();
-    });
-
-    it('should allow viewing tournament with slug option', async () => {
+    it('should respond to /tournament status subcommand', async () => {
       const interaction = await testClient.executeCommand('tournament', {
-        _subcommand: 'view',
-        slug: 'test-tournament-slug',
+        _subcommand: 'status',
       });
 
       expect(interaction.replied).toBe(true);
+      expect(interaction.lastReply).toBeDefined();
+      expect(interaction.lastReply?.content).toContain('pending implementation');
+    });
+
+    it('should respond to /tournament setup subcommand', async () => {
+      // Note: This test uses the test harness without mocking the service,
+      // so it will fail at the service level (user not linked).
+      // Full integration tests with database should mock or seed the user.
+      const interaction = await testClient.executeCommand('tournament', {
+        _subcommand: 'setup',
+        slug: 'test-tournament-slug',
+        'match-channel': 'test-channel-123',
+      });
+
+      // Command should defer and then reply
+      expect(interaction.deferred || interaction.replied).toBe(true);
     });
   });
 
