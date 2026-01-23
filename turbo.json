@@ -20,6 +20,18 @@
     "test": {
       "dependsOn": ["build"]
     },
+    "test:integration": {
+      "dependsOn": ["build"],
+      "cache": false
+    },
+    "test:e2e": {
+      "dependsOn": ["build"],
+      "cache": false
+    },
+    "test:smoke": {
+      "dependsOn": ["build"],
+      "cache": false
+    },
     "db:generate": {
       "cache": false
     },

@@ -1,0 +1,221 @@
+name: Smoke Tests
+
+# Smoke tests run against real APIs
+# They should NOT run on PRs to avoid:
+# - Rate limiting
+# - Credential exposure
+# - Unnecessary API costs
+
+on:
+  # Manual trigger for pre-release verification
+  workflow_dispatch:
+    inputs:
+      run_discord:
+        description: 'Run Discord API tests'
+        type: boolean
+        default: true
+      run_startgg:
+        description: 'Run Start.gg API tests'
+        type: boolean
+        default: true
+      run_oauth:
+        description: 'Run OAuth flow tests'
+        type: boolean
+        default: true
+
+  # Scheduled nightly run to detect API changes
+  schedule:
+    - cron: '0 6 * * *'  # Daily at 6 AM UTC
+
+concurrency:
+  group: smoke-tests
+  cancel-in-progress: false  # Don't cancel running smoke tests
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  discord-api:
+    name: Discord API Smoke Tests
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' || github.event.inputs.run_discord == 'true' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run db:generate
+
+      - name: Build packages
+        run: npm run build
+
+      - name: Run Discord API smoke tests
+        run: npm run test:smoke --filter=@fightrise/bot
+        env:
+          SMOKE_DISCORD_TOKEN: ${{ secrets.SMOKE_DISCORD_TOKEN }}
+          SMOKE_DISCORD_GUILD_ID: ${{ secrets.SMOKE_DISCORD_GUILD_ID }}
+          SMOKE_DISCORD_CHANNEL_ID: ${{ secrets.SMOKE_DISCORD_CHANNEL_ID }}
+          DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
+
+      - name: Report Discord API status
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "Discord API Smoke Tests Failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Discord API Smoke Tests Failed*\nWorkflow: ${{ github.workflow }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+  startgg-api:
+    name: Start.gg API Smoke Tests
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' || github.event.inputs.run_startgg == 'true' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build
+
+      - name: Run Start.gg API smoke tests
+        run: npm run test:smoke --filter=@fightrise/startgg-client
+        env:
+          SMOKE_STARTGG_API_KEY: ${{ secrets.SMOKE_STARTGG_API_KEY }}
+          SMOKE_STARTGG_TOURNAMENT_SLUG: ${{ vars.SMOKE_STARTGG_TOURNAMENT_SLUG }}
+
+      - name: Report Start.gg API status
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "Start.gg API Smoke Tests Failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Start.gg API Smoke Tests Failed*\nWorkflow: ${{ github.workflow }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+  oauth-flow:
+    name: OAuth Flow Smoke Tests
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' || github.event.inputs.run_oauth == 'true' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run db:generate
+
+      - name: Build packages
+        run: npm run build
+        env:
+          DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
+          DISCORD_CLIENT_ID: ${{ secrets.SMOKE_DISCORD_CLIENT_ID }}
+          DISCORD_CLIENT_SECRET: ${{ secrets.SMOKE_DISCORD_CLIENT_SECRET }}
+          NEXTAUTH_SECRET: 'test-nextauth-secret'
+          NEXTAUTH_URL: 'http://localhost:3000'
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run OAuth smoke tests
+        run: npx playwright test apps/web/__tests__/smoke/ --project=chromium
+        env:
+          SMOKE_DISCORD_CLIENT_ID: ${{ secrets.SMOKE_DISCORD_CLIENT_ID }}
+          SMOKE_DISCORD_CLIENT_SECRET: ${{ secrets.SMOKE_DISCORD_CLIENT_SECRET }}
+          SMOKE_OAUTH_REDIRECT_URI: 'http://localhost:3000/api/auth/callback/discord'
+          DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
+          DISCORD_CLIENT_ID: ${{ secrets.SMOKE_DISCORD_CLIENT_ID }}
+          DISCORD_CLIENT_SECRET: ${{ secrets.SMOKE_DISCORD_CLIENT_SECRET }}
+          NEXTAUTH_SECRET: 'test-nextauth-secret'
+          NEXTAUTH_URL: 'http://localhost:3000'
+
+      - name: Report OAuth status
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "OAuth Smoke Tests Failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*OAuth Smoke Tests Failed*\nWorkflow: ${{ github.workflow }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+  summary:
+    name: Smoke Test Summary
+    runs-on: ubuntu-latest
+    needs: [discord-api, startgg-api, oauth-flow]
+    if: always()
+    steps:
+      - name: Check results
+        run: |
+          echo "Discord API: ${{ needs.discord-api.result }}"
+          echo "Start.gg API: ${{ needs.startgg-api.result }}"
+          echo "OAuth Flow: ${{ needs.oauth-flow.result }}"
+
+          if [[ "${{ needs.discord-api.result }}" == "failure" ]] || \
+             [[ "${{ needs.startgg-api.result }}" == "failure" ]] || \
+             [[ "${{ needs.oauth-flow.result }}" == "failure" ]]; then
+            echo "One or more smoke tests failed!"
+            exit 1
+          fi
+
+          echo "All smoke tests passed!"

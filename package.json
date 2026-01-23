@@ -14,12 +14,18 @@
     "start:web": "turbo start --filter=@fightrise/web",
     "lint": "turbo lint",
     "test": "turbo test",
+    "test:integration": "turbo test:integration",
+    "test:e2e": "playwright test",
+    "test:e2e:bot": "turbo test:e2e --filter=@fightrise/bot",
+    "test:smoke": "turbo test:smoke",
     "db:generate": "turbo db:generate",
     "db:push": "turbo db:push",
     "db:migrate": "turbo db:migrate",
     "clean": "turbo clean && rm -rf node_modules"
   },
   "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "msw": "^2.0.0",
     "turbo": "^2.0.0",
     "typescript": "^5.3.0"
   },
