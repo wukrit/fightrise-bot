@@ -18,19 +18,23 @@
       "dependsOn": ["^build"]
     },
     "test": {
-      "dependsOn": ["build"]
+      "dependsOn": ["build"],
+      "passThroughEnv": ["DATABASE_URL", "DISCORD_TOKEN", "DISCORD_CLIENT_ID", "DISCORD_CLIENT_SECRET", "STARTGG_API_KEY", "NEXTAUTH_SECRET", "NEXTAUTH_URL"]
     },
     "test:integration": {
       "dependsOn": ["build"],
-      "cache": false
+      "cache": false,
+      "passThroughEnv": ["DATABASE_URL", "REDIS_URL", "DISCORD_TOKEN", "DISCORD_CLIENT_ID", "DISCORD_CLIENT_SECRET", "STARTGG_API_KEY", "NEXTAUTH_SECRET", "NEXTAUTH_URL"]
     },
     "test:e2e": {
       "dependsOn": ["build"],
-      "cache": false
+      "cache": false,
+      "passThroughEnv": ["DATABASE_URL", "DISCORD_TOKEN", "DISCORD_CLIENT_ID", "DISCORD_CLIENT_SECRET", "STARTGG_API_KEY", "NEXTAUTH_SECRET", "NEXTAUTH_URL", "PLAYWRIGHT_BASE_URL"]
     },
     "test:smoke": {
       "dependsOn": ["build"],
-      "cache": false
+      "cache": false,
+      "passThroughEnv": ["DATABASE_URL", "DISCORD_TOKEN", "DISCORD_CLIENT_ID", "DISCORD_CLIENT_SECRET", "STARTGG_API_KEY", "NEXTAUTH_SECRET", "NEXTAUTH_URL"]
     },
     "db:generate": {
       "cache": false

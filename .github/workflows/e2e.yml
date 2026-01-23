@@ -64,7 +64,8 @@ jobs:
         run: npm run build
 
       - name: Push database schema
-        run: npm run db:push
+        run: npx prisma db push --skip-generate
+        working-directory: packages/database
         env:
           DATABASE_URL: 'postgresql://fightrise_test:testpassword@localhost:5433/fightrise_test'
 
@@ -144,6 +145,21 @@ jobs:
   e2e-bot:
     name: E2E Tests (Bot)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -167,6 +183,12 @@ jobs:
           DISCORD_TOKEN: 'test-token'
           DISCORD_CLIENT_ID: 'test-client-id'
           STARTGG_API_KEY: 'test-api-key'
+
+      - name: Push database schema
+        run: npx prisma db push --skip-generate
+        working-directory: packages/database
+        env:
+          DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
 
       - name: Run bot E2E tests
         run: npm run test:e2e:bot

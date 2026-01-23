@@ -104,7 +104,8 @@ export interface MockCommandOptions {
 }
 
 export function createMockOptionsResolver(
-  options: MockCommandOptions = {}
+  options: MockCommandOptions = {},
+  channels?: Map<string, { id: string; name?: string }>
 ): CommandInteractionOptionResolver {
   return {
     getString: (name: string) => options[name] as string | null ?? null,
@@ -119,7 +120,17 @@ export function createMockOptionsResolver(
       const id = options[name] as string | null;
       return id ? createMockGuildMember({ id }) : null;
     },
-    getChannel: () => null,
+    getChannel: (name: string) => {
+      const channelId = options[name] as string | null;
+      if (channelId && channels?.has(channelId)) {
+        return channels.get(channelId) ?? null;
+      }
+      // Return a mock channel if channelId is provided
+      if (channelId) {
+        return { id: channelId, name: `channel-${channelId}` };
+      }
+      return null;
+    },
     getRole: () => null,
     getMentionable: () => null,
     getAttachment: () => null,

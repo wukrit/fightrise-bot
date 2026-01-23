@@ -7,10 +7,10 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "dotenv -e ../../.env -- vitest run",
+    "test": "[ -f ../../.env ] && dotenv -e ../../.env -- vitest run || vitest run",
     "db:generate": "prisma generate",
-    "db:push": "dotenv -e ../../.env -- prisma db push",
-    "db:migrate": "dotenv -e ../../.env -- prisma migrate dev",
+    "db:push": "[ -f ../../.env ] && dotenv -e ../../.env -- prisma db push || prisma db push",
+    "db:migrate": "[ -f ../../.env ] && dotenv -e ../../.env -- prisma migrate dev || prisma migrate dev",
     "db:studio": "dotenv -e ../../.env -- prisma studio"
   },
   "dependencies": {
