@@ -1316,47 +1316,158 @@ DISCORD_REDIRECT_URI="http://localhost:3000/api/auth/callback/discord"
 
 ## Development Phases
 
-### Phase 1: Foundation (Weeks 1-2)
-- [ ] Set up monorepo with Turborepo
-- [ ] Initialize Prisma with database schema
-- [ ] Create basic Discord bot with slash command registration
-- [ ] Implement Start.gg API client with basic queries
-- [ ] Set up NextAuth with Discord OAuth
+### Phase 1: Foundation ✅ COMPLETE
+- [x] Set up monorepo with Turborepo
+- [x] Initialize Prisma with database schema (Issue #2)
+- [x] Create basic Discord bot with slash command registration (Issue #3)
+- [x] Implement Start.gg API client with basic queries (Issue #4)
+- [x] Set up NextAuth with Discord OAuth (Issue #5)
+- [x] Create shared types and utilities package (Issue #7)
+- [x] Docker development environment with hot-reload (Issue #6)
 
-### Phase 2: Core Bot Features (Weeks 3-4)
-- [ ] `/tournament setup` command
+### Phase 2: Core Bot Features (IN PROGRESS)
+- [ ] `/tournament setup` command implementation
+  - [x] Command registered and routed
+  - [ ] Fetch tournament from Start.gg
+  - [ ] Save tournament configuration to database
+  - [ ] Link Discord guild/channel
+- [ ] `/tournament status` command implementation
+  - [x] Command registered and routed
+  - [ ] Display tournament state, events, match counts
 - [ ] Start.gg polling service with BullMQ
-- [ ] Match thread creation
+  - [x] BullMQ dependency installed
+  - [ ] Create polling job queue
+  - [ ] Implement tournament state sync worker
+  - [ ] Dynamic poll intervals based on tournament state
+- [ ] Match thread creation service
+  - [ ] Create Discord threads when matches are ready
+  - [ ] Add players to thread
+  - [ ] Send check-in message with buttons
 - [ ] Check-in button interactions
+  - [x] Interaction ID helpers in @fightrise/shared
+  - [ ] Button interaction handler
+  - [ ] Check-in deadline enforcement
+  - [ ] Update match state on all checked-in
 - [ ] Basic score reporting
+  - [ ] Winner selection buttons
+  - [ ] Loser confirmation flow
+  - [ ] Report result to Start.gg via mutation
 
-### Phase 3: Registration System (Weeks 5-6)
-- [ ] `/register` command
+### Phase 3: Registration & Account Linking
+- [ ] `/register` command implementation
+  - [x] Command registered and routed
+  - [ ] Check user Start.gg link status
+  - [ ] Create registration in database
+  - [ ] Handle pending approval for non-linked users
 - [ ] `/link-startgg` OAuth flow
-- [ ] Admin manual registration
+  - [x] Command registered and routed
+  - [ ] Start.gg OAuth provider setup
+  - [ ] Token storage in User model
+  - [ ] Account linking confirmation
+- [ ] `/my-matches` command implementation
+  - [x] Command registered and routed
+  - [ ] Query upcoming matches for user
+  - [ ] Display match details with thread links
+- [ ] `/checkin` command implementation
+  - [x] Command registered and routed
+  - [ ] Find user's current match
+  - [ ] Perform check-in
+- [ ] `/report` command implementation
+  - [x] Command registered and routed
+  - [ ] Score entry and confirmation flow
+- [ ] Admin manual registration (web portal)
 - [ ] Registration approval workflow
-- [ ] Sync registrations to Start.gg (if API supports)
 
-### Phase 4: Web Portal (Weeks 7-8)
-- [ ] Dashboard with tournament list
-- [ ] Tournament configuration page
-- [ ] User account management
-- [ ] Admin registration management
-- [ ] Real-time match status view
+### Phase 4: Web Portal
+- [x] NextAuth authentication infrastructure
+- [x] Protected route middleware
+- [x] Auth components (SignIn, SignOut, UserMenu)
+- [ ] Dashboard page (`/dashboard`)
+  - [ ] Tournament list for user
+  - [ ] Upcoming matches widget
+  - [ ] Quick actions
+- [ ] Tournament management pages (`/tournaments`)
+  - [ ] Tournament list view
+  - [ ] Tournament detail/configuration page
+  - [ ] Discord channel configuration
+  - [ ] Settings (check-in window, auto-threads, etc.)
+- [ ] User settings page (`/settings`)
+  - [ ] Account linking status
+  - [ ] Notification preferences
+- [ ] Admin features
+  - [ ] Registration approval queue
+  - [ ] Manual registration form
+  - [ ] Match dispute resolution
 
-### Phase 5: Polish & Advanced Features (Weeks 9-10)
+### Phase 5: Polish & Advanced Features
 - [ ] Match dispute system
+  - [ ] Dispute button in match thread
+  - [ ] Admin notification
+  - [ ] Resolution workflow
 - [ ] DQ handling
-- [ ] Bracket visualization (embed Start.gg or custom)
+  - [ ] Auto-DQ on check-in timeout
+  - [ ] Manual DQ by admin
+  - [ ] Sync DQ to Start.gg
+- [ ] Bracket visualization
+  - [ ] Embed Start.gg bracket widget OR
+  - [ ] Custom bracket component
 - [ ] Notification preferences
+  - [ ] Discord DM opt-in/out
+  - [ ] Match reminder timing
 - [ ] Mobile-friendly web portal
+  - [ ] Responsive layouts
+  - [ ] Touch-friendly interactions
 
-### Phase 6: Testing & Launch (Weeks 11-12)
+### Phase 6: Testing & Launch
 - [ ] Integration testing
+  - [ ] Bot command handlers
+  - [ ] Button interaction handlers
+  - [ ] Start.gg sync flow
 - [ ] Load testing polling system
+  - [ ] Concurrent tournament handling
+  - [ ] Rate limit compliance
 - [ ] Beta testing with real tournaments
 - [ ] Documentation
+  - [ ] User guide
+  - [ ] Admin setup guide
+  - [ ] API documentation
 - [ ] Production deployment
+  - [ ] Railway/Fly.io setup
+  - [ ] Environment configuration
+  - [ ] Monitoring/alerting
+
+---
+
+## Implementation Notes
+
+### What's Built (as of Issue #7)
+
+**Infrastructure:**
+- Turborepo monorepo with npm workspaces
+- TypeScript throughout with strict mode
+- ESLint configuration
+- Vitest for testing
+- Docker Compose for local dev (Postgres + Redis)
+
+**Packages:**
+- `@fightrise/database` - Prisma schema with 8 models, singleton client
+- `@fightrise/startgg-client` - Full GraphQL client with caching, retry, error handling
+- `@fightrise/shared` - Validation schemas, error types, datetime utilities, constants
+- `@fightrise/ui` - Button component, icons
+
+**Apps:**
+- `apps/bot` - Discord.js client, command/event loaders, 7 slash commands (stubs)
+- `apps/web` - Next.js 14, NextAuth Discord OAuth, protected routes, auth components
+
+### What's Missing (Gaps Identified)
+
+1. **No button/select interaction handlers** - `interactionCreate.ts` only handles chat commands
+2. **No BullMQ job setup** - Package installed but no queues or workers created
+3. **No Start.gg OAuth provider** - Only Discord OAuth configured in NextAuth
+4. **No service layer in bot** - Need `services/` directory for match, tournament, sync logic
+5. **No real-time updates** - Consider WebSocket or polling for web portal match status
+6. **No audit logging** - Need to track score reports, admin actions
+7. **No encryption for OAuth tokens** - `startggToken` stored as plain string
 
 ---
 
@@ -1365,27 +1476,28 @@ DISCORD_REDIRECT_URI="http://localhost:3000/api/auth/callback/discord"
 ### Rate Limiting
 
 **Start.gg:**
-- Implement exponential backoff
-- Cache frequently accessed data
-- Batch queries where possible
+- [x] Implement exponential backoff (`@fightrise/startgg-client` withRetry)
+- [x] Cache frequently accessed data (ResponseCache with TTL)
+- [ ] Batch queries where possible
 
 **Discord:**
-- Use built-in discord.js rate limit handling
-- Queue bulk operations (thread creation, member adds)
+- [x] Use built-in discord.js rate limit handling (automatic)
+- [ ] Queue bulk operations (thread creation, member adds)
 
 ### Error Handling
 
-- Graceful degradation if Start.gg is unavailable
-- Retry logic for transient failures
-- Admin notifications for critical errors
-- Audit logging for all score reports
+- [x] Standardized error types (`@fightrise/shared` FightRiseError hierarchy)
+- [x] Retry logic for transient failures (startgg-client)
+- [ ] Graceful degradation if Start.gg is unavailable
+- [ ] Admin notifications for critical errors
+- [ ] Audit logging for all score reports
 
 ### Security
 
-- Encrypt OAuth tokens at rest
-- Validate all button interaction sources
-- Rate limit user actions
-- Audit trail for administrative actions
+- [ ] Encrypt OAuth tokens at rest (startggToken currently plain text)
+- [ ] Validate all button interaction sources
+- [ ] Rate limit user actions
+- [ ] Audit trail for administrative actions
 
 ---
 
