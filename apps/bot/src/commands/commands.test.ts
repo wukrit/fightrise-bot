@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ChatInputCommandInteraction } from 'discord.js';
+import type { TournamentSetupResult } from '../services/tournamentService.js';
+
+// Store the mock function so we can change its return value per test
+const mockSetupTournament = vi.fn();
 
 // Mock the tournament service for /tournament setup command
 vi.mock('../services/tournamentService.js', () => ({
   getTournamentService: vi.fn(() => ({
-    setupTournament: vi.fn().mockResolvedValue({
-      success: false,
-      error: { code: 'USER_NOT_LINKED', message: 'User not linked' },
-    }),
+    setupTournament: mockSetupTournament,
   })),
 }));
 
@@ -43,41 +44,223 @@ function createMockInteraction(options: {
 describe('Command Handlers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default mock return value
+    mockSetupTournament.mockResolvedValue({
+      success: false,
+      error: { code: 'USER_NOT_LINKED', message: 'User not linked' },
+    });
   });
 
   describe('/tournament', () => {
-    it('should respond to setup subcommand with slug', async () => {
-      const { default: command } = await import('./tournament.js');
-      const interaction = createMockInteraction({
-        commandName: 'tournament',
-        subcommand: 'setup',
-        getString: (name: string) => (name === 'slug' ? 'tournament/test' : null),
-        getChannel: (name: string) => (name === 'match-channel' ? { id: 'channel-123' } : null),
-        guildId: 'guild-123',
+    // Mock tournament data for success scenarios
+    const mockTournament = {
+      id: 'tournament-123',
+      name: 'Test Tournament',
+      startggSlug: 'test-tournament',
+      startAt: new Date(),
+      events: [
+        { id: 'event-1', name: 'SF6', numEntrants: 32 },
+        { id: 'event-2', name: 'Tekken 8', numEntrants: 16 },
+      ],
+    };
+
+    describe('setup subcommand', () => {
+      it('should show success embed when setup succeeds (new tournament)', async () => {
+        mockSetupTournament.mockResolvedValue({
+          success: true,
+          tournament: mockTournament,
+          isUpdate: false,
+        } as TournamentSetupResult);
+
+        const { default: command } = await import('./tournament.js');
+        const interaction = createMockInteraction({
+          commandName: 'tournament',
+          subcommand: 'setup',
+          getString: (name: string) => (name === 'slug' ? 'test-tournament' : null),
+          getChannel: (name: string) => (name === 'match-channel' ? { id: 'channel-123' } : null),
+          guildId: 'guild-123',
+        });
+
+        await command.execute(interaction);
+
+        expect(interaction.deferReply).toHaveBeenCalledWith({ ephemeral: true });
+        expect(interaction.editReply).toHaveBeenCalledWith(
+          expect.objectContaining({
+            embeds: expect.arrayContaining([
+              expect.objectContaining({
+                data: expect.objectContaining({
+                  title: 'Tournament Configured',
+                }),
+              }),
+            ]),
+          })
+        );
       });
 
-      await command.execute(interaction);
+      it('should show update embed when tournament already exists', async () => {
+        mockSetupTournament.mockResolvedValue({
+          success: true,
+          tournament: mockTournament,
+          isUpdate: true,
+        } as TournamentSetupResult);
 
-      // Should defer reply first, then edit with result
-      expect(interaction.deferReply).toHaveBeenCalledWith({ ephemeral: true });
-      expect(interaction.editReply).toHaveBeenCalled();
+        const { default: command } = await import('./tournament.js');
+        const interaction = createMockInteraction({
+          commandName: 'tournament',
+          subcommand: 'setup',
+          getString: (name: string) => (name === 'slug' ? 'test-tournament' : null),
+          getChannel: (name: string) => (name === 'match-channel' ? { id: 'channel-123' } : null),
+          guildId: 'guild-123',
+        });
+
+        await command.execute(interaction);
+
+        expect(interaction.editReply).toHaveBeenCalledWith(
+          expect.objectContaining({
+            embeds: expect.arrayContaining([
+              expect.objectContaining({
+                data: expect.objectContaining({
+                  title: 'Tournament Updated',
+                }),
+              }),
+            ]),
+          })
+        );
+      });
+
+      it('should show error when user not linked', async () => {
+        mockSetupTournament.mockResolvedValue({
+          success: false,
+          error: { code: 'USER_NOT_LINKED', message: 'You haven\'t linked your Start.gg account yet.' },
+        });
+
+        const { default: command } = await import('./tournament.js');
+        const interaction = createMockInteraction({
+          commandName: 'tournament',
+          subcommand: 'setup',
+          getString: (name: string) => (name === 'slug' ? 'test-tournament' : null),
+          getChannel: (name: string) => (name === 'match-channel' ? { id: 'channel-123' } : null),
+          guildId: 'guild-123',
+        });
+
+        await command.execute(interaction);
+
+        expect(interaction.editReply).toHaveBeenCalledWith(
+          expect.objectContaining({
+            content: expect.stringContaining('haven\'t linked'),
+          })
+        );
+      });
+
+      it('should show error when OAuth required', async () => {
+        mockSetupTournament.mockResolvedValue({
+          success: false,
+          error: { code: 'OAUTH_REQUIRED', message: 'OAuth connection required.' },
+        });
+
+        const { default: command } = await import('./tournament.js');
+        const interaction = createMockInteraction({
+          commandName: 'tournament',
+          subcommand: 'setup',
+          getString: (name: string) => (name === 'slug' ? 'test-tournament' : null),
+          getChannel: (name: string) => (name === 'match-channel' ? { id: 'channel-123' } : null),
+          guildId: 'guild-123',
+        });
+
+        await command.execute(interaction);
+
+        expect(interaction.editReply).toHaveBeenCalledWith(
+          expect.objectContaining({
+            content: expect.stringContaining('OAuth connection required'),
+          })
+        );
+      });
+
+      it('should show error when tournament not found', async () => {
+        mockSetupTournament.mockResolvedValue({
+          success: false,
+          error: { code: 'TOURNAMENT_NOT_FOUND', message: 'Tournament not found.' },
+        });
+
+        const { default: command } = await import('./tournament.js');
+        const interaction = createMockInteraction({
+          commandName: 'tournament',
+          subcommand: 'setup',
+          getString: (name: string) => (name === 'slug' ? 'invalid-tournament' : null),
+          getChannel: (name: string) => (name === 'match-channel' ? { id: 'channel-123' } : null),
+          guildId: 'guild-123',
+        });
+
+        await command.execute(interaction);
+
+        expect(interaction.editReply).toHaveBeenCalledWith(
+          expect.objectContaining({
+            content: expect.stringContaining('Tournament not found'),
+          })
+        );
+      });
+
+      it('should show error when user is not admin', async () => {
+        mockSetupTournament.mockResolvedValue({
+          success: false,
+          error: { code: 'NOT_ADMIN', message: 'Permission denied.' },
+        });
+
+        const { default: command } = await import('./tournament.js');
+        const interaction = createMockInteraction({
+          commandName: 'tournament',
+          subcommand: 'setup',
+          getString: (name: string) => (name === 'slug' ? 'test-tournament' : null),
+          getChannel: (name: string) => (name === 'match-channel' ? { id: 'channel-123' } : null),
+          guildId: 'guild-123',
+        });
+
+        await command.execute(interaction);
+
+        expect(interaction.editReply).toHaveBeenCalledWith(
+          expect.objectContaining({
+            content: expect.stringContaining('Permission denied'),
+          })
+        );
+      });
+
+      it('should show error when command used outside a server', async () => {
+        const { default: command } = await import('./tournament.js');
+        const interaction = createMockInteraction({
+          commandName: 'tournament',
+          subcommand: 'setup',
+          getString: (name: string) => (name === 'slug' ? 'test-tournament' : null),
+          getChannel: (name: string) => (name === 'match-channel' ? { id: 'channel-123' } : null),
+          guildId: null, // Not in a server
+        });
+
+        await command.execute(interaction);
+
+        expect(interaction.editReply).toHaveBeenCalledWith(
+          expect.objectContaining({
+            content: expect.stringContaining('only be used in a server'),
+          })
+        );
+      });
     });
 
-    it('should respond to status subcommand', async () => {
-      const { default: command } = await import('./tournament.js');
-      const interaction = createMockInteraction({
-        commandName: 'tournament',
-        subcommand: 'status',
+    describe('status subcommand', () => {
+      it('should respond with pending implementation message', async () => {
+        const { default: command } = await import('./tournament.js');
+        const interaction = createMockInteraction({
+          commandName: 'tournament',
+          subcommand: 'status',
+        });
+
+        await command.execute(interaction);
+
+        expect(interaction.reply).toHaveBeenCalledWith(
+          expect.objectContaining({
+            content: expect.stringContaining('pending implementation'),
+            ephemeral: true,
+          })
+        );
       });
-
-      await command.execute(interaction);
-
-      expect(interaction.reply).toHaveBeenCalledWith(
-        expect.objectContaining({
-          content: expect.stringContaining('pending implementation'),
-          ephemeral: true,
-        })
-      );
     });
   });
 

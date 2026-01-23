@@ -15,6 +15,7 @@ export type TournamentSetupResult =
 
 export type TournamentSetupError =
   | { code: 'USER_NOT_LINKED'; message: string }
+  | { code: 'OAUTH_REQUIRED'; message: string }
   | { code: 'TOURNAMENT_NOT_FOUND'; message: string }
   | { code: 'NOT_ADMIN'; message: string }
   | { code: 'API_ERROR'; message: string };
@@ -73,7 +74,17 @@ export class TournamentService {
       };
     }
 
-    // Step 3: Validate user is admin (if they have OAuth token)
+    // Step 3: Validate user is admin (requires OAuth token)
+    if (!user.startggToken) {
+      return {
+        success: false,
+        error: {
+          code: 'OAUTH_REQUIRED',
+          message: 'OAuth connection required.\n\nYou need to link your Start.gg account with OAuth to verify tournament ownership. Use `/link-startgg` to connect your account with full permissions.',
+        },
+      };
+    }
+
     const isAdmin = await this.validateUserIsAdmin(user.startggToken, normalizedSlug);
     if (!isAdmin) {
       return {
@@ -140,14 +151,13 @@ export class TournamentService {
 
   /**
    * Validate that the user is an admin of the tournament
-   * Returns true if validation passes or cannot be verified (no OAuth token)
+   * Returns false if validation fails, token is missing, or API error occurs (deny-by-default)
    */
   async validateUserIsAdmin(userToken: string | null, tournamentSlug: string): Promise<boolean> {
-    // If user doesn't have OAuth token, we can't verify via API
-    // Fall back to trusting Discord ManageGuild permission
+    // If user doesn't have OAuth token, deny access (strict validation)
     if (!userToken) {
-      console.warn('User does not have Start.gg OAuth token - skipping admin validation');
-      return true;
+      console.warn('User does not have Start.gg OAuth token - admin validation failed');
+      return false;
     }
 
     try {
@@ -168,13 +178,14 @@ export class TournamentService {
       );
     } catch (error) {
       console.error('Error validating tournament admin status:', error);
-      // If we can't verify, default to allowing (they have Discord admin perms)
-      return true;
+      // If we can't verify, deny access (strict validation)
+      return false;
     }
   }
 
   /**
    * Save tournament configuration to database
+   * Uses a transaction to ensure atomicity of all database operations
    */
   async saveTournamentConfig(params: {
     startggTournament: StartGGTournament;
@@ -186,104 +197,116 @@ export class TournamentService {
     const { startggTournament, normalizedSlug, discordGuildId, matchChannelId, userId } = params;
 
     try {
-      // Check if tournament already exists
-      const existingTournament = await prisma.tournament.findUnique({
-        where: { startggId: startggTournament.id },
-      });
-
-      const isUpdate = !!existingTournament;
-
       // Map Start.gg state to our TournamentState enum
       const tournamentState = this.mapStartggState(startggTournament.state);
 
-      // Upsert tournament
-      const tournament = await prisma.tournament.upsert({
-        where: { startggId: startggTournament.id },
-        create: {
-          startggId: startggTournament.id,
-          startggSlug: normalizedSlug,
-          name: startggTournament.name,
-          startAt: startggTournament.startAt ? new Date(startggTournament.startAt * 1000) : null,
-          endAt: startggTournament.endAt ? new Date(startggTournament.endAt * 1000) : null,
-          state: tournamentState,
-          discordGuildId,
-          discordChannelId: matchChannelId,
-          pollIntervalMs: 30000,
-        },
-        update: {
-          startggSlug: normalizedSlug,
-          name: startggTournament.name,
-          startAt: startggTournament.startAt ? new Date(startggTournament.startAt * 1000) : null,
-          endAt: startggTournament.endAt ? new Date(startggTournament.endAt * 1000) : null,
-          state: tournamentState,
-          discordGuildId,
-          discordChannelId: matchChannelId,
-        },
-        include: {
-          events: true,
-          admins: true,
-        },
-      });
+      // Get IDs of events from Start.gg for orphan cleanup
+      const startggEventIds = startggTournament.events.map((e) => e.id);
 
-      // Sync events
-      for (const event of startggTournament.events) {
-        await prisma.event.upsert({
-          where: { startggId: event.id },
+      // Wrap all database operations in a transaction for atomicity
+      const result = await prisma.$transaction(async (tx) => {
+        // Check if tournament already exists
+        const existingTournament = await tx.tournament.findUnique({
+          where: { startggId: startggTournament.id },
+        });
+
+        const isUpdate = !!existingTournament;
+
+        // Upsert tournament
+        const tournament = await tx.tournament.upsert({
+          where: { startggId: startggTournament.id },
           create: {
-            startggId: event.id,
-            name: event.name,
-            numEntrants: event.numEntrants ?? 0,
-            state: this.parseEventState(event.state),
-            tournamentId: tournament.id,
+            startggId: startggTournament.id,
+            startggSlug: normalizedSlug,
+            name: startggTournament.name,
+            startAt: startggTournament.startAt ? new Date(startggTournament.startAt * 1000) : null,
+            endAt: startggTournament.endAt ? new Date(startggTournament.endAt * 1000) : null,
+            state: tournamentState,
+            discordGuildId,
+            discordChannelId: matchChannelId,
+            pollIntervalMs: 30000,
           },
           update: {
-            name: event.name,
-            numEntrants: event.numEntrants ?? 0,
-            state: this.parseEventState(event.state),
+            startggSlug: normalizedSlug,
+            name: startggTournament.name,
+            startAt: startggTournament.startAt ? new Date(startggTournament.startAt * 1000) : null,
+            endAt: startggTournament.endAt ? new Date(startggTournament.endAt * 1000) : null,
+            state: tournamentState,
+            discordGuildId,
+            discordChannelId: matchChannelId,
           },
         });
-      }
 
-      // Ensure user is tournament admin
-      await prisma.tournamentAdmin.upsert({
-        where: {
-          userId_tournamentId: {
+        // Sync events - upsert each event from Start.gg
+        for (const event of startggTournament.events) {
+          await tx.event.upsert({
+            where: { startggId: event.id },
+            create: {
+              startggId: event.id,
+              name: event.name,
+              numEntrants: event.numEntrants ?? 0,
+              state: this.parseEventState(event.state),
+              tournamentId: tournament.id,
+            },
+            update: {
+              name: event.name,
+              numEntrants: event.numEntrants ?? 0,
+              state: this.parseEventState(event.state),
+            },
+          });
+        }
+
+        // Delete orphaned events (events no longer in Start.gg response)
+        await tx.event.deleteMany({
+          where: {
+            tournamentId: tournament.id,
+            startggId: { notIn: startggEventIds },
+          },
+        });
+
+        // Ensure user is tournament admin
+        await tx.tournamentAdmin.upsert({
+          where: {
+            userId_tournamentId: {
+              userId,
+              tournamentId: tournament.id,
+            },
+          },
+          create: {
             userId,
             tournamentId: tournament.id,
+            role: AdminRole.OWNER,
           },
-        },
-        create: {
-          userId,
-          tournamentId: tournament.id,
-          role: AdminRole.OWNER,
-        },
-        update: {
-          role: AdminRole.OWNER,
-        },
+          update: {
+            role: AdminRole.OWNER,
+          },
+        });
+
+        // Update guild config
+        await tx.guildConfig.upsert({
+          where: { discordGuildId },
+          create: {
+            discordGuildId,
+            matchChannelId,
+          },
+          update: {
+            matchChannelId,
+          },
+        });
+
+        return { tournamentId: tournament.id, isUpdate };
       });
 
-      // Update guild config
-      await prisma.guildConfig.upsert({
-        where: { discordGuildId },
-        create: {
-          discordGuildId,
-          matchChannelId,
-        },
-        update: {
-          matchChannelId,
-        },
-      });
-
-      // Fetch the complete tournament with events
+      // Fetch the complete tournament with events outside transaction
       const completeTournament = await prisma.tournament.findUnique({
-        where: { id: tournament.id },
+        where: { id: result.tournamentId },
         include: { events: true },
       });
 
       return {
         success: true,
         tournament: completeTournament,
-        isUpdate,
+        isUpdate: result.isUpdate,
       };
     } catch (error) {
       console.error('Error saving tournament config:', error);
