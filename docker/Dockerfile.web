@@ -1,5 +1,29 @@
 FROM node:20-alpine AS base
 
+# Development stage for hot-reload
+FROM base AS dev
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json* ./
+COPY apps/web/package.json ./apps/web/
+COPY packages/database/package.json ./packages/database/
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/ui/package.json ./packages/ui/
+
+RUN npm ci
+
+# Copy prisma schema for client generation
+COPY packages/database/prisma ./packages/database/prisma
+RUN npm run db:generate --workspace=@fightrise/database
+
+# Source code will be mounted as volume
+EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["npm", "run", "dev", "--workspace=@fightrise/web"]
+
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
