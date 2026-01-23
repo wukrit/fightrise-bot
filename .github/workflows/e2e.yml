@@ -64,7 +64,8 @@ jobs:
         run: npm run build
 
       - name: Push database schema
-        run: npm run db:push
+        run: npx prisma db push --skip-generate
+        working-directory: packages/database
         env:
           DATABASE_URL: 'postgresql://fightrise_test:testpassword@localhost:5433/fightrise_test'
 
@@ -184,7 +185,8 @@ jobs:
           STARTGG_API_KEY: 'test-api-key'
 
       - name: Push database schema
-        run: npm run db:push
+        run: npx prisma db push --skip-generate
+        working-directory: packages/database
         env:
           DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
 
