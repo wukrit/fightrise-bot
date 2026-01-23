@@ -28,19 +28,21 @@
 - [x] 3.3 README includes setup instructions, commands, and service documentation
 - [x] 3.4 CLAUDE.md updated with docker-compose.dev.yml workflow
 
-## E2E Verification Notes
+## E2E Verification Results
 
-**Performed:**
-- Docker Compose config validation: Both files pass `docker compose config`
-- Health endpoint unit tests: 2 tests pass
-- Container startup: Attempted `docker compose up postgres redis` - images pulled successfully, containers created
+**All verifications passed:**
 
-**Limitations:**
-- Full E2E blocked by port conflicts (ports 5432, 6379 in use by existing gobi-* containers)
-- Hot-reload verification requires running containers with available ports
-
-**To fully verify:**
-1. Stop conflicting containers: `docker stop gobi-postgres-1 gobi-redis-1`
-2. Run: `docker compose -f docker/docker-compose.dev.yml up`
-3. Verify services reach healthy state
-4. Modify a source file and confirm hot-reload triggers
+1. **Docker Compose config validation:** Both files pass `docker compose config`
+2. **Health endpoint unit tests:** 2 tests pass
+3. **Container startup:** All services start successfully
+   - PostgreSQL: healthy (port 5432)
+   - Redis: healthy (port 6379)
+   - Web: healthy (port 3000)
+4. **Database connectivity:** `psql -U fightrise -c "SELECT 1"` returns successfully
+5. **Redis connectivity:** `redis-cli ping` returns PONG
+6. **Health endpoint from host:** `curl http://localhost:3000/api/health` returns `{"status":"ok"}`
+7. **Hot-reload verified:**
+   - Modified `apps/web/app/api/health/route.ts` to add timestamp
+   - Next.js detected change and recompiled in 104ms
+   - Endpoint returned updated response with timestamp
+   - Reverted change, recompiled in 44ms
