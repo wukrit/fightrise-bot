@@ -12,7 +12,7 @@ A Discord bot and web portal for running Start.gg fighting game tournaments enti
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 22+
 - Docker and Docker Compose
 - Discord Application (Bot Token, Client ID, Client Secret)
 - Start.gg API Key
@@ -115,7 +115,9 @@ npm run dev --filter=@fightrise/web
 npm run build
 
 # Run tests
-npm run test
+npm run test               # Unit tests
+npm run test:integration   # Integration tests (requires Docker)
+npm run test:e2e           # Playwright browser tests
 
 # Run linting
 npm run lint
@@ -125,6 +127,23 @@ npm run db:generate    # Generate Prisma client
 npm run db:push        # Push schema to database (dev)
 npm run db:migrate     # Run migrations (production)
 ```
+
+### Testing
+
+The project uses a multi-layered testing strategy:
+
+| Layer | Command | Description |
+|-------|---------|-------------|
+| Unit | `npm run test` | Fast tests for pure functions and utilities |
+| Integration | `npm run test:integration` | Tests with real database (Testcontainers) |
+| E2E | `npm run test:e2e` | Playwright browser tests for web portal |
+| Smoke | `npm run test:smoke` | Tests against real APIs (manual/CI only) |
+
+**Test Infrastructure:**
+- **Discord Bot**: Custom test harness with mock client, interactions, and channels
+- **Start.gg API**: MSW (Mock Service Worker) for GraphQL mocking
+- **Database**: Testcontainers for isolated PostgreSQL instances
+- **Web E2E**: Playwright with session mocking utilities
 
 ### Project Structure
 
@@ -185,8 +204,10 @@ docker build -f docker/Dockerfile.web -t fightrise-web .
 
 1. Create a branch: `git checkout -b issue-<number>-<description>`
 2. Make changes following the existing code patterns
-3. Run tests: `npm run test && npm run lint`
+3. Run tests: `npm run test && npm run test:integration && npm run lint`
 4. Create a pull request
+
+See [CLAUDE.md](./CLAUDE.md) for detailed development workflow and testing guidelines.
 
 ## License
 
