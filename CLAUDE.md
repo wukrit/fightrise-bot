@@ -44,7 +44,10 @@ npm run db:push                # Push schema to database (dev)
 npm run db:migrate             # Run migrations (production)
 
 # Testing & Linting
-npm run test                   # Run tests via vitest
+npm run test                   # Run unit tests (Vitest)
+npm run test:integration       # Run integration tests (Testcontainers)
+npm run test:e2e               # Run Playwright browser E2E tests
+npm run test:smoke             # Run smoke tests against real APIs
 npm run lint                   # Run ESLint
 
 # Docker (for local Postgres & Redis only)
@@ -166,21 +169,69 @@ Use `/issue <url-or-number>` to start working on an issue, which will guide you 
 - Commit incrementally with clear messages
 
 ### Step 4: Testing
-- Write unit tests for all new functions/services (Vitest)
-- Write integration tests for API endpoints and Discord commands
-- Ensure all tests pass: `npm run test`
+
+Use the multi-layered test suite based on what you're building:
+
+| Layer | Command | When to Use |
+|-------|---------|-------------|
+| **Unit** | `npm run test` | Pure functions, validators, utilities |
+| **Integration** | `npm run test:integration` | Services with database, bot command flows |
+| **E2E** | `npm run test:e2e` | Browser user flows (web portal) |
+
+**Test Infrastructure:**
+- **Discord Bot**: Use test harness in `apps/bot/src/__tests__/harness/`
+  - `DiscordTestClient` - Mock Discord.js client for command testing
+  - `MockInteraction` - Simulate slash commands and button clicks
+  - `MockChannel` - Track messages and threads created
+- **Start.gg API**: Use MSW mocks in `packages/startgg-client/src/__mocks__/`
+  - `handlers.ts` - GraphQL query/mutation handlers
+  - `fixtures.ts` - Realistic response data
+- **Database**: Use Testcontainers in `packages/database/src/__tests__/`
+  - `setup.ts` - Spins up isolated PostgreSQL container
+  - `seeders.ts` - Factory functions for all models
+- **Web E2E**: Use Playwright in `apps/web/__tests__/e2e/`
+  - `utils/auth.ts` - Session mocking utilities
+
+**Requirements:**
+- Write unit tests for all new functions/services
+- Write integration tests for Discord commands using the test harness
+- Write Playwright tests for new web UI features
+- Ensure all tests pass: `npm run test && npm run test:integration`
 - Ensure linting passes: `npm run lint`
 - **Do not proceed if any tests fail**
 
 ### Step 5: End-to-End Verification
-- Start the application locally if needed
-- For web features: Use Playwright MCP tools to verify UI behavior
-  - `mcp__playwright__browser_navigate` to load pages
-  - `mcp__playwright__browser_snapshot` to verify content
-  - `mcp__playwright__browser_click` to test interactions
-- For bot features: Verify command registration and response structure
-- For database changes: Verify migrations work with `npm run db:push`
-- Document any manual verification steps performed
+
+**For Web Features:**
+1. Run Playwright E2E tests: `npm run test:e2e`
+2. For manual verification, use Playwright MCP tools:
+   - `mcp__playwright__browser_navigate` to load pages
+   - `mcp__playwright__browser_snapshot` to verify content
+   - `mcp__playwright__browser_click` to test interactions
+
+**For Bot Features:**
+1. Write integration tests using the Discord test harness:
+   ```typescript
+   import { createDiscordTestClient } from '../harness';
+
+   const client = createDiscordTestClient();
+   client.registerCommand(myCommand);
+   const interaction = await client.executeCommand('mycommand', { option: 'value' });
+   expect(interaction.lastReply?.content).toBe('Expected response');
+   ```
+2. Run: `npm run test:integration --filter=@fightrise/bot`
+
+**For Database Changes:**
+1. Verify migrations work: `npm run db:push`
+2. Add seeders in `packages/database/src/__tests__/utils/seeders.ts` if needed
+3. Write integration tests using Testcontainers (auto-spins up PostgreSQL)
+
+**For Start.gg Integration:**
+1. Add MSW handlers in `packages/startgg-client/src/__mocks__/handlers.ts`
+2. Add fixtures in `packages/startgg-client/src/__mocks__/fixtures.ts`
+3. Tests automatically use mocked API responses
+
+Document any manual verification steps performed.
 
 ### Step 6: Pull Request
 - Push the branch to origin
@@ -213,8 +264,10 @@ Use `/issue <url-or-number>` to start working on an issue, which will guide you 
 openspec validate <change-id> --strict
 
 # Run tests
-npm run test
-npm run lint
+npm run test                   # Unit tests
+npm run test:integration       # Integration tests (bot commands, database)
+npm run test:e2e               # Playwright browser tests
+npm run lint                   # Linting
 
 # Create PR
 gh pr create --title "Title #42" --body "..."
