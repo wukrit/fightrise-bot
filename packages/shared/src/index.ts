@@ -1,49 +1,55 @@
 // Shared types and utilities for FightRise
+// Main entry point - re-exports all modules
 
-export interface TournamentConfig {
-  autoCreateThreads: boolean;
-  requireCheckIn: boolean;
-  checkInWindowMinutes: number;
-  allowSelfReporting: boolean;
-}
+// Types
+export type { TournamentConfig } from './types.js';
+export { DEFAULT_TOURNAMENT_CONFIG } from './types.js';
 
-export const DEFAULT_TOURNAMENT_CONFIG: TournamentConfig = {
-  autoCreateThreads: true,
-  requireCheckIn: true,
-  checkInWindowMinutes: 10,
-  allowSelfReporting: true,
-};
+// Constants
+export {
+  POLL_INTERVALS,
+  STARTGG_SET_STATE,
+  INTERACTION_PREFIX,
+} from './constants.js';
 
-// Poll intervals in milliseconds
-export const POLL_INTERVALS = {
-  INACTIVE: 5 * 60 * 1000,    // 5 minutes when not active
-  ACTIVE: 15 * 1000,          // 15 seconds during active play
-  MATCH_PENDING: 10 * 1000,   // 10 seconds when matches are waiting
-  REGISTRATION: 60 * 1000,    // 1 minute during registration
-} as const;
+// Interaction helpers
+export { parseInteractionId, createInteractionId } from './interactions.js';
 
-// Match state mappings from Start.gg
-export const STARTGG_SET_STATE = {
-  NOT_STARTED: 1,
-  STARTED: 2,
-  COMPLETED: 3,
-} as const;
+// Validation schemas
+export {
+  TournamentConfigSchema,
+  InteractionIdSchema,
+  PartialTournamentConfigSchema,
+} from './schemas.js';
+export type {
+  ValidatedTournamentConfig,
+  PartialTournamentConfig,
+} from './schemas.js';
 
-// Discord custom ID prefixes
-export const INTERACTION_PREFIX = {
-  CHECK_IN: 'checkin',
-  REPORT: 'report',
-  CONFIRM: 'confirm',
-  DISPUTE: 'dispute',
-  REGISTER: 'register',
-  SCORE: 'score',
-} as const;
+// Error types
+export {
+  ErrorCode,
+  FightRiseError,
+  ValidationError,
+  NotFoundError,
+  PermissionError,
+  DiscordError,
+  ConfigurationError,
+  MatchError,
+  isFightRiseError,
+  hasErrorCode,
+} from './errors.js';
+export type { ErrorCodeType } from './errors.js';
 
-export function parseInteractionId(customId: string) {
-  const [prefix, ...parts] = customId.split(':');
-  return { prefix, parts };
-}
-
-export function createInteractionId(prefix: string, ...parts: string[]) {
-  return [prefix, ...parts].join(':');
-}
+// Date/time utilities
+export {
+  formatTournamentDate,
+  formatTournamentDateTz,
+  formatDuration,
+  isWithinWindow,
+  getWindowRemaining,
+  getRelativeTime,
+  toUnixSeconds,
+  fromUnixSeconds,
+} from './datetime.js';
+export type { WindowStatus } from './datetime.js';
