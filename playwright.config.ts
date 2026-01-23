@@ -64,9 +64,15 @@ export default defineConfig({
 
   // Run local dev server before starting the tests
   webServer: {
-    command: 'npm run dev --filter=@fightrise/web',
+    // Use production mode in CI (already built), dev mode locally
+    command: process.env.CI
+      ? 'npm run start --filter=@fightrise/web'
+      : 'npm run dev --filter=@fightrise/web',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000, // 2 minutes for Next.js to start
+    // Capture stdout/stderr for debugging
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
 });
