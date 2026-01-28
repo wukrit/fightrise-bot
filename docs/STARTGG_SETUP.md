@@ -321,7 +321,7 @@ Expected response:
 Run the smoke tests:
 
 ```bash
-npm run test:smoke --filter=@fightrise/startgg-client
+npm run test:smoke -- --filter=@fightrise/startgg-client
 ```
 
 ### API Explorer
@@ -510,7 +510,7 @@ Now that Start.gg is configured:
 - [ ] Complete [Discord Setup](./DISCORD_SETUP.md) if you haven't already
 - [ ] Run `npm install` at the repository root
 - [ ] Copy `.env.example` to `.env` and add your credentials
-- [ ] Run `npm run test:smoke --filter=@fightrise/startgg-client` to verify API access
+- [ ] Run `npm run test:smoke -- --filter=@fightrise/startgg-client` to verify API access
 - [ ] Run `npm run dev` to start the full application
 
 See [Implementation Status](./IMPLEMENTATION_STATUS.md) to track progress or find ways to contribute.

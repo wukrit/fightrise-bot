@@ -5,10 +5,10 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "dotenv -e ../../.env -- tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
-    "deploy": "tsx src/deploy-commands.ts",
+    "start": "dotenv -e ../../.env -- node dist/index.js",
+    "deploy": "dotenv -e ../../.env -- tsx src/deploy-commands.ts",
     "lint": "eslint --ext .ts,.js src/",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -22,7 +22,6 @@
     "@fightrise/startgg-client": "*",
     "bullmq": "^5.0.0",
     "discord.js": "^14.14.0",
-    "dotenv": "^16.3.0",
     "ioredis": "^5.3.0"
   },
   "devDependencies": {
@@ -30,6 +29,7 @@
     "@types/node": "^20.10.0",
     "@typescript-eslint/eslint-plugin": "^8.53.1",
     "@typescript-eslint/parser": "^8.53.1",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^8.55.0",
     "tsx": "^4.6.0",
     "typescript": "^5.3.0",

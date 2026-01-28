@@ -49,3 +49,6 @@ packages/database/prisma/*.db
 # Misc
 *.tsbuildinfo
 .eslintcache
+
+# Docker (user-specific configs)
+docker/cloudflared-config.yml

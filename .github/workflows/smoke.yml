@@ -59,7 +59,7 @@ jobs:
         run: npm run build
 
       - name: Run Discord API smoke tests
-        run: npm run test:smoke --filter=@fightrise/bot
+        run: npm run test:smoke -- --filter=@fightrise/bot
         env:
           SMOKE_DISCORD_TOKEN: ${{ secrets.SMOKE_DISCORD_TOKEN }}
           SMOKE_DISCORD_GUILD_ID: ${{ secrets.SMOKE_DISCORD_GUILD_ID }}
@@ -108,7 +108,7 @@ jobs:
         run: npm run build
 
       - name: Run Start.gg API smoke tests
-        run: npm run test:smoke --filter=@fightrise/startgg-client
+        run: npm run test:smoke -- --filter=@fightrise/startgg-client
         env:
           SMOKE_STARTGG_API_KEY: ${{ secrets.SMOKE_STARTGG_API_KEY }}
           SMOKE_STARTGG_TOURNAMENT_SLUG: ${{ vars.SMOKE_STARTGG_TOURNAMENT_SLUG }}

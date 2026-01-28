@@ -88,7 +88,7 @@ Only proceed after user approval of the plan.
 Verify the implementation works in a realistic environment.
 
 #### For Web Features (Next.js):
-1. Start the dev server if needed: `npm run dev --filter=@fightrise/web`
+1. Start the dev server if needed: `npm run dev -- --filter=@fightrise/web`
 2. Use Playwright MCP to verify:
    ```
    mcp__playwright__browser_navigate to http://localhost:3000/<route>

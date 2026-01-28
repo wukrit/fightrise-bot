@@ -11,8 +11,8 @@ FightRise is a Discord bot and web portal for running Start.gg fighting game tou
 ```bash
 # Development
 npm run dev                    # Run all apps/packages in dev mode (turbo)
-npm run dev --filter=@fightrise/bot   # Run just the bot
-npm run dev --filter=@fightrise/web   # Run just the web app
+npm run dev -- --filter=@fightrise/bot   # Run just the bot
+npm run dev -- --filter=@fightrise/web   # Run just the web app
 
 # Build & Start
 npm run build                  # Build all packages
@@ -31,11 +31,21 @@ npm run test:e2e               # Run Playwright browser E2E tests
 npm run test:smoke             # Run smoke tests against real APIs
 npm run lint                   # Run ESLint
 
-# Docker (for local Postgres & Redis only)
-docker compose -f docker/docker-compose.yml up -d postgres redis
+# Docker Development (recommended)
+npm run docker:dev          # Full stack with hot-reload
+npm run docker:dev:tunnel   # With Cloudflare Tunnel for OAuth
+npm run docker:dev:tools    # With pgAdmin and Redis Commander
+npm run docker:dev:all      # Everything
+npm run docker:down         # Stop all services
+npm run docker:infra        # Just Postgres and Redis
 
-# Docker Development (full stack with hot-reload - recommended)
-docker compose -f docker/docker-compose.dev.yml up
+# Docker commands (run in containers)
+npm run docker:db:generate  # Generate Prisma client
+npm run docker:db:push      # Push schema to database
+npm run docker:db:migrate   # Run migrations
+npm run docker:deploy       # Deploy Discord commands
+npm run docker:exec:web -- <cmd>  # Run any command in web container
+npm run docker:exec:bot -- <cmd>  # Run any command in bot container
 
 # Cloudflare Tunnel (for OAuth development)
 npm run tunnel                 # Exposes localhost:3000 for OAuth callbacks
@@ -219,7 +229,7 @@ Use the multi-layered test suite based on what you're building:
    const interaction = await client.executeCommand('mycommand', { option: 'value' });
    expect(interaction.lastReply?.content).toBe('Expected response');
    ```
-2. Run: `npm run test:integration --filter=@fightrise/bot`
+2. Run: `npm run test:integration -- --filter=@fightrise/bot`
 
 **For Database Changes:**
 1. Verify migrations work: `npm run db:push`
