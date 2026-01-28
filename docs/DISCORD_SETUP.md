@@ -20,6 +20,7 @@ Before you begin, make sure you have:
 | [README.md](../README.md) | Quick start guide |
 | **Discord Setup** (this doc) | Discord bot configuration |
 | [Start.gg Setup](./STARTGG_SETUP.md) | Start.gg API setup |
+| [Tunnel Setup](./TUNNEL_SETUP.md) | Cloudflare Tunnel for OAuth |
 | [Implementation Status](./IMPLEMENTATION_STATUS.md) | Current progress |
 | [Architecture Plan](../ARCHITECTURE_PLAN.md) | Full system design |
 
@@ -167,10 +168,13 @@ sequenceDiagram
 
 1. Go to **OAuth2** → **General** in Developer Portal
 2. Add your redirect URIs:
-   - Development: `http://localhost:3000/api/auth/callback/discord`
+   - Development (local only): `http://localhost:3000/api/auth/callback/discord`
+   - Development (with tunnel): `https://fightrise-dev.yourdomain.com/api/auth/callback/discord`
    - Production: `https://your-domain.com/api/auth/callback/discord`
 3. Note your **Client Secret** (click "Reset Secret" if needed)
    - This is your `DISCORD_CLIENT_SECRET`
+
+> **Note:** OAuth callbacks require publicly accessible URLs. For local development with OAuth, use [Cloudflare Tunnel](../README.md#cloudflare-tunnel-for-oauth) to expose your local server.
 
 ---
 

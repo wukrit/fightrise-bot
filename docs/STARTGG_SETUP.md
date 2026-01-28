@@ -19,6 +19,7 @@ Before you begin, make sure you have:
 | [README.md](../README.md) | Quick start guide |
 | [Discord Setup](./DISCORD_SETUP.md) | Discord bot configuration |
 | **Start.gg Setup** (this doc) | Start.gg API setup |
+| [Tunnel Setup](./TUNNEL_SETUP.md) | Cloudflare Tunnel for OAuth |
 | [Implementation Status](./IMPLEMENTATION_STATUS.md) | Current progress |
 | [Architecture Plan](../ARCHITECTURE_PLAN.md) | Full system design |
 
@@ -192,12 +193,17 @@ OAuth2 allows users to authorize FightRise to access their personal Start.gg dat
 Add these redirect URIs:
 
 ```
-# Development
+# Development (local only - won't work for OAuth testing)
 http://localhost:3000/api/auth/callback/startgg
+
+# Development (with Cloudflare Tunnel - recommended for OAuth)
+https://fightrise-dev.yourdomain.com/api/auth/callback/startgg
 
 # Production
 https://your-domain.com/api/auth/callback/startgg
 ```
+
+> **Note:** OAuth callbacks require publicly accessible URLs. For local development with OAuth, use [Cloudflare Tunnel](../README.md#cloudflare-tunnel-for-oauth) to expose your local server.
 
 ### Step 3: Note OAuth Credentials
 

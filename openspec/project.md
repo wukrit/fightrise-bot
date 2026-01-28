@@ -137,3 +137,4 @@ See `CLAUDE.md` for full workflow details. Use `/issue <number>` to start.
 ### OAuth Providers (via NextAuth)
 - Discord OAuth2 for user authentication
 - Start.gg OAuth2 for account linking and API access
+- **Local development**: Requires Cloudflare Tunnel (`npm run tunnel`) to expose localhost for OAuth callbacks. See `docs/TUNNEL_SETUP.md`.

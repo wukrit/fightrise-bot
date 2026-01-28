@@ -88,6 +88,25 @@ npm run dev --filter=@fightrise/bot
 npm run dev --filter=@fightrise/web
 ```
 
+**Option C: With Cloudflare Tunnel (for OAuth testing)**
+
+OAuth providers require publicly accessible redirect URLs. Use Cloudflare Tunnel to expose your local dev server:
+
+```bash
+# Terminal 1: Start the tunnel (exposes localhost:3000)
+npm run tunnel
+
+# Terminal 2: Start infrastructure
+docker compose -f docker/docker-compose.yml up -d postgres redis
+
+# Terminal 3: Run the web portal
+npm run dev --filter=@fightrise/web
+```
+
+Your app will be accessible at `https://fightrise-dev.sukritwalia.com`
+
+See [Cloudflare Tunnel Setup](#cloudflare-tunnel-for-oauth) for initial configuration.
+
 ### 4. Database Setup
 
 Generate the Prisma client and push the schema:
@@ -188,6 +207,63 @@ View service health:
 docker compose -f docker/docker-compose.dev.yml ps
 ```
 
+## Cloudflare Tunnel for OAuth
+
+OAuth providers (Discord, Start.gg) require publicly accessible redirect URLs. Cloudflare Tunnel exposes your local development server securely.
+
+### First-Time Setup
+
+1. **Install cloudflared**
+   ```bash
+   brew install cloudflared
+   ```
+
+2. **Authenticate with Cloudflare**
+   ```bash
+   cloudflared tunnel login
+   # Opens browser to authenticate
+   ```
+
+3. **Create the tunnel** (already done for this project)
+   ```bash
+   cloudflared tunnel create fightrise-dev
+   ```
+
+4. **Configure** (`~/.cloudflared/config.yml`)
+   ```yaml
+   tunnel: <TUNNEL-UUID>
+   credentials-file: /Users/<you>/.cloudflared/<TUNNEL-UUID>.json
+
+   ingress:
+     - hostname: fightrise-dev.yourdomain.com
+       service: http://localhost:3000
+     - service: http_status:404
+   ```
+
+5. **Create DNS route**
+   ```bash
+   cloudflared tunnel route dns fightrise-dev fightrise-dev.yourdomain.com
+   ```
+
+### Running the Tunnel
+
+```bash
+npm run tunnel
+```
+
+Your local app will be accessible at your configured hostname (e.g., `https://fightrise-dev.sukritwalia.com`).
+
+### OAuth Redirect URIs
+
+Add these to your OAuth providers:
+
+| Provider | Redirect URI |
+|----------|--------------|
+| Discord | `https://fightrise-dev.yourdomain.com/api/auth/callback/discord` |
+| Start.gg | `https://fightrise-dev.yourdomain.com/api/auth/callback/startgg` |
+
+---
+
 ## Production
 
 Build and run production containers:
@@ -221,6 +297,7 @@ See [CLAUDE.md](./CLAUDE.md) for detailed development workflow and testing guide
 |----------|-------------|
 | [Discord Setup Guide](./docs/DISCORD_SETUP.md) | Creating Discord application, bot token, permissions, OAuth2 |
 | [Start.gg Setup Guide](./docs/STARTGG_SETUP.md) | API key, rate limits, OAuth2 configuration |
+| [Tunnel Setup Guide](./docs/TUNNEL_SETUP.md) | Cloudflare Tunnel for local OAuth development |
 | [Implementation Status](./docs/IMPLEMENTATION_STATUS.md) | Current progress, what's built, what's remaining |
 | [Architecture Plan](./ARCHITECTURE_PLAN.md) | Full system design, data flow, database schema |
 | [Development Guide](./CLAUDE.md) | Workflow, testing, contribution guidelines |

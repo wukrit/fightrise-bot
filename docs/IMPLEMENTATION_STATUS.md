@@ -11,6 +11,7 @@ This document tracks the current implementation progress against the architectur
 | [README.md](../README.md) | Quick start guide |
 | [Discord Setup](./DISCORD_SETUP.md) | Discord bot configuration |
 | [Start.gg Setup](./STARTGG_SETUP.md) | Start.gg API setup |
+| [Tunnel Setup](./TUNNEL_SETUP.md) | Cloudflare Tunnel for OAuth |
 | **Implementation Status** (this doc) | Current progress |
 | [Architecture Plan](../ARCHITECTURE_PLAN.md) | Full system design |
 
