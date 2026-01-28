@@ -9,7 +9,7 @@ import {
   ButtonStyle,
   ChannelType,
 } from 'discord.js';
-import { prisma, MatchState, Prisma } from '@fightrise/database';
+import { prisma, MatchState, StartggSyncStatus, Prisma } from '@fightrise/database';
 import {
   createInteractionId,
   INTERACTION_PREFIX,
@@ -273,7 +273,54 @@ export interface MatchStatus {
     isCheckedIn: boolean;
     checkedInAt: Date | null;
     discordId: string | null;
+    isWinner?: boolean | null;
   }>;
+}
+
+/**
+ * Helper to convert a match with players to MatchStatus format.
+ * Consolidates the repeated inline MatchStatus construction pattern.
+ */
+function toMatchStatus(
+  match: {
+    id: string;
+    identifier: string;
+    roundText: string;
+    state: MatchState;
+    discordThreadId: string | null;
+    checkInDeadline: Date | null;
+    players: Array<{
+      id: string;
+      playerName: string;
+      isCheckedIn: boolean;
+      checkedInAt: Date | null;
+      isWinner?: boolean | null;
+      user?: { discordId: string | null } | null;
+    }>;
+  },
+  overrides?: {
+    state?: MatchState;
+    playerWinnerMap?: Record<string, boolean | null>;
+  }
+): MatchStatus {
+  return {
+    id: match.id,
+    identifier: match.identifier,
+    roundText: match.roundText,
+    state: overrides?.state ?? match.state,
+    discordThreadId: match.discordThreadId,
+    checkInDeadline: match.checkInDeadline,
+    players: match.players.map((p) => ({
+      id: p.id,
+      playerName: p.playerName,
+      isCheckedIn: p.isCheckedIn,
+      checkedInAt: p.checkedInAt,
+      discordId: p.user?.discordId ?? null,
+      isWinner: overrides?.playerWinnerMap !== undefined
+        ? (overrides.playerWinnerMap[p.id] ?? null)
+        : (p.isWinner ?? null),
+    })),
+  };
 }
 
 /**
@@ -479,6 +526,400 @@ export async function checkInPlayer(
   };
 }
 
+// ============================================================================
+// Score Reporting Functions
+// ============================================================================
+
+/**
+ * Result of a score report operation
+ */
+export interface ReportResult {
+  success: boolean;
+  message: string;
+  /** Whether this was a loser confirmation (auto-completed) vs self-report (needs confirmation) */
+  autoCompleted: boolean;
+  /** Match status included on success for UI updates */
+  matchStatus?: MatchStatus;
+}
+
+/**
+ * Result of a score confirmation operation
+ */
+export interface ConfirmResult {
+  success: boolean;
+  message: string;
+  /** Match status included on success for UI updates */
+  matchStatus?: MatchStatus;
+}
+
+/**
+ * Report a match result.
+ * - If the reporter claims their opponent won (loser confirmation), auto-complete the match
+ * - If the reporter claims themselves as winner (self-report), wait for opponent confirmation
+ *
+ * @param matchId - The match ID
+ * @param discordId - Discord ID of the player reporting
+ * @param winnerSlot - 1 or 2, indicating which player won
+ */
+export async function reportScore(
+  matchId: string,
+  discordId: string,
+  winnerSlot: number
+): Promise<ReportResult> {
+  // Validate slot
+  if (winnerSlot !== 1 && winnerSlot !== 2) {
+    return { success: false, message: 'Invalid winner selection.', autoCompleted: false };
+  }
+
+  // Fetch match with players and event info for Start.gg sync
+  const match = await prisma.match.findUnique({
+    where: { id: matchId },
+    include: {
+      players: {
+        include: { user: true },
+        orderBy: { id: 'asc' },
+      },
+      event: { include: { tournament: true } },
+    },
+  });
+
+  if (!match) {
+    console.warn(`[ReportScore] Match not found: ${matchId} (user: ${discordId})`);
+    return { success: false, message: 'Match not found.', autoCompleted: false };
+  }
+
+  // Validate match is in correct state
+  if (match.state === MatchState.COMPLETED) {
+    return { success: false, message: 'This match has already been completed.', autoCompleted: false };
+  }
+
+  if (match.state === MatchState.PENDING_CONFIRMATION) {
+    return { success: false, message: 'A result has already been reported. Waiting for confirmation.', autoCompleted: false };
+  }
+
+  if (match.state !== MatchState.CHECKED_IN) {
+    return { success: false, message: 'Score reporting is not available for this match.', autoCompleted: false };
+  }
+
+  // Find reporter by Discord ID
+  const reporter = match.players.find((p) => p.user?.discordId === discordId);
+  if (!reporter) {
+    console.warn(`[ReportScore] User not in match: ${discordId} for ${match.identifier}`);
+    return { success: false, message: 'You are not a participant in this match.', autoCompleted: false };
+  }
+
+  // Determine winner and loser
+  const [player1, player2] = match.players;
+  if (!player1 || !player2) {
+    return { success: false, message: 'Match does not have two players.', autoCompleted: false };
+  }
+
+  const winner = winnerSlot === 1 ? player1 : player2;
+  const loser = winnerSlot === 1 ? player2 : player1;
+
+  // Is this a self-report (reporter claims they won) or loser confirmation (reporter says opponent won)?
+  const isSelfReport = reporter.id === winner.id;
+
+  if (isSelfReport) {
+    // Self-report: transition to PENDING_CONFIRMATION, wait for opponent
+    const result = await prisma.$transaction(async (tx) => {
+      // Atomic update with state guard
+      const updated = await tx.match.updateMany({
+        where: { id: matchId, state: MatchState.CHECKED_IN },
+        data: { state: MatchState.PENDING_CONFIRMATION },
+      });
+
+      if (updated.count === 0) {
+        return { success: false, reason: 'STATE_CHANGED' };
+      }
+
+      // Mark claimed winner
+      await tx.matchPlayer.update({
+        where: { id: winner.id },
+        data: { isWinner: true },
+      });
+
+      return { success: true };
+    });
+
+    if (!result.success) {
+      return { success: false, message: 'Match state changed. Please try again.', autoCompleted: false };
+    }
+
+    console.log(`[ReportScore] Self-report: ${reporter.playerName} claims win for ${match.identifier}`);
+
+    return {
+      success: true,
+      message: `You reported yourself as the winner. Waiting for ${loser.playerName} to confirm.`,
+      autoCompleted: false,
+      matchStatus: toMatchStatus(match, {
+        state: MatchState.PENDING_CONFIRMATION,
+        playerWinnerMap: { [winner.id]: true, [loser.id]: null },
+      }),
+    };
+  } else {
+    // Loser confirmation: auto-complete the match
+    const result = await prisma.$transaction(async (tx) => {
+      // Atomic update with state guard
+      const updated = await tx.match.updateMany({
+        where: { id: matchId, state: MatchState.CHECKED_IN },
+        data: { state: MatchState.COMPLETED },
+      });
+
+      if (updated.count === 0) {
+        return { success: false, reason: 'STATE_CHANGED' };
+      }
+
+      // Mark winner
+      await tx.matchPlayer.update({
+        where: { id: winner.id },
+        data: { isWinner: true },
+      });
+
+      // Mark loser
+      await tx.matchPlayer.update({
+        where: { id: loser.id },
+        data: { isWinner: false },
+      });
+
+      return { success: true };
+    });
+
+    if (!result.success) {
+      return { success: false, message: 'Match state changed. Please try again.', autoCompleted: false };
+    }
+
+    // Sync to Start.gg (fire and forget - don't block Discord response)
+    syncToStartGG(match.id, match.startggSetId, winner.startggEntrantId).catch((err) => {
+      console.error(`[ReportScore] Start.gg sync failed for ${match.identifier}:`, err);
+    });
+
+    console.log(`[ReportScore] Loser confirmed: ${reporter.playerName} confirms ${winner.playerName} won ${match.identifier}`);
+
+    return {
+      success: true,
+      message: `Match complete! ${winner.playerName} wins.`,
+      autoCompleted: true,
+      matchStatus: toMatchStatus(match, {
+        state: MatchState.COMPLETED,
+        playerWinnerMap: { [winner.id]: true, [loser.id]: false },
+      }),
+    };
+  }
+}
+
+/**
+ * Confirm or dispute a reported match result.
+ * Only the opponent (non-reporter) can confirm or dispute.
+ *
+ * @param matchId - The match ID
+ * @param discordId - Discord ID of the player confirming/disputing
+ * @param confirmed - true to confirm, false to dispute
+ */
+export async function confirmResult(
+  matchId: string,
+  discordId: string,
+  confirmed: boolean
+): Promise<ConfirmResult> {
+  // Fetch match with players
+  const match = await prisma.match.findUnique({
+    where: { id: matchId },
+    include: {
+      players: {
+        include: { user: true },
+        orderBy: { id: 'asc' },
+      },
+    },
+  });
+
+  if (!match) {
+    return { success: false, message: 'Match not found.' };
+  }
+
+  // Validate state
+  if (match.state !== MatchState.PENDING_CONFIRMATION) {
+    if (match.state === MatchState.COMPLETED) {
+      return { success: false, message: 'This match has already been completed.' };
+    }
+    return { success: false, message: 'No result pending confirmation.' };
+  }
+
+  // Find the user
+  const user = match.players.find((p) => p.user?.discordId === discordId);
+  if (!user) {
+    return { success: false, message: 'You are not a participant in this match.' };
+  }
+
+  // Find reporter (the one who claimed to win)
+  const reporter = match.players.find((p) => p.isWinner === true);
+  if (!reporter) {
+    return { success: false, message: 'No pending report found.' };
+  }
+
+  // Only opponent can confirm/dispute
+  if (user.id === reporter.id) {
+    return { success: false, message: 'You cannot confirm your own report.' };
+  }
+
+  const opponent = user; // The one confirming/disputing
+  const winner = reporter;
+  const loser = opponent;
+
+  if (confirmed) {
+    // Confirm: complete the match
+    const result = await prisma.$transaction(async (tx) => {
+      const updated = await tx.match.updateMany({
+        where: { id: matchId, state: MatchState.PENDING_CONFIRMATION },
+        data: { state: MatchState.COMPLETED },
+      });
+
+      if (updated.count === 0) {
+        return { success: false, reason: 'STATE_CHANGED' };
+      }
+
+      // Mark loser
+      await tx.matchPlayer.update({
+        where: { id: loser.id },
+        data: { isWinner: false },
+      });
+
+      return { success: true };
+    });
+
+    if (!result.success) {
+      return { success: false, message: 'Match state changed. Please try again.' };
+    }
+
+    // Sync to Start.gg
+    syncToStartGG(match.id, match.startggSetId, winner.startggEntrantId).catch((err) => {
+      console.error(`[ConfirmResult] Start.gg sync failed for ${match.identifier}:`, err);
+    });
+
+    console.log(`[ConfirmResult] Confirmed: ${opponent.playerName} confirms ${winner.playerName} won ${match.identifier}`);
+
+    return {
+      success: true,
+      message: `Match complete! ${winner.playerName} wins.`,
+      matchStatus: toMatchStatus(match, {
+        state: MatchState.COMPLETED,
+        playerWinnerMap: { [winner.id]: true, [loser.id]: false },
+      }),
+    };
+  } else {
+    // Dispute: reset state to CHECKED_IN so players can re-report
+    const disputeResult = await prisma.$transaction(async (tx) => {
+      const updated = await tx.match.updateMany({
+        where: { id: matchId, state: MatchState.PENDING_CONFIRMATION },
+        data: { state: MatchState.CHECKED_IN },
+      });
+
+      if (updated.count === 0) {
+        return { success: false, reason: 'STATE_CHANGED' };
+      }
+
+      // Clear winner flags on all players
+      await tx.matchPlayer.updateMany({
+        where: { matchId },
+        data: { isWinner: null },
+      });
+
+      return { success: true };
+    });
+
+    if (!disputeResult.success) {
+      return { success: false, message: 'Match state changed. Please try again.' };
+    }
+
+    console.log(`[ConfirmResult] Disputed: ${opponent.playerName} disputes ${winner.playerName}'s claim for ${match.identifier}`);
+
+    // Build playerWinnerMap with all players set to null
+    const allNullWinners: Record<string, null> = {};
+    for (const p of match.players) {
+      allNullWinners[p.id] = null;
+    }
+
+    return {
+      success: true,
+      message: 'Result disputed. Please report the correct winner.',
+      matchStatus: toMatchStatus(match, {
+        state: MatchState.CHECKED_IN,
+        playerWinnerMap: allNullWinners,
+      }),
+    };
+  }
+}
+
+/**
+ * Sync match result to Start.gg with status tracking.
+ * Updates the match record with sync status for retry/audit purposes.
+ *
+ * @param matchId - The internal match ID (for status tracking)
+ * @param setId - The Start.gg set ID
+ * @param winnerEntrantId - The Start.gg entrant ID of the winner
+ */
+async function syncToStartGG(
+  matchId: string,
+  setId: string,
+  winnerEntrantId: string | null
+): Promise<void> {
+  if (!winnerEntrantId) {
+    console.warn(`[StartGGSync] No entrant ID for winner, skipping sync for set ${setId}`);
+    return;
+  }
+
+  // Mark as pending
+  await prisma.match.update({
+    where: { id: matchId },
+    data: { startggSyncStatus: StartggSyncStatus.PENDING },
+  }).catch((err) => {
+    console.warn(`[StartGGSync] Failed to set PENDING status for ${matchId}:`, err);
+  });
+
+  // Import StartGGClient dynamically to avoid circular deps
+  const { StartGGClient } = await import('@fightrise/startgg-client');
+
+  const apiKey = process.env.STARTGG_API_KEY;
+  if (!apiKey) {
+    console.error('[StartGGSync] STARTGG_API_KEY not configured');
+    await prisma.match.update({
+      where: { id: matchId },
+      data: {
+        startggSyncStatus: StartggSyncStatus.FAILED,
+        startggSyncError: 'STARTGG_API_KEY not configured',
+      },
+    }).catch(() => {});
+    return;
+  }
+
+  const client = new StartGGClient({ apiKey });
+
+  try {
+    const result = await client.reportSet(setId, winnerEntrantId);
+    console.log(`[StartGGSync] Reported set ${setId} winner ${winnerEntrantId}, result:`, result);
+
+    // Mark as synced
+    await prisma.match.update({
+      where: { id: matchId },
+      data: {
+        startggSyncStatus: StartggSyncStatus.SYNCED,
+        startggSyncError: null,
+      },
+    });
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    console.error(`[StartGGSync] Failed to report set ${setId}:`, err);
+
+    // Mark as failed with error message
+    await prisma.match.update({
+      where: { id: matchId },
+      data: {
+        startggSyncStatus: StartggSyncStatus.FAILED,
+        startggSyncError: errorMessage.slice(0, 500), // Limit error message length
+      },
+    }).catch(() => {});
+  }
+}
+
 /**
  * Get all matches for a user by their Discord ID
  * Useful for agents to show a player their upcoming matches
@@ -506,19 +947,5 @@ export async function getPlayerMatches(
     take: options?.limit ?? 10,
   });
 
-  return matches.map((match) => ({
-    id: match.id,
-    identifier: match.identifier,
-    roundText: match.roundText,
-    state: match.state,
-    discordThreadId: match.discordThreadId,
-    checkInDeadline: match.checkInDeadline,
-    players: match.players.map((p) => ({
-      id: p.id,
-      playerName: p.playerName,
-      isCheckedIn: p.isCheckedIn,
-      checkedInAt: p.checkedInAt,
-      discordId: p.user?.discordId ?? null,
-    })),
-  }));
+  return matches.map((match) => toMatchStatus(match));
 }
