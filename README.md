@@ -17,6 +17,10 @@ A Discord bot and web portal for running Start.gg fighting game tournaments enti
 - Discord Application (Bot Token, Client ID, Client Secret)
 - Start.gg API Key
 
+For detailed setup instructions:
+- [Discord Bot Setup Guide](./docs/DISCORD_SETUP.md) - Creating your Discord application, bot token, permissions, and OAuth2
+- [Start.gg API Setup Guide](./docs/STARTGG_SETUP.md) - Getting your API key, rate limits, and OAuth2 configuration
+
 ## Quick Start
 
 ### 1. Clone and Install
@@ -37,16 +41,18 @@ cp .env.example .env
 
 Required environment variables:
 
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `REDIS_URL` | Redis connection string |
-| `DISCORD_TOKEN` | Discord bot token |
-| `DISCORD_CLIENT_ID` | Discord application client ID |
-| `DISCORD_CLIENT_SECRET` | Discord OAuth client secret |
-| `STARTGG_API_KEY` | Start.gg API token |
-| `NEXTAUTH_SECRET` | NextAuth encryption key |
-| `NEXTAUTH_URL` | Web app URL (http://localhost:3000 for dev) |
+| Variable | Description | Where to Get |
+|----------|-------------|--------------|
+| `DATABASE_URL` | PostgreSQL connection string | Docker provides `postgresql://fightrise:fightrise@localhost:5432/fightrise` |
+| `REDIS_URL` | Redis connection string | Docker provides `redis://localhost:6379` |
+| `DISCORD_TOKEN` | Discord bot token | [Discord Developer Portal](https://discord.com/developers/applications) → Bot → Token |
+| `DISCORD_CLIENT_ID` | Discord application client ID | Discord Developer Portal → General Information → Application ID |
+| `DISCORD_CLIENT_SECRET` | Discord OAuth client secret | Discord Developer Portal → OAuth2 → Client Secret |
+| `STARTGG_API_KEY` | Start.gg API token | [Start.gg Developer Settings](https://start.gg/admin/profile/developer) |
+| `NEXTAUTH_SECRET` | NextAuth encryption key | Generate with `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | Web app URL | `http://localhost:3000` for development |
+
+See the [Discord Setup Guide](./docs/DISCORD_SETUP.md) and [Start.gg Setup Guide](./docs/STARTGG_SETUP.md) for detailed instructions on obtaining these credentials.
 
 ### 3. Start Development Environment
 
@@ -208,6 +214,16 @@ docker build -f docker/Dockerfile.web -t fightrise-web .
 4. Create a pull request
 
 See [CLAUDE.md](./CLAUDE.md) for detailed development workflow and testing guidelines.
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Discord Setup Guide](./docs/DISCORD_SETUP.md) | Creating Discord application, bot token, permissions, OAuth2 |
+| [Start.gg Setup Guide](./docs/STARTGG_SETUP.md) | API key, rate limits, OAuth2 configuration |
+| [Implementation Status](./docs/IMPLEMENTATION_STATUS.md) | Current progress, what's built, what's remaining |
+| [Architecture Plan](./ARCHITECTURE_PLAN.md) | Full system design, data flow, database schema |
+| [Development Guide](./CLAUDE.md) | Workflow, testing, contribution guidelines |
 
 ## License
 
