@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { Client, Collection, GatewayIntentBits } from 'discord.js';
 import { loadCommands } from './utils/commandLoader.js';
 import { loadEvents } from './utils/eventLoader.js';
+import { startPollingService, stopPollingService } from './services/pollingService.js';
 import type { Command, ExtendedClient } from './types.js';
 
 const client = new Client({
@@ -31,6 +32,7 @@ async function main() {
   // Graceful shutdown handling
   const shutdown = async (signal: string) => {
     console.log(`\nReceived ${signal}. Shutting down gracefully...`);
+    await stopPollingService();
     client.destroy();
     console.log('Discord client destroyed. Goodbye!');
     process.exit(0);
@@ -38,6 +40,13 @@ async function main() {
 
   process.on('SIGINT', () => shutdown('SIGINT'));
   process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+  // Start polling service (requires REDIS_URL and STARTGG_API_KEY)
+  if (process.env.REDIS_URL && process.env.STARTGG_API_KEY) {
+    await startPollingService();
+  } else {
+    console.warn('[PollingService] Skipped - REDIS_URL or STARTGG_API_KEY not configured');
+  }
 
   // Login to Discord
   await client.login(token);

@@ -1,5 +1,6 @@
 import { prisma, TournamentState, AdminRole, Prisma } from '@fightrise/database';
 import { StartGGClient, Tournament as StartGGTournament } from '@fightrise/startgg-client';
+import { schedulePoll, calculatePollInterval } from './pollingService.js';
 
 // Type for tournament with events included
 type TournamentWithEvents = Prisma.TournamentGetPayload<{
@@ -302,6 +303,14 @@ export class TournamentService {
         where: { id: result.tournamentId },
         include: { events: true },
       });
+
+      // Schedule polling for this tournament
+      if (completeTournament) {
+        const interval = calculatePollInterval(completeTournament.state);
+        if (interval !== null) {
+          await schedulePoll(completeTournament.id, interval);
+        }
+      }
 
       return {
         success: true,
