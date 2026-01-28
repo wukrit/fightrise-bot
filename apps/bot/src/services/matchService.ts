@@ -386,29 +386,57 @@ export async function checkInPlayer(
     };
   }
 
-  // Update player check-in status
-  await prisma.matchPlayer.update({
-    where: { id: player.id },
-    data: {
-      isCheckedIn: true,
-      checkedInAt: new Date(),
-    },
-  });
-
-  // Query fresh count to determine if both players are checked in
-  const checkedInCount = await prisma.matchPlayer.count({
-    where: { matchId, isCheckedIn: true },
-  });
-
-  const bothCheckedIn = checkedInCount === 2;
-
-  if (bothCheckedIn) {
-    // Update match state to CHECKED_IN
-    await prisma.match.update({
-      where: { id: matchId },
-      data: { state: MatchState.CHECKED_IN },
+  // Use transaction with optimistic locking to prevent race conditions
+  const result = await prisma.$transaction(async (tx) => {
+    // Atomic update - only succeeds if player is not already checked in
+    const updated = await tx.matchPlayer.updateMany({
+      where: { id: player.id, isCheckedIn: false },
+      data: {
+        isCheckedIn: true,
+        checkedInAt: new Date(),
+      },
     });
 
+    // If no rows updated, player was already checked in (concurrent request)
+    if (updated.count === 0) {
+      return { success: false, bothCheckedIn: false, alreadyCheckedIn: true };
+    }
+
+    // Count checked-in players within the transaction
+    const checkedInCount = await tx.matchPlayer.count({
+      where: { matchId, isCheckedIn: true },
+    });
+
+    const bothCheckedIn = checkedInCount === 2;
+
+    if (bothCheckedIn) {
+      // Use updateMany with state guard to prevent duplicate transitions
+      const matchUpdated = await tx.match.updateMany({
+        where: { id: matchId, state: MatchState.CALLED },
+        data: { state: MatchState.CHECKED_IN },
+      });
+
+      if (matchUpdated.count === 0) {
+        console.log(`[CheckIn] Match ${match.identifier} state already transitioned by concurrent request`);
+      }
+    }
+
+    return { success: true, bothCheckedIn, alreadyCheckedIn: false };
+  });
+
+  // Handle the case where concurrent request already checked in
+  if (result.alreadyCheckedIn) {
+    console.log(
+      `[CheckIn] Concurrent check-in detected: ${player.playerName} for ${match.identifier}`
+    );
+    return {
+      success: false,
+      message: 'You have already checked in!',
+      bothCheckedIn: result.bothCheckedIn,
+    };
+  }
+
+  if (result.bothCheckedIn) {
     console.log(
       `[CheckIn] Match ready: ${match.identifier} - both players checked in`
     );

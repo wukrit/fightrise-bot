@@ -34,9 +34,9 @@ export const checkinHandler: ButtonHandler = {
     }
 
     const [matchId, playerSlot] = parts;
-    const slotIndex = parseInt(playerSlot, 10) - 1;
+    const slot = parseInt(playerSlot, 10);
 
-    if (isNaN(slotIndex) || slotIndex < 0 || slotIndex > 1) {
+    if (isNaN(slot) || slot < 1 || slot > 2) {
       await interaction.reply({ content: 'Invalid button.', ephemeral: true });
       return;
     }
