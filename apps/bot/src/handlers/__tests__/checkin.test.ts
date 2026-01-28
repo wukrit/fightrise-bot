@@ -1,24 +1,8 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 
-// Mock the database before imports
-vi.mock('@fightrise/database', () => ({
-  prisma: {
-    match: {
-      findUnique: vi.fn(),
-      update: vi.fn(),
-    },
-    matchPlayer: {
-      update: vi.fn(),
-      count: vi.fn(),
-    },
-  },
-  MatchState: {
-    NOT_STARTED: 'NOT_STARTED',
-    CALLED: 'CALLED',
-    CHECKED_IN: 'CHECKED_IN',
-    IN_PROGRESS: 'IN_PROGRESS',
-    COMPLETED: 'COMPLETED',
-  },
+// Mock the service before imports
+vi.mock('../../services/matchService.js', () => ({
+  checkInPlayer: vi.fn(),
 }));
 
 // Mock the shared package
@@ -28,7 +12,7 @@ vi.mock('@fightrise/shared', () => ({
   },
 }));
 
-import { prisma } from '@fightrise/database';
+import { checkInPlayer } from '../../services/matchService.js';
 import { checkinHandler } from '../checkin.js';
 
 describe('checkinHandler', () => {
@@ -57,147 +41,48 @@ describe('checkinHandler', () => {
     vi.restoreAllMocks();
   });
 
-  const mockMatch = {
-    id: 'match-123',
-    state: 'CALLED',
-    checkInDeadline: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
-    players: [
-      {
-        id: 'player-1',
-        playerName: 'Player1',
-        isCheckedIn: false,
-        checkedInAt: null,
-        user: {
-          id: 'user-1',
-          discordId: 'discord-111',
-        },
-      },
-      {
-        id: 'player-2',
-        playerName: 'Player2',
-        isCheckedIn: false,
-        checkedInAt: null,
-        user: {
-          id: 'user-2',
-          discordId: 'discord-222',
-        },
-      },
-    ],
-  };
-
-  it('should update player check-in status when correct player clicks', async () => {
-    vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
-    vi.mocked(prisma.matchPlayer.update).mockResolvedValue({} as never);
-    vi.mocked(prisma.matchPlayer.count).mockResolvedValue(1 as never); // Only current player checked in
+  it('should delegate to checkInPlayer service and reply with result', async () => {
+    vi.mocked(checkInPlayer).mockResolvedValue({
+      success: true,
+      message: 'Checked in! Waiting for your opponent.',
+      bothCheckedIn: false,
+    });
 
     await checkinHandler.execute(mockInteraction as never, ['match-123', '1']);
 
-    expect(prisma.matchPlayer.update).toHaveBeenCalledWith({
-      where: { id: 'player-1' },
-      data: {
-        isCheckedIn: true,
-        checkedInAt: expect.any(Date),
-      },
-    });
-    expect(prisma.matchPlayer.count).toHaveBeenCalledWith({
-      where: { matchId: 'match-123', isCheckedIn: true },
-    });
+    expect(checkInPlayer).toHaveBeenCalledWith('match-123', 'discord-111');
     expect(mockInteraction.reply).toHaveBeenCalledWith({
       content: 'Checked in! Waiting for your opponent.',
       ephemeral: true,
     });
   });
 
-  it('should reject when wrong player clicks', async () => {
-    vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
-    mockInteraction.user.id = 'discord-wrong-user';
-
-    await checkinHandler.execute(mockInteraction as never, ['match-123', '1']);
-
-    expect(prisma.matchPlayer.update).not.toHaveBeenCalled();
-    expect(mockInteraction.reply).toHaveBeenCalledWith({
-      content: 'This check-in button is not for you.',
-      ephemeral: true,
+  it('should return service error message when check-in fails', async () => {
+    vi.mocked(checkInPlayer).mockResolvedValue({
+      success: false,
+      message: 'Match not found.',
+      bothCheckedIn: false,
     });
-  });
-
-  it('should reject when match not found', async () => {
-    vi.mocked(prisma.match.findUnique).mockResolvedValue(null);
 
     await checkinHandler.execute(mockInteraction as never, ['match-123', '1']);
 
-    expect(prisma.matchPlayer.update).not.toHaveBeenCalled();
     expect(mockInteraction.reply).toHaveBeenCalledWith({
       content: 'Match not found.',
       ephemeral: true,
     });
   });
 
-  it('should transition match to CHECKED_IN when both players check in', async () => {
-    // Second player already checked in
-    const matchWithOneCheckedIn = {
-      ...mockMatch,
-      players: [
-        mockMatch.players[0],
-        {
-          ...mockMatch.players[1],
-          isCheckedIn: true,
-          checkedInAt: new Date(),
-        },
-      ],
-    };
-    vi.mocked(prisma.match.findUnique).mockResolvedValue(matchWithOneCheckedIn as never);
-    vi.mocked(prisma.matchPlayer.update).mockResolvedValue({} as never);
-    vi.mocked(prisma.matchPlayer.count).mockResolvedValue(2 as never); // Both players now checked in
-    vi.mocked(prisma.match.update).mockResolvedValue({} as never);
+  it('should return both checked in message when both players are ready', async () => {
+    vi.mocked(checkInPlayer).mockResolvedValue({
+      success: true,
+      message: 'Checked in! Both players are ready - match can begin!',
+      bothCheckedIn: true,
+    });
 
     await checkinHandler.execute(mockInteraction as never, ['match-123', '1']);
 
-    expect(prisma.match.update).toHaveBeenCalledWith({
-      where: { id: 'match-123' },
-      data: { state: 'CHECKED_IN' },
-    });
     expect(mockInteraction.reply).toHaveBeenCalledWith({
       content: 'Checked in! Both players are ready - match can begin!',
-      ephemeral: true,
-    });
-  });
-
-  it('should reject when player already checked in', async () => {
-    const matchWithPlayerCheckedIn = {
-      ...mockMatch,
-      players: [
-        {
-          ...mockMatch.players[0],
-          isCheckedIn: true,
-          checkedInAt: new Date(),
-        },
-        mockMatch.players[1],
-      ],
-    };
-    vi.mocked(prisma.match.findUnique).mockResolvedValue(matchWithPlayerCheckedIn as never);
-
-    await checkinHandler.execute(mockInteraction as never, ['match-123', '1']);
-
-    expect(prisma.matchPlayer.update).not.toHaveBeenCalled();
-    expect(mockInteraction.reply).toHaveBeenCalledWith({
-      content: 'You have already checked in!',
-      ephemeral: true,
-    });
-  });
-
-  it('should reject when check-in deadline has passed', async () => {
-    const matchDeadlinePassed = {
-      ...mockMatch,
-      checkInDeadline: new Date(Date.now() - 1000), // 1 second ago
-    };
-    vi.mocked(prisma.match.findUnique).mockResolvedValue(matchDeadlinePassed as never);
-
-    await checkinHandler.execute(mockInteraction as never, ['match-123', '1']);
-
-    expect(prisma.matchPlayer.update).not.toHaveBeenCalled();
-    expect(mockInteraction.reply).toHaveBeenCalledWith({
-      content: 'Check-in deadline has passed.',
       ephemeral: true,
     });
   });
@@ -205,7 +90,7 @@ describe('checkinHandler', () => {
   it('should reject with invalid player slot', async () => {
     await checkinHandler.execute(mockInteraction as never, ['match-123', '3']);
 
-    expect(prisma.match.findUnique).not.toHaveBeenCalled();
+    expect(checkInPlayer).not.toHaveBeenCalled();
     expect(mockInteraction.reply).toHaveBeenCalledWith({
       content: 'Invalid button.',
       ephemeral: true,
@@ -215,7 +100,7 @@ describe('checkinHandler', () => {
   it('should reject with malformed customId parts (missing matchId)', async () => {
     await checkinHandler.execute(mockInteraction as never, ['', '1']);
 
-    expect(prisma.match.findUnique).not.toHaveBeenCalled();
+    expect(checkInPlayer).not.toHaveBeenCalled();
     expect(mockInteraction.reply).toHaveBeenCalledWith({
       content: 'Invalid button format.',
       ephemeral: true,
@@ -225,7 +110,7 @@ describe('checkinHandler', () => {
   it('should reject with malformed customId parts (wrong length)', async () => {
     await checkinHandler.execute(mockInteraction as never, ['match-123']);
 
-    expect(prisma.match.findUnique).not.toHaveBeenCalled();
+    expect(checkInPlayer).not.toHaveBeenCalled();
     expect(mockInteraction.reply).toHaveBeenCalledWith({
       content: 'Invalid button format.',
       ephemeral: true,
@@ -233,41 +118,15 @@ describe('checkinHandler', () => {
   });
 
   it('should handle player slot 2 correctly', async () => {
-    mockInteraction.user.id = 'discord-222'; // Player 2's Discord ID
-    vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
-    vi.mocked(prisma.matchPlayer.update).mockResolvedValue({} as never);
-    vi.mocked(prisma.matchPlayer.count).mockResolvedValue(1 as never); // Only current player checked in
+    mockInteraction.user.id = 'discord-222';
+    vi.mocked(checkInPlayer).mockResolvedValue({
+      success: true,
+      message: 'Checked in! Waiting for your opponent.',
+      bothCheckedIn: false,
+    });
 
     await checkinHandler.execute(mockInteraction as never, ['match-123', '2']);
 
-    expect(prisma.matchPlayer.update).toHaveBeenCalledWith({
-      where: { id: 'player-2' },
-      data: {
-        isCheckedIn: true,
-        checkedInAt: expect.any(Date),
-      },
-    });
-  });
-
-  it('should reject when player has no linked Discord account', async () => {
-    const matchNoDiscordLink = {
-      ...mockMatch,
-      players: [
-        {
-          ...mockMatch.players[0],
-          user: null, // No linked user
-        },
-        mockMatch.players[1],
-      ],
-    };
-    vi.mocked(prisma.match.findUnique).mockResolvedValue(matchNoDiscordLink as never);
-
-    await checkinHandler.execute(mockInteraction as never, ['match-123', '1']);
-
-    expect(prisma.matchPlayer.update).not.toHaveBeenCalled();
-    expect(mockInteraction.reply).toHaveBeenCalledWith({
-      content: 'This check-in button is not for you.',
-      ephemeral: true,
-    });
+    expect(checkInPlayer).toHaveBeenCalledWith('match-123', 'discord-222');
   });
 });

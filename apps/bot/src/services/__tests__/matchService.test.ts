@@ -6,7 +6,13 @@ vi.mock('@fightrise/database', () => ({
   prisma: {
     match: {
       findUnique: vi.fn(),
+      findMany: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
+    },
+    matchPlayer: {
+      update: vi.fn(),
+      count: vi.fn(),
     },
   },
   MatchState: {
@@ -28,7 +34,13 @@ vi.mock('@fightrise/shared', () => ({
 }));
 
 import { prisma } from '@fightrise/database';
-import { createMatchThread, formatThreadName } from '../matchService.js';
+import {
+  createMatchThread,
+  formatThreadName,
+  checkInPlayer,
+  getMatchStatus,
+  getPlayerMatches,
+} from '../matchService.js';
 
 // Helper to create a mock thread with members.add method
 function createMockThread(id: string, name: string, addSuccess = true) {
@@ -119,13 +131,13 @@ describe('MatchService', () => {
 
     it('should create thread for valid match', async () => {
       vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
-      vi.mocked(prisma.match.update).mockResolvedValue({ ...mockMatch, discordThreadId: 'thread-new-123' } as never);
+      vi.mocked(prisma.match.updateMany).mockResolvedValue({ count: 1 } as never);
 
       const result = await createMatchThread(mockClient as never, 'match-123');
 
       expect(result).toBe('thread-new-123');
-      expect(prisma.match.update).toHaveBeenCalledWith({
-        where: { id: 'match-123' },
+      expect(prisma.match.updateMany).toHaveBeenCalledWith({
+        where: { id: 'match-123', state: 'NOT_STARTED' },
         data: expect.objectContaining({
           discordThreadId: 'thread-new-123',
           state: 'CALLED',
@@ -139,7 +151,7 @@ describe('MatchService', () => {
       const result = await createMatchThread(mockClient as never, 'match-nonexistent');
 
       expect(result).toBeNull();
-      expect(prisma.match.update).not.toHaveBeenCalled();
+      expect(prisma.match.updateMany).not.toHaveBeenCalled();
     });
 
     it('should return existing thread ID when match already has thread (idempotency)', async () => {
@@ -152,7 +164,7 @@ describe('MatchService', () => {
       const result = await createMatchThread(mockClient as never, 'match-123');
 
       expect(result).toBe('existing-thread-456');
-      expect(prisma.match.update).not.toHaveBeenCalled();
+      expect(prisma.match.updateMany).not.toHaveBeenCalled();
     });
 
     it('should return null when tournament has no channel configured', async () => {
@@ -195,7 +207,7 @@ describe('MatchService', () => {
 
     it('should continue when player add fails', async () => {
       vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
-      vi.mocked(prisma.match.update).mockResolvedValue({ ...mockMatch, discordThreadId: 'thread-new-123' } as never);
+      vi.mocked(prisma.match.updateMany).mockResolvedValue({ count: 1 } as never);
 
       // Override channel mock to have member add fail
       mockClient.channels.fetch.mockResolvedValue({
@@ -225,7 +237,7 @@ describe('MatchService', () => {
         },
       };
       vi.mocked(prisma.match.findUnique).mockResolvedValue(matchNoCheckIn as never);
-      vi.mocked(prisma.match.update).mockResolvedValue({ ...matchNoCheckIn, discordThreadId: 'thread-new-123' } as never);
+      vi.mocked(prisma.match.updateMany).mockResolvedValue({ count: 1 } as never);
 
       // Track what was sent to thread
       let sentComponents: unknown[] = [];
@@ -256,12 +268,12 @@ describe('MatchService', () => {
 
     it('should set checkInDeadline when requireCheckIn is true', async () => {
       vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
-      vi.mocked(prisma.match.update).mockResolvedValue({ ...mockMatch, discordThreadId: 'thread-new-123' } as never);
+      vi.mocked(prisma.match.updateMany).mockResolvedValue({ count: 1 } as never);
 
       await createMatchThread(mockClient as never, 'match-123');
 
-      expect(prisma.match.update).toHaveBeenCalledWith({
-        where: { id: 'match-123' },
+      expect(prisma.match.updateMany).toHaveBeenCalledWith({
+        where: { id: 'match-123', state: 'NOT_STARTED' },
         data: expect.objectContaining({
           checkInDeadline: expect.any(Date),
         }),
@@ -312,6 +324,254 @@ describe('MatchService', () => {
     it('should handle special characters in player names', () => {
       const result = formatThreadName('Round 1', 'R1', 'Player<One>', 'Player|Two');
       expect(result).toBe('Round 1 (R1): Player<One> vs Player|Two');
+    });
+  });
+
+  // ============================================================================
+  // Agent-Native Function Tests
+  // ============================================================================
+
+  describe('checkInPlayer', () => {
+    const mockMatch = {
+      id: 'match-123',
+      state: 'CALLED',
+      checkInDeadline: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
+      players: [
+        {
+          id: 'player-1',
+          playerName: 'Player1',
+          isCheckedIn: false,
+          checkedInAt: null,
+          user: { id: 'user-1', discordId: 'discord-111' },
+        },
+        {
+          id: 'player-2',
+          playerName: 'Player2',
+          isCheckedIn: false,
+          checkedInAt: null,
+          user: { id: 'user-2', discordId: 'discord-222' },
+        },
+      ],
+    };
+
+    it('should check in player successfully', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
+      vi.mocked(prisma.matchPlayer.update).mockResolvedValue({} as never);
+      vi.mocked(prisma.matchPlayer.count).mockResolvedValue(1 as never);
+
+      const result = await checkInPlayer('match-123', 'discord-111');
+
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('Checked in! Waiting for your opponent.');
+      expect(result.bothCheckedIn).toBe(false);
+      expect(prisma.matchPlayer.update).toHaveBeenCalledWith({
+        where: { id: 'player-1' },
+        data: { isCheckedIn: true, checkedInAt: expect.any(Date) },
+      });
+    });
+
+    it('should return both checked in when both players are ready', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
+      vi.mocked(prisma.matchPlayer.update).mockResolvedValue({} as never);
+      vi.mocked(prisma.matchPlayer.count).mockResolvedValue(2 as never);
+      vi.mocked(prisma.match.update).mockResolvedValue({} as never);
+
+      const result = await checkInPlayer('match-123', 'discord-111');
+
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('Checked in! Both players are ready - match can begin!');
+      expect(result.bothCheckedIn).toBe(true);
+      expect(prisma.match.update).toHaveBeenCalledWith({
+        where: { id: 'match-123' },
+        data: { state: 'CHECKED_IN' },
+      });
+    });
+
+    it('should return error when match not found', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(null);
+
+      const result = await checkInPlayer('match-123', 'discord-111');
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Match not found.');
+    });
+
+    it('should return error when player not in match', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
+
+      const result = await checkInPlayer('match-123', 'discord-999');
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('You are not a participant in this match.');
+    });
+
+    it('should return error when already checked in', async () => {
+      const matchWithCheckedIn = {
+        ...mockMatch,
+        players: [
+          { ...mockMatch.players[0], isCheckedIn: true },
+          mockMatch.players[1],
+        ],
+      };
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(matchWithCheckedIn as never);
+
+      const result = await checkInPlayer('match-123', 'discord-111');
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('You have already checked in!');
+    });
+
+    it('should return error when deadline passed', async () => {
+      const matchDeadlinePassed = {
+        ...mockMatch,
+        checkInDeadline: new Date(Date.now() - 1000), // 1 second ago
+      };
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(matchDeadlinePassed as never);
+
+      const result = await checkInPlayer('match-123', 'discord-111');
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Check-in deadline has passed.');
+    });
+  });
+
+  describe('getMatchStatus', () => {
+    const mockMatch = {
+      id: 'match-123',
+      identifier: 'WF1',
+      roundText: 'Winners Finals',
+      state: 'CALLED',
+      discordThreadId: 'thread-123',
+      checkInDeadline: new Date('2026-01-28T12:00:00Z'),
+      players: [
+        {
+          id: 'player-1',
+          playerName: 'Player1',
+          isCheckedIn: true,
+          checkedInAt: new Date('2026-01-28T11:50:00Z'),
+          user: { discordId: 'discord-111' },
+        },
+        {
+          id: 'player-2',
+          playerName: 'Player2',
+          isCheckedIn: false,
+          checkedInAt: null,
+          user: { discordId: 'discord-222' },
+        },
+      ],
+    };
+
+    it('should return match status with player info', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
+
+      const result = await getMatchStatus('match-123');
+
+      expect(result).toEqual({
+        id: 'match-123',
+        identifier: 'WF1',
+        roundText: 'Winners Finals',
+        state: 'CALLED',
+        discordThreadId: 'thread-123',
+        checkInDeadline: mockMatch.checkInDeadline,
+        players: [
+          {
+            id: 'player-1',
+            playerName: 'Player1',
+            isCheckedIn: true,
+            checkedInAt: mockMatch.players[0].checkedInAt,
+            discordId: 'discord-111',
+          },
+          {
+            id: 'player-2',
+            playerName: 'Player2',
+            isCheckedIn: false,
+            checkedInAt: null,
+            discordId: 'discord-222',
+          },
+        ],
+      });
+    });
+
+    it('should return null when match not found', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(null);
+
+      const result = await getMatchStatus('match-nonexistent');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getPlayerMatches', () => {
+    const mockMatches = [
+      {
+        id: 'match-1',
+        identifier: 'WF1',
+        roundText: 'Winners Finals',
+        state: 'CHECKED_IN',
+        discordThreadId: 'thread-1',
+        checkInDeadline: null,
+        players: [
+          { id: 'p1', playerName: 'Player1', isCheckedIn: true, checkedInAt: new Date(), user: { discordId: 'discord-111' } },
+          { id: 'p2', playerName: 'Player2', isCheckedIn: true, checkedInAt: new Date(), user: { discordId: 'discord-222' } },
+        ],
+      },
+      {
+        id: 'match-2',
+        identifier: 'GF1',
+        roundText: 'Grand Finals',
+        state: 'CALLED',
+        discordThreadId: 'thread-2',
+        checkInDeadline: new Date(),
+        players: [
+          { id: 'p3', playerName: 'Player1', isCheckedIn: false, checkedInAt: null, user: { discordId: 'discord-111' } },
+          { id: 'p4', playerName: 'Player3', isCheckedIn: false, checkedInAt: null, user: { discordId: 'discord-333' } },
+        ],
+      },
+    ];
+
+    it('should return matches for player', async () => {
+      vi.mocked(prisma.match.findMany).mockResolvedValue(mockMatches as never);
+
+      const result = await getPlayerMatches('discord-111');
+
+      expect(result).toHaveLength(2);
+      expect(result[0].identifier).toBe('WF1');
+      expect(result[1].identifier).toBe('GF1');
+    });
+
+    it('should filter by state when provided', async () => {
+      vi.mocked(prisma.match.findMany).mockResolvedValue([mockMatches[1]] as never);
+
+      const result = await getPlayerMatches('discord-111', { state: 'CALLED' as never });
+
+      expect(prisma.match.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            state: 'CALLED',
+          }),
+        })
+      );
+      expect(result).toHaveLength(1);
+    });
+
+    it('should respect limit option', async () => {
+      vi.mocked(prisma.match.findMany).mockResolvedValue([mockMatches[0]] as never);
+
+      await getPlayerMatches('discord-111', { limit: 1 });
+
+      expect(prisma.match.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          take: 1,
+        })
+      );
+    });
+
+    it('should return empty array when no matches found', async () => {
+      vi.mocked(prisma.match.findMany).mockResolvedValue([]);
+
+      const result = await getPlayerMatches('discord-999');
+
+      expect(result).toEqual([]);
     });
   });
 });

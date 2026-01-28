@@ -1,6 +1,7 @@
 import {
   Client,
   TextChannel,
+  ThreadChannel,
   ThreadAutoArchiveDuration,
   EmbedBuilder,
   ActionRowBuilder,
@@ -88,7 +89,7 @@ export async function createMatchThread(
     ? new Date(Date.now() + tournament.checkInWindowMinutes * 60 * 1000)
     : null;
 
-  let thread;
+  let thread: ThreadChannel | undefined;
   try {
     // Create thread
     thread = await textChannel.threads.create({
@@ -97,9 +98,9 @@ export async function createMatchThread(
     });
 
     // P1 Fix: Update database immediately after thread creation to prevent orphaned threads
-    // If this fails, we clean up the thread in the catch block
-    await prisma.match.update({
-      where: { id: matchId },
+    // P2 Fix: Only transition to CALLED from NOT_STARTED to prevent invalid state regression
+    const updateResult = await prisma.match.updateMany({
+      where: { id: matchId, state: MatchState.NOT_STARTED },
       data: {
         discordThreadId: thread.id,
         state: MatchState.CALLED,
@@ -107,24 +108,32 @@ export async function createMatchThread(
       },
     });
 
-    // Add linked players to thread (failures are non-fatal)
-    for (const player of match.players) {
-      if (player.user?.discordId) {
-        try {
-          await thread.members.add(player.user.discordId);
-        } catch {
-          console.warn(`[MatchService] Failed to add player ${player.playerName} to thread`);
-        }
-      }
+    if (updateResult.count === 0) {
+      // Match was already in a different state, clean up thread
+      console.warn(`[MatchService] Match ${matchId} not in NOT_STARTED state, cleaning up thread`);
+      await thread.delete();
+      return null;
     }
+
+    // P2 Fix: Add linked players to thread in parallel (failures are non-fatal)
+    const playersWithDiscord = match.players.filter(
+      (player): player is typeof player & { user: { discordId: string } } =>
+        player.user?.discordId != null
+    );
+    const addPlayerPromises = playersWithDiscord.map((player) =>
+      thread!.members.add(player.user.discordId).catch(() => {
+        console.warn(`[MatchService] Failed to add player ${player.playerName} to thread`);
+      })
+    );
+    await Promise.allSettled(addPlayerPromises);
 
     // Build and send embed
     const embed = buildMatchEmbed(match, tournament.requireCheckIn, checkInDeadline);
     const components = tournament.requireCheckIn ? [buildCheckInButtons(matchId)] : [];
-    await thread.send({ embeds: [embed], components });
+    await thread!.send({ embeds: [embed], components });
 
     console.log(`[MatchService] Thread created for match: ${matchId} (${threadName})`);
-    return thread.id;
+    return thread!.id;
   } catch (err) {
     console.error(`[MatchService] Thread creation failed for ${matchId}:`, err);
 
@@ -218,4 +227,208 @@ function buildCheckInButtons(matchId: string): ActionRowBuilder<ButtonBuilder> {
       .setLabel('Check In (Player 2)')
       .setStyle(ButtonStyle.Primary)
   );
+}
+
+// ============================================================================
+// Agent-Native Functions
+// These functions allow agents and automated systems to interact with matches
+// ============================================================================
+
+/**
+ * Result of a check-in operation
+ */
+export interface CheckInResult {
+  success: boolean;
+  message: string;
+  bothCheckedIn: boolean;
+}
+
+/**
+ * Match status for agent queries
+ */
+export interface MatchStatus {
+  id: string;
+  identifier: string;
+  roundText: string;
+  state: MatchState;
+  discordThreadId: string | null;
+  checkInDeadline: Date | null;
+  players: Array<{
+    id: string;
+    playerName: string;
+    isCheckedIn: boolean;
+    checkedInAt: Date | null;
+    discordId: string | null;
+  }>;
+}
+
+/**
+ * Get the current status of a match
+ * Useful for agents to query match state without Discord UI
+ */
+export async function getMatchStatus(matchId: string): Promise<MatchStatus | null> {
+  const match = await prisma.match.findUnique({
+    where: { id: matchId },
+    include: {
+      players: {
+        include: { user: true },
+        orderBy: { id: 'asc' },
+      },
+    },
+  });
+
+  if (!match) return null;
+
+  return {
+    id: match.id,
+    identifier: match.identifier,
+    roundText: match.roundText,
+    state: match.state,
+    discordThreadId: match.discordThreadId,
+    checkInDeadline: match.checkInDeadline,
+    players: match.players.map((p) => ({
+      id: p.id,
+      playerName: p.playerName,
+      isCheckedIn: p.isCheckedIn,
+      checkedInAt: p.checkedInAt,
+      discordId: p.user?.discordId ?? null,
+    })),
+  };
+}
+
+/**
+ * Check in a player for a match programmatically
+ * This is the agent-native equivalent of clicking the check-in button
+ *
+ * @param matchId - The match ID
+ * @param discordId - The Discord ID of the player checking in
+ * @returns Result indicating success/failure and whether both players are now checked in
+ */
+export async function checkInPlayer(
+  matchId: string,
+  discordId: string
+): Promise<CheckInResult> {
+  // Fetch match with players
+  const match = await prisma.match.findUnique({
+    where: { id: matchId },
+    include: {
+      players: {
+        include: { user: true },
+        orderBy: { id: 'asc' },
+      },
+    },
+  });
+
+  if (!match) {
+    return { success: false, message: 'Match not found.', bothCheckedIn: false };
+  }
+
+  // Find the player by their linked Discord ID
+  const player = match.players.find((p) => p.user?.discordId === discordId);
+
+  if (!player) {
+    return {
+      success: false,
+      message: 'You are not a participant in this match.',
+      bothCheckedIn: false,
+    };
+  }
+
+  // Check if already checked in
+  if (player.isCheckedIn) {
+    return {
+      success: false,
+      message: 'You have already checked in!',
+      bothCheckedIn: match.players.every((p) => p.isCheckedIn),
+    };
+  }
+
+  // Check if check-in deadline has passed
+  if (match.checkInDeadline && new Date() > match.checkInDeadline) {
+    return {
+      success: false,
+      message: 'Check-in deadline has passed.',
+      bothCheckedIn: false,
+    };
+  }
+
+  // Update player check-in status
+  await prisma.matchPlayer.update({
+    where: { id: player.id },
+    data: {
+      isCheckedIn: true,
+      checkedInAt: new Date(),
+    },
+  });
+
+  // Query fresh count to determine if both players are checked in
+  const checkedInCount = await prisma.matchPlayer.count({
+    where: { matchId, isCheckedIn: true },
+  });
+
+  const bothCheckedIn = checkedInCount === 2;
+
+  if (bothCheckedIn) {
+    // Update match state to CHECKED_IN
+    await prisma.match.update({
+      where: { id: matchId },
+      data: { state: MatchState.CHECKED_IN },
+    });
+
+    return {
+      success: true,
+      message: 'Checked in! Both players are ready - match can begin!',
+      bothCheckedIn: true,
+    };
+  }
+
+  return {
+    success: true,
+    message: 'Checked in! Waiting for your opponent.',
+    bothCheckedIn: false,
+  };
+}
+
+/**
+ * Get all matches for a user by their Discord ID
+ * Useful for agents to show a player their upcoming matches
+ */
+export async function getPlayerMatches(
+  discordId: string,
+  options?: { state?: MatchState; limit?: number }
+): Promise<MatchStatus[]> {
+  const matches = await prisma.match.findMany({
+    where: {
+      players: {
+        some: {
+          user: { discordId },
+        },
+      },
+      ...(options?.state && { state: options.state }),
+    },
+    include: {
+      players: {
+        include: { user: true },
+        orderBy: { id: 'asc' },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: options?.limit ?? 10,
+  });
+
+  return matches.map((match) => ({
+    id: match.id,
+    identifier: match.identifier,
+    roundText: match.roundText,
+    state: match.state,
+    discordThreadId: match.discordThreadId,
+    checkInDeadline: match.checkInDeadline,
+    players: match.players.map((p) => ({
+      id: p.id,
+      playerName: p.playerName,
+      isCheckedIn: p.isCheckedIn,
+      checkedInAt: p.checkedInAt,
+      discordId: p.user?.discordId ?? null,
+    })),
+  }));
 }
