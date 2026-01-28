@@ -1,8 +1,15 @@
 import { Queue, Worker, Job } from 'bullmq';
 import { getRedisConnection, closeRedisConnection } from '../lib/redis.js';
-import { prisma, TournamentState, MatchState } from '@fightrise/database';
+import { prisma, TournamentState, MatchState, Prisma } from '@fightrise/database';
 import { StartGGClient, AuthError, Set } from '@fightrise/startgg-client';
 import { POLL_INTERVALS, STARTGG_SET_STATE } from '@fightrise/shared';
+
+// Type for prefetched match data
+interface ExistingMatch {
+  id: string;
+  startggSetId: string;
+  state: MatchState;
+}
 
 interface PollJobData {
   tournamentId: string;
@@ -126,11 +133,14 @@ async function pollTournament(tournamentId: string): Promise<void> {
   }
 
   try {
+    // Process all events in parallel (P1 fix: sequential → parallel)
+    const results = await Promise.all(
+      tournament.events.map((event) => syncEventMatches(event.id, event.startggId))
+    );
+
     let matchesCreated = 0;
     let matchesUpdated = 0;
-
-    for (const event of tournament.events) {
-      const result = await syncEventMatches(event.id, event.startggId);
+    for (const result of results) {
       matchesCreated += result.created;
       matchesUpdated += result.updated;
     }
@@ -166,6 +176,15 @@ async function syncEventMatches(
   const result = { created: 0, updated: 0 };
   if (!client) return result;
 
+  // P1 fix: Prefetch all existing matches for this event (eliminates N+1 queries)
+  const existingMatches = await prisma.match.findMany({
+    where: { eventId },
+    select: { id: true, startggSetId: true, state: true },
+  });
+  const matchMap = new Map<string, ExistingMatch>(
+    existingMatches.map((m) => [m.startggSetId, m])
+  );
+
   let page = 1;
   const MAX_PAGES = 100;
 
@@ -174,7 +193,7 @@ async function syncEventMatches(
     if (!setsConnection?.nodes?.length) break;
 
     for (const set of setsConnection.nodes) {
-      const setResult = await processSet(set, eventId);
+      const setResult = await processSet(set, eventId, matchMap);
       result.created += setResult.created ? 1 : 0;
       result.updated += setResult.updated ? 1 : 0;
     }
@@ -186,7 +205,11 @@ async function syncEventMatches(
   return result;
 }
 
-async function processSet(set: Set, eventId: string): Promise<{ created: boolean; updated: boolean }> {
+async function processSet(
+  set: Set,
+  eventId: string,
+  matchMap: Map<string, ExistingMatch>
+): Promise<{ created: boolean; updated: boolean }> {
   const result = { created: false, updated: false };
 
   // Skip if not both players assigned
@@ -200,9 +223,8 @@ async function processSet(set: Set, eventId: string): Promise<{ created: boolean
     set.state === STARTGG_SET_STATE.STARTED ||
     set.state === STARTGG_SET_STATE.IN_PROGRESS;
 
-  const existingMatch = await prisma.match.findUnique({
-    where: { startggSetId: set.id },
-  });
+  // P1 fix: Use prefetched map instead of database query (O(1) lookup)
+  const existingMatch = matchMap.get(set.id);
 
   // Create new match if ready and doesn't exist
   if (!existingMatch && isReady) {
@@ -227,8 +249,8 @@ async function processSet(set: Set, eventId: string): Promise<{ created: boolean
       console.log(`[Poll] Match ready: ${set.fullRoundText} - ${player1.name} vs ${player2.name}`);
       // TODO: Create Discord thread here (Issue #10)
     } catch (error) {
-      // Unique constraint violation = already created by another poll
-      if ((error as { code?: string }).code === 'P2002') {
+      // P2 fix: Use proper Prisma error type instead of unsafe assertion
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         return result;
       }
       throw error;
