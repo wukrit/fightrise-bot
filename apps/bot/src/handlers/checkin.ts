@@ -12,6 +12,12 @@ export const checkinHandler: ButtonHandler = {
   prefix: INTERACTION_PREFIX.CHECK_IN,
 
   async execute(interaction: ButtonInteraction, parts: string[]): Promise<void> {
+    // P1 Fix: Validate customId parts before destructuring
+    if (parts.length !== 2 || !parts[0]) {
+      await interaction.reply({ content: 'Invalid button format.', ephemeral: true });
+      return;
+    }
+
     const [matchId, playerSlot] = parts;
     const slotIndex = parseInt(playerSlot, 10) - 1; // Convert 1-based to 0-based index
 
@@ -79,9 +85,13 @@ export const checkinHandler: ButtonHandler = {
       },
     });
 
-    // Check if both players are now checked in
-    const otherPlayer = match.players[1 - slotIndex];
-    const bothCheckedIn = otherPlayer?.isCheckedIn;
+    // P1 Fix: Query fresh count to avoid race condition when both players check in simultaneously
+    // Using count query instead of stale data from the initial fetch
+    const checkedInCount = await prisma.matchPlayer.count({
+      where: { matchId, isCheckedIn: true },
+    });
+
+    const bothCheckedIn = checkedInCount === 2;
 
     if (bothCheckedIn) {
       // Update match state to CHECKED_IN

@@ -83,11 +83,28 @@ export async function createMatchThread(
     player2.playerName
   );
 
+  // Calculate check-in deadline if check-in is required
+  const checkInDeadline = tournament.requireCheckIn
+    ? new Date(Date.now() + tournament.checkInWindowMinutes * 60 * 1000)
+    : null;
+
+  let thread;
   try {
     // Create thread
-    const thread = await textChannel.threads.create({
+    thread = await textChannel.threads.create({
       name: threadName,
       autoArchiveDuration: ThreadAutoArchiveDuration.OneDay,
+    });
+
+    // P1 Fix: Update database immediately after thread creation to prevent orphaned threads
+    // If this fails, we clean up the thread in the catch block
+    await prisma.match.update({
+      where: { id: matchId },
+      data: {
+        discordThreadId: thread.id,
+        state: MatchState.CALLED,
+        checkInDeadline,
+      },
     });
 
     // Add linked players to thread (failures are non-fatal)
@@ -101,30 +118,26 @@ export async function createMatchThread(
       }
     }
 
-    // Calculate check-in deadline if check-in is required
-    const checkInDeadline = tournament.requireCheckIn
-      ? new Date(Date.now() + tournament.checkInWindowMinutes * 60 * 1000)
-      : null;
-
     // Build and send embed
     const embed = buildMatchEmbed(match, tournament.requireCheckIn, checkInDeadline);
     const components = tournament.requireCheckIn ? [buildCheckInButtons(matchId)] : [];
     await thread.send({ embeds: [embed], components });
 
-    // Update database
-    await prisma.match.update({
-      where: { id: matchId },
-      data: {
-        discordThreadId: thread.id,
-        state: MatchState.CALLED,
-        checkInDeadline,
-      },
-    });
-
     console.log(`[MatchService] Thread created for match: ${matchId} (${threadName})`);
     return thread.id;
   } catch (err) {
     console.error(`[MatchService] Thread creation failed for ${matchId}:`, err);
+
+    // P1 Fix: Clean up orphaned thread if database update failed
+    if (thread) {
+      try {
+        await thread.delete();
+        console.log(`[MatchService] Cleaned up orphaned thread for match: ${matchId}`);
+      } catch (deleteErr) {
+        console.error(`[MatchService] Failed to clean up orphaned thread for ${matchId}:`, deleteErr);
+      }
+    }
+
     return null;
   }
 }
