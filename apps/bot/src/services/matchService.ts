@@ -326,6 +326,7 @@ export async function checkInPlayer(
   });
 
   if (!match) {
+    console.warn(`[CheckIn] Match not found: ${matchId} (user: ${discordId})`);
     return { success: false, message: 'Match not found.', bothCheckedIn: false };
   }
 
@@ -333,6 +334,9 @@ export async function checkInPlayer(
   const player = match.players.find((p) => p.user?.discordId === discordId);
 
   if (!player) {
+    console.warn(
+      `[CheckIn] User not in match: ${discordId} attempted check-in for ${match.identifier}`
+    );
     return {
       success: false,
       message: 'You are not a participant in this match.',
@@ -342,6 +346,9 @@ export async function checkInPlayer(
 
   // Check if already checked in
   if (player.isCheckedIn) {
+    console.log(
+      `[CheckIn] Duplicate attempt: ${player.playerName} already checked in for ${match.identifier}`
+    );
     return {
       success: false,
       message: 'You have already checked in!',
@@ -351,6 +358,9 @@ export async function checkInPlayer(
 
   // Check if check-in deadline has passed
   if (match.checkInDeadline && new Date() > match.checkInDeadline) {
+    console.warn(
+      `[CheckIn] Deadline passed: ${player.playerName} attempted late check-in for ${match.identifier}`
+    );
     return {
       success: false,
       message: 'Check-in deadline has passed.',
@@ -381,6 +391,9 @@ export async function checkInPlayer(
       data: { state: MatchState.CHECKED_IN },
     });
 
+    console.log(
+      `[CheckIn] Match ready: ${match.identifier} - both players checked in`
+    );
     return {
       success: true,
       message: 'Checked in! Both players are ready - match can begin!',
@@ -388,6 +401,9 @@ export async function checkInPlayer(
     };
   }
 
+  console.log(
+    `[CheckIn] Success: ${player.playerName} checked in for ${match.identifier} (waiting for opponent)`
+  );
   return {
     success: true,
     message: 'Checked in! Waiting for your opponent.',
