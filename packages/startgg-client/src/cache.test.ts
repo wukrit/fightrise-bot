@@ -193,4 +193,57 @@ describe('ResponseCache', () => {
       expect(cache.get('method', { id: '1' })).toBeUndefined();
     });
   });
+
+  describe('maxEntries', () => {
+    it('should evict oldest entries when maxEntries is exceeded', () => {
+      const cache = new ResponseCache({ enabled: true, maxEntries: 3 });
+
+      cache.set('method', { id: '1' }, { data: 'one' });
+      cache.set('method', { id: '2' }, { data: 'two' });
+      cache.set('method', { id: '3' }, { data: 'three' });
+
+      expect(cache.size).toBe(3);
+
+      // Adding a 4th entry should evict the oldest (id: 1)
+      cache.set('method', { id: '4' }, { data: 'four' });
+
+      expect(cache.size).toBe(3);
+      expect(cache.get('method', { id: '1' })).toBeUndefined(); // Evicted
+      expect(cache.get('method', { id: '2' })).toEqual({ data: 'two' });
+      expect(cache.get('method', { id: '3' })).toEqual({ data: 'three' });
+      expect(cache.get('method', { id: '4' })).toEqual({ data: 'four' });
+    });
+
+    it('should use default maxEntries (1000) when not specified', () => {
+      const cache = new ResponseCache({ enabled: true });
+
+      // Add entries up to default max
+      for (let i = 0; i < 1000; i++) {
+        cache.set('method', { id: String(i) }, { data: i });
+      }
+
+      expect(cache.size).toBe(1000);
+
+      // Adding one more should evict the oldest
+      cache.set('method', { id: '1000' }, { data: 1000 });
+
+      expect(cache.size).toBe(1000);
+      expect(cache.get('method', { id: '0' })).toBeUndefined(); // Evicted
+      expect(cache.get('method', { id: '1000' })).toEqual({ data: 1000 });
+    });
+
+    it('should handle updating existing entry without eviction', () => {
+      const cache = new ResponseCache({ enabled: true, maxEntries: 2 });
+
+      cache.set('method', { id: '1' }, { data: 'one' });
+      cache.set('method', { id: '2' }, { data: 'two' });
+
+      // Update existing entry (should not cause eviction)
+      cache.set('method', { id: '1' }, { data: 'one-updated' });
+
+      expect(cache.size).toBe(2);
+      expect(cache.get('method', { id: '1' })).toEqual({ data: 'one-updated' });
+      expect(cache.get('method', { id: '2' })).toEqual({ data: 'two' });
+    });
+  });
 });

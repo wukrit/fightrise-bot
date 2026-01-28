@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p3
 issue_id: "007"
 tags: [code-review, performance]
@@ -73,6 +73,7 @@ Clear the cache periodically or on tournament completion.
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-28 | Created from code review | Performance oracle noted unbounded cache |
+| 2026-01-28 | Fixed: Added maxEntries to CacheConfig, implemented LRU-style eviction | Default 1000 entries, polling uses 500; 3 new tests added |
 
 ## Resources
 

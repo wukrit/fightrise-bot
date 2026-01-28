@@ -124,6 +124,7 @@ export interface StartGGClientConfig {
 export interface CacheConfig {
   enabled: boolean;
   ttlMs?: number;
+  maxEntries?: number;
 }
 
 export interface RetryConfig {

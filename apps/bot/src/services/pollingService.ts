@@ -33,7 +33,7 @@ export async function startPollingService(): Promise<void> {
   // Create client once, reuse for all polls
   client = new StartGGClient({
     apiKey,
-    cache: { enabled: true, ttlMs: 30000 },
+    cache: { enabled: true, ttlMs: 30000, maxEntries: 500 },
     retry: { maxRetries: 3 },
   });
 
