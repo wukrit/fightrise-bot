@@ -136,7 +136,13 @@ export async function createMatchThread(
     // Build and send embed
     const embed = buildMatchEmbed(match, tournament.requireCheckIn, checkInDeadline);
     const components = tournament.requireCheckIn ? [buildCheckInButtons(matchId)] : [];
-    await thread!.send({ embeds: [embed], components });
+    const sentMessage = await thread!.send({ embeds: [embed], components });
+
+    // Store the message ID for future embed updates (e.g., from BullMQ jobs)
+    await prisma.match.update({
+      where: { id: matchId },
+      data: { discordMessageId: sentMessage.id },
+    });
 
     console.log(`[MatchService] Thread created for match: ${matchId} (${threadName})`);
     return thread!.id;
@@ -247,6 +253,8 @@ export interface CheckInResult {
   success: boolean;
   message: string;
   bothCheckedIn: boolean;
+  /** Match status included on successful check-in to avoid duplicate DB queries */
+  matchStatus?: MatchStatus;
 }
 
 /**
@@ -330,6 +338,18 @@ export async function checkInPlayer(
     return { success: false, message: 'Match not found.', bothCheckedIn: false };
   }
 
+  // Validate match is in CALLED state (check-in window is active)
+  if (match.state !== MatchState.CALLED) {
+    console.warn(
+      `[CheckIn] Invalid state: ${discordId} attempted check-in for ${match.identifier} in state ${match.state}`
+    );
+    return {
+      success: false,
+      message: 'Check-in is not available for this match.',
+      bothCheckedIn: false,
+    };
+  }
+
   // Find the player by their linked Discord ID
   const player = match.players.find((p) => p.user?.discordId === discordId);
 
@@ -368,29 +388,75 @@ export async function checkInPlayer(
     };
   }
 
-  // Update player check-in status
-  await prisma.matchPlayer.update({
-    where: { id: player.id },
-    data: {
-      isCheckedIn: true,
-      checkedInAt: new Date(),
-    },
-  });
-
-  // Query fresh count to determine if both players are checked in
-  const checkedInCount = await prisma.matchPlayer.count({
-    where: { matchId, isCheckedIn: true },
-  });
-
-  const bothCheckedIn = checkedInCount === 2;
-
-  if (bothCheckedIn) {
-    // Update match state to CHECKED_IN
-    await prisma.match.update({
-      where: { id: matchId },
-      data: { state: MatchState.CHECKED_IN },
+  // Use transaction with optimistic locking to prevent race conditions
+  const result = await prisma.$transaction(async (tx) => {
+    // Atomic update - only succeeds if player is not already checked in
+    const updated = await tx.matchPlayer.updateMany({
+      where: { id: player.id, isCheckedIn: false },
+      data: {
+        isCheckedIn: true,
+        checkedInAt: new Date(),
+      },
     });
 
+    // If no rows updated, player was already checked in (concurrent request)
+    if (updated.count === 0) {
+      return { success: false, bothCheckedIn: false, alreadyCheckedIn: true };
+    }
+
+    // Count checked-in players within the transaction
+    const checkedInCount = await tx.matchPlayer.count({
+      where: { matchId, isCheckedIn: true },
+    });
+
+    const bothCheckedIn = checkedInCount === 2;
+
+    if (bothCheckedIn) {
+      // Use updateMany with state guard to prevent duplicate transitions
+      const matchUpdated = await tx.match.updateMany({
+        where: { id: matchId, state: MatchState.CALLED },
+        data: { state: MatchState.CHECKED_IN },
+      });
+
+      if (matchUpdated.count === 0) {
+        console.log(`[CheckIn] Match ${match.identifier} state already transitioned by concurrent request`);
+      }
+    }
+
+    return { success: true, bothCheckedIn, alreadyCheckedIn: false };
+  });
+
+  // Handle the case where concurrent request already checked in
+  if (result.alreadyCheckedIn) {
+    console.log(
+      `[CheckIn] Concurrent check-in detected: ${player.playerName} for ${match.identifier}`
+    );
+    return {
+      success: false,
+      message: 'You have already checked in!',
+      bothCheckedIn: result.bothCheckedIn,
+    };
+  }
+
+  // Build match status from already-fetched data (avoids duplicate query)
+  const buildMatchStatus = (): MatchStatus => ({
+    id: match.id,
+    identifier: match.identifier,
+    roundText: match.roundText,
+    state: result.bothCheckedIn ? MatchState.CHECKED_IN : match.state,
+    discordThreadId: match.discordThreadId,
+    checkInDeadline: match.checkInDeadline,
+    players: match.players.map((p) => ({
+      id: p.id,
+      playerName: p.playerName,
+      // Update check-in status: the current player just checked in
+      isCheckedIn: p.id === player.id ? true : p.isCheckedIn,
+      checkedInAt: p.id === player.id ? new Date() : p.checkedInAt,
+      discordId: p.user?.discordId ?? null,
+    })),
+  });
+
+  if (result.bothCheckedIn) {
     console.log(
       `[CheckIn] Match ready: ${match.identifier} - both players checked in`
     );
@@ -398,6 +464,7 @@ export async function checkInPlayer(
       success: true,
       message: 'Checked in! Both players are ready - match can begin!',
       bothCheckedIn: true,
+      matchStatus: buildMatchStatus(),
     };
   }
 
@@ -408,6 +475,7 @@ export async function checkInPlayer(
     success: true,
     message: 'Checked in! Waiting for your opponent.',
     bothCheckedIn: false,
+    matchStatus: buildMatchStatus(),
   };
 }
 

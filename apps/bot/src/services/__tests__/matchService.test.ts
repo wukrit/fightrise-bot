@@ -12,8 +12,22 @@ vi.mock('@fightrise/database', () => ({
     },
     matchPlayer: {
       update: vi.fn(),
+      updateMany: vi.fn(),
       count: vi.fn(),
     },
+    // Transaction mock that executes callback with prisma-like tx object
+    $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => {
+      const tx = {
+        matchPlayer: {
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          count: vi.fn().mockResolvedValue(1),
+        },
+        match: {
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        },
+      };
+      return callback(tx);
+    }),
   },
   MatchState: {
     NOT_STARTED: 'NOT_STARTED',
@@ -347,6 +361,7 @@ describe('MatchService', () => {
   describe('checkInPlayer', () => {
     const mockMatch = {
       id: 'match-123',
+      identifier: 'WF1',
       state: 'CALLED',
       checkInDeadline: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
       players: [
@@ -369,35 +384,48 @@ describe('MatchService', () => {
 
     it('should check in player successfully', async () => {
       vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
-      vi.mocked(prisma.matchPlayer.update).mockResolvedValue({} as never);
-      vi.mocked(prisma.matchPlayer.count).mockResolvedValue(1 as never);
+      // Transaction mock returns partial check-in (1 player)
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+        const tx = {
+          matchPlayer: {
+            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+            count: vi.fn().mockResolvedValue(1), // Only 1 player checked in
+          },
+          match: {
+            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          },
+        };
+        return callback(tx as never);
+      });
 
       const result = await checkInPlayer('match-123', 'discord-111');
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('Checked in! Waiting for your opponent.');
       expect(result.bothCheckedIn).toBe(false);
-      expect(prisma.matchPlayer.update).toHaveBeenCalledWith({
-        where: { id: 'player-1' },
-        data: { isCheckedIn: true, checkedInAt: expect.any(Date) },
-      });
     });
 
     it('should return both checked in when both players are ready', async () => {
       vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
-      vi.mocked(prisma.matchPlayer.update).mockResolvedValue({} as never);
-      vi.mocked(prisma.matchPlayer.count).mockResolvedValue(2 as never);
-      vi.mocked(prisma.match.update).mockResolvedValue({} as never);
+      // Transaction mock returns both players checked in
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+        const tx = {
+          matchPlayer: {
+            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+            count: vi.fn().mockResolvedValue(2), // Both players checked in
+          },
+          match: {
+            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          },
+        };
+        return callback(tx as never);
+      });
 
       const result = await checkInPlayer('match-123', 'discord-111');
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('Checked in! Both players are ready - match can begin!');
       expect(result.bothCheckedIn).toBe(true);
-      expect(prisma.match.update).toHaveBeenCalledWith({
-        where: { id: 'match-123' },
-        data: { state: 'CHECKED_IN' },
-      });
     });
 
     it('should return error when match not found', async () => {
@@ -418,7 +446,7 @@ describe('MatchService', () => {
       expect(result.message).toBe('You are not a participant in this match.');
     });
 
-    it('should return error when already checked in', async () => {
+    it('should return error when already checked in (pre-validation)', async () => {
       const matchWithCheckedIn = {
         ...mockMatch,
         players: [
@@ -427,6 +455,28 @@ describe('MatchService', () => {
         ],
       };
       vi.mocked(prisma.match.findUnique).mockResolvedValue(matchWithCheckedIn as never);
+
+      const result = await checkInPlayer('match-123', 'discord-111');
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('You have already checked in!');
+    });
+
+    it('should return error when concurrent check-in detected (optimistic lock)', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
+      // Transaction mock simulates concurrent check-in (updateMany returns 0)
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+        const tx = {
+          matchPlayer: {
+            updateMany: vi.fn().mockResolvedValue({ count: 0 }), // Already checked in
+            count: vi.fn().mockResolvedValue(1),
+          },
+          match: {
+            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          },
+        };
+        return callback(tx as never);
+      });
 
       const result = await checkInPlayer('match-123', 'discord-111');
 
@@ -445,6 +495,19 @@ describe('MatchService', () => {
 
       expect(result.success).toBe(false);
       expect(result.message).toBe('Check-in deadline has passed.');
+    });
+
+    it('should return error when match not in CALLED state', async () => {
+      const matchNotCalled = {
+        ...mockMatch,
+        state: 'NOT_STARTED',
+      };
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(matchNotCalled as never);
+
+      const result = await checkInPlayer('match-123', 'discord-111');
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Check-in is not available for this match.');
     });
   });
 
