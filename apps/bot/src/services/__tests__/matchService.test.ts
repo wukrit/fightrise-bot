@@ -882,15 +882,26 @@ describe('MatchService', () => {
       expect(result.matchStatus?.state).toBe('COMPLETED');
     });
 
-    it('should return dispute message when opponent disputes', async () => {
+    it('should reset state and return dispute message when opponent disputes', async () => {
       vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as never);
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+        const tx = {
+          match: {
+            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          },
+          matchPlayer: {
+            updateMany: vi.fn().mockResolvedValue({ count: 2 }),
+          },
+        };
+        return callback(tx as never);
+      });
 
       // Player 2 (discord-222) disputes Player 1's self-report
       const result = await confirmResult('match-123', 'discord-222', false);
 
       expect(result.success).toBe(true);
-      expect(result.message).toContain('disputes the result');
-      expect(result.matchStatus?.state).toBe('PENDING_CONFIRMATION');
+      expect(result.message).toBe('Result disputed. Please report the correct winner.');
+      expect(result.matchStatus?.state).toBe('CHECKED_IN');
     });
 
     it('should return error when reporter tries to confirm their own report', async () => {
@@ -959,6 +970,32 @@ describe('MatchService', () => {
 
       expect(result.success).toBe(false);
       expect(result.message).toBe('Match state changed. Please try again.');
+    });
+
+    it('should reset state to CHECKED_IN when disputed', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as never);
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+        const tx = {
+          match: {
+            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          },
+          matchPlayer: {
+            updateMany: vi.fn().mockResolvedValue({ count: 2 }),
+          },
+        };
+        return callback(tx as never);
+      });
+
+      // Player 2 disputes
+      const result = await confirmResult('match-123', 'discord-222', false);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('Result disputed. Please report the correct winner.');
+      expect(result.matchStatus?.state).toBe('CHECKED_IN');
+      // Winner flags should be cleared
+      result.matchStatus?.players.forEach((p) => {
+        expect(p.isWinner).toBeNull();
+      });
     });
   });
 });

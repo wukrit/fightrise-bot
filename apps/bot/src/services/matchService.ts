@@ -796,17 +796,40 @@ export async function confirmResult(
       },
     };
   } else {
-    // Dispute: keep in PENDING_CONFIRMATION, post message
+    // Dispute: reset state to CHECKED_IN so players can re-report
+    const disputeResult = await prisma.$transaction(async (tx) => {
+      const updated = await tx.match.updateMany({
+        where: { id: matchId, state: MatchState.PENDING_CONFIRMATION },
+        data: { state: MatchState.CHECKED_IN },
+      });
+
+      if (updated.count === 0) {
+        return { success: false, reason: 'STATE_CHANGED' };
+      }
+
+      // Clear winner flags on all players
+      await tx.matchPlayer.updateMany({
+        where: { matchId },
+        data: { isWinner: null },
+      });
+
+      return { success: true };
+    });
+
+    if (!disputeResult.success) {
+      return { success: false, message: 'Match state changed. Please try again.' };
+    }
+
     console.log(`[ConfirmResult] Disputed: ${opponent.playerName} disputes ${winner.playerName}'s claim for ${match.identifier}`);
 
     return {
       success: true,
-      message: `${opponent.playerName} disputes the result. Please discuss in the thread and try again, or contact a tournament organizer.`,
+      message: 'Result disputed. Please report the correct winner.',
       matchStatus: {
         id: match.id,
         identifier: match.identifier,
         roundText: match.roundText,
-        state: MatchState.PENDING_CONFIRMATION,
+        state: MatchState.CHECKED_IN,
         discordThreadId: match.discordThreadId,
         checkInDeadline: match.checkInDeadline,
         players: match.players.map((p) => ({
@@ -815,7 +838,7 @@ export async function confirmResult(
           isCheckedIn: p.isCheckedIn,
           checkedInAt: p.checkedInAt,
           discordId: p.user?.discordId ?? null,
-          isWinner: p.isWinner,
+          isWinner: null,
         })),
       },
     };
