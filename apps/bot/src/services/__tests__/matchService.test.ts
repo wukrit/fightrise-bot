@@ -31,6 +31,19 @@ vi.mock('@fightrise/shared', () => ({
   INTERACTION_PREFIX: {
     CHECK_IN: 'checkin',
   },
+  DISCORD_LIMITS: {
+    THREAD_NAME_MAX_LENGTH: 100,
+  },
+  DISCORD_COLORS: {
+    BLURPLE: 0x5865f2,
+    SUCCESS: 0x57f287,
+    WARNING: 0xfee75c,
+    ERROR: 0xed4245,
+  },
+  TIME: {
+    MINUTES_TO_MS: 60 * 1000,
+    SECONDS_TO_MS: 1000,
+  },
 }));
 
 import { prisma } from '@fightrise/database';

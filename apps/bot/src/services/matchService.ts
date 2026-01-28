@@ -10,7 +10,13 @@ import {
   ChannelType,
 } from 'discord.js';
 import { prisma, MatchState, Prisma } from '@fightrise/database';
-import { createInteractionId, INTERACTION_PREFIX } from '@fightrise/shared';
+import {
+  createInteractionId,
+  INTERACTION_PREFIX,
+  DISCORD_LIMITS,
+  DISCORD_COLORS,
+  TIME,
+} from '@fightrise/shared';
 
 // Type for match with players and tournament info
 type MatchWithPlayers = Prisma.MatchGetPayload<{
@@ -86,7 +92,7 @@ export async function createMatchThread(
 
   // Calculate check-in deadline if check-in is required
   const checkInDeadline = tournament.requireCheckIn
-    ? new Date(Date.now() + tournament.checkInWindowMinutes * 60 * 1000)
+    ? new Date(Date.now() + tournament.checkInWindowMinutes * TIME.MINUTES_TO_MS)
     : null;
 
   let thread: ThreadChannel | undefined;
@@ -162,12 +168,12 @@ export function formatThreadName(
   player2: string
 ): string {
   const name = `${roundText} (${identifier}): ${player1} vs ${player2}`;
-  if (name.length <= 100) return name;
+  if (name.length <= DISCORD_LIMITS.THREAD_NAME_MAX_LENGTH) return name;
 
   // Truncate player names to fit
   const prefix = `${roundText} (${identifier}): `;
   const separator = ' vs ';
-  const availableSpace = 100 - prefix.length - separator.length;
+  const availableSpace = DISCORD_LIMITS.THREAD_NAME_MAX_LENGTH - prefix.length - separator.length;
   const maxPlayerLen = Math.floor(availableSpace / 2) - 2; // -2 for ".." suffix
 
   const p1 = player1.length > maxPlayerLen ? player1.slice(0, maxPlayerLen) + '..' : player1;
@@ -198,10 +204,10 @@ function buildMatchEmbed(
     .setTitle(match.roundText)
     .setDescription(`${p1Mention} vs ${p2Mention}`)
     .addFields({ name: 'Match ID', value: match.identifier, inline: true })
-    .setColor(0x5865f2); // Discord blurple
+    .setColor(DISCORD_COLORS.BLURPLE);
 
   if (requireCheckIn && checkInDeadline) {
-    const unix = Math.floor(checkInDeadline.getTime() / 1000);
+    const unix = Math.floor(checkInDeadline.getTime() / TIME.SECONDS_TO_MS);
     embed.addFields(
       { name: 'Status', value: 'Waiting for check-in', inline: true },
       { name: 'Deadline', value: `<t:${unix}:R>`, inline: true }

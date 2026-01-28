@@ -3,6 +3,24 @@ import type { Event, ExtendedClient } from '../types.js';
 import { buttonHandlers } from '../handlers/index.js';
 import { parseInteractionId } from '@fightrise/shared';
 
+/**
+ * Reply with an ephemeral error message, handling both replied and unreplied states.
+ */
+async function replyWithError(
+  interaction: Interaction,
+  message: string
+): Promise<void> {
+  if (!interaction.isRepliable()) return;
+
+  const content = { content: message, ephemeral: true };
+
+  if (interaction.replied || interaction.deferred) {
+    await interaction.followUp(content);
+  } else {
+    await interaction.reply(content);
+  }
+}
+
 const event: Event = {
   name: Events.InteractionCreate,
   async execute(interaction: Interaction) {
@@ -20,14 +38,7 @@ const event: Event = {
         await command.execute(interaction);
       } catch (error) {
         console.error(`Error executing command ${interaction.commandName}:`, error);
-
-        const errorMessage = 'There was an error executing this command.';
-
-        if (interaction.replied || interaction.deferred) {
-          await interaction.followUp({ content: errorMessage, ephemeral: true });
-        } else {
-          await interaction.reply({ content: errorMessage, ephemeral: true });
-        }
+        await replyWithError(interaction, 'There was an error executing this command.');
       }
       return;
     }
@@ -46,14 +57,7 @@ const event: Event = {
         await handler.execute(interaction, parts);
       } catch (error) {
         console.error(`Error handling button ${interaction.customId}:`, error);
-
-        const errorMessage = 'There was an error processing this action.';
-
-        if (interaction.replied || interaction.deferred) {
-          await interaction.followUp({ content: errorMessage, ephemeral: true });
-        } else {
-          await interaction.reply({ content: errorMessage, ephemeral: true });
-        }
+        await replyWithError(interaction, 'There was an error processing this action.');
       }
       return;
     }
