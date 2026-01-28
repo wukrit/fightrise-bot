@@ -41,15 +41,16 @@ async function main() {
   process.on('SIGINT', () => shutdown('SIGINT'));
   process.on('SIGTERM', () => shutdown('SIGTERM'));
 
+  // Login to Discord first so the client is ready for polling service
+  await client.login(token);
+
   // Start polling service (requires REDIS_URL and STARTGG_API_KEY)
+  // Pass Discord client so it can create match threads
   if (process.env.REDIS_URL && process.env.STARTGG_API_KEY) {
-    await startPollingService();
+    await startPollingService(client);
   } else {
     console.warn('[PollingService] Skipped - REDIS_URL or STARTGG_API_KEY not configured');
   }
-
-  // Login to Discord
-  await client.login(token);
 }
 
 main().catch((error) => {

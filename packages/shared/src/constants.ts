@@ -28,3 +28,21 @@ export const INTERACTION_PREFIX = {
   REGISTER: 'register',
   SCORE: 'score',
 } as const;
+
+// Discord API limits and styling
+export const DISCORD_LIMITS = {
+  THREAD_NAME_MAX_LENGTH: 100,
+} as const;
+
+export const DISCORD_COLORS = {
+  BLURPLE: 0x5865f2,
+  SUCCESS: 0x57f287,
+  WARNING: 0xfee75c,
+  ERROR: 0xed4245,
+} as const;
+
+// Time conversion helpers
+export const TIME = {
+  MINUTES_TO_MS: 60 * 1000,
+  SECONDS_TO_MS: 1000,
+} as const;
