@@ -23,6 +23,7 @@
     "db:migrate": "turbo db:migrate",
     "tunnel": "cloudflared tunnel run fightrise-dev",
     "clean": "turbo clean && rm -rf node_modules",
+    "docker:build": "docker compose --env-file .env -f docker/docker-compose.dev.yml build",
     "docker:dev": "docker compose --env-file .env -f docker/docker-compose.dev.yml up",
     "docker:dev:build": "docker compose --env-file .env -f docker/docker-compose.dev.yml up --build",
     "docker:dev:tunnel": "docker compose --env-file .env -f docker/docker-compose.dev.yml --profile tunnel up",
