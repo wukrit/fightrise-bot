@@ -4,6 +4,28 @@ Last updated: January 2026
 
 This document tracks the current implementation progress against the architecture plan.
 
+## Related Documentation
+
+| Document | Description |
+|----------|-------------|
+| [README.md](../README.md) | Quick start guide |
+| [Discord Setup](./DISCORD_SETUP.md) | Discord bot configuration |
+| [Start.gg Setup](./STARTGG_SETUP.md) | Start.gg API setup |
+| **Implementation Status** (this doc) | Current progress |
+| [Architecture Plan](../ARCHITECTURE_PLAN.md) | Full system design |
+
+---
+
+## Status Legend
+
+| Icon | Meaning | Description |
+|------|---------|-------------|
+| ✅ | **Complete** | Fully implemented and tested |
+| ⚠️ | **Partial/Stubbed** | Basic implementation exists, missing features or tests |
+| ❌ | **Not Started** | No implementation yet |
+
+---
+
 ## Overall Progress
 
 | Phase | Status | Completion |
@@ -166,7 +188,7 @@ All foundational infrastructure is in place and working.
 
 ## Database Schema Status
 
-All 10 models are implemented and migrated:
+All 8 models are implemented and migrated:
 
 | Model | Fields | Relations | Indexes |
 |-------|--------|-----------|---------|
@@ -235,12 +257,12 @@ All 10 models are implemented and migrated:
 1. **No button interaction handler** - interactionCreate only handles slash commands
 2. **No BullMQ workers** - Polling service not implemented
 3. **No Start.gg OAuth provider** - Cannot verify tournament admin via OAuth
+4. **OAuth token encryption** - startggToken stored as plain text in User model (violates OWASP standards, requires AES-256 encryption)
 
 ### Important (Quality of Life)
 
-1. **OAuth token encryption** - startggToken stored as plain text in User model
-2. **No audit logging** - Score reports and admin actions not tracked
-3. **Minimal web UI** - No functional pages beyond auth
+1. **No audit logging** - Score reports and admin actions not tracked
+2. **Minimal web UI** - No functional pages beyond auth
 
 ### Nice to Have
 

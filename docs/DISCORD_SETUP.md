@@ -2,6 +2,29 @@
 
 This guide walks you through setting up a Discord application and bot for FightRise.
 
+## Prerequisites
+
+Before you begin, make sure you have:
+
+- **Discord account** with verified email address
+- **Administrator access** to a Discord server (for testing the bot)
+- **Text editor** for managing `.env` files
+- **Node.js 18+** installed (for running the bot locally)
+
+**Estimated time:** 15-20 minutes
+
+## Related Documentation
+
+| Document | Description |
+|----------|-------------|
+| [README.md](../README.md) | Quick start guide |
+| **Discord Setup** (this doc) | Discord bot configuration |
+| [Start.gg Setup](./STARTGG_SETUP.md) | Start.gg API setup |
+| [Implementation Status](./IMPLEMENTATION_STATUS.md) | Current progress |
+| [Architecture Plan](../ARCHITECTURE_PLAN.md) | Full system design |
+
+---
+
 ## Table of Contents
 1. [Creating a Discord Application](#creating-a-discord-application)
 2. [Configuring the Bot](#configuring-the-bot)
@@ -113,6 +136,24 @@ OAuth2 is used for two purposes:
 1. **Bot invites** - Adding the bot to servers
 2. **User authentication** - Web portal sign-in via Discord
 
+### OAuth2 Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as FightRise Web
+    participant D as Discord
+
+    U->>F: Click "Sign in with Discord"
+    F->>D: Redirect to Discord authorize
+    D->>U: Show permission prompt
+    U->>D: Approve permissions
+    D->>F: Redirect with auth code
+    F->>D: Exchange code for tokens
+    D->>F: Access token + refresh token
+    F->>U: User signed in
+```
+
 ### Required OAuth2 Scopes
 
 | Scope | Purpose |
@@ -161,14 +202,14 @@ OAuth2 is used for two purposes:
 
 ### Recommended Permission Integer
 
-For FightRise, use this permissions integer: `395271700480`
+For FightRise, use this permissions integer: `397284690944`
 
 This includes all required permissions listed above.
 
 ### Generated Invite URL Format
 
 ```
-https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=395271700480&scope=bot%20applications.commands
+https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=397284690944&scope=bot%20applications.commands
 ```
 
 Replace `YOUR_CLIENT_ID` with your actual Application ID.
@@ -219,11 +260,30 @@ DISCORD_REDIRECT_URI="http://localhost:3000/api/auth/callback/discord"
 2. **Use environment variables**
    - Never hardcode tokens in source code
 
-3. **Rotate tokens if compromised**
-   - If you suspect your token is leaked, reset it immediately in the Developer Portal
-
-4. **Limit token access**
+3. **Limit token access**
    - Only share tokens with trusted team members through secure channels
+
+### Token Rotation
+
+Regular token rotation reduces the risk of compromised credentials.
+
+**Rotation Schedule:**
+| Token Type | Recommended Interval |
+|------------|---------------------|
+| Bot Token | Every 90 days |
+| Client Secret | Every 90 days |
+
+**When to Rotate Immediately:**
+- A team member with token access leaves the project
+- You suspect the token may have been exposed
+- After a security incident
+- Token appears in logs, error messages, or version control
+
+**How to Rotate:**
+1. **Bot Token**: Go to Bot tab → Click "Reset Token" → Update `.env` → Restart bot
+2. **Client Secret**: Go to OAuth2 → Click "Reset Secret" → Update `.env` → Restart web app
+
+**Best Practice:** Create the new token and verify it works before revoking the old one (where possible).
 
 ### Permission Principles
 
@@ -241,11 +301,32 @@ DISCORD_REDIRECT_URI="http://localhost:3000/api/auth/callback/discord"
 1. **Validate redirect URIs**
    - Only add URIs you control to the OAuth2 settings
 
-2. **Use HTTPS in production**
+2. **Use HTTPS in production** (mandatory)
    - Never use HTTP redirect URIs in production
+   - Exception: `http://localhost` is allowed for local development only
 
 3. **Validate state parameter**
    - Implement CSRF protection in OAuth flows
+   - NextAuth.js handles this automatically
+
+### Production Secrets Management
+
+For production deployments, use a dedicated secrets manager instead of `.env` files:
+
+| Service | Best For | Key Features |
+|---------|----------|--------------|
+| **AWS Secrets Manager** | AWS-hosted apps | Automatic rotation, IAM integration |
+| **HashiCorp Vault** | Multi-cloud, K8s | Open-source, highly configurable |
+| **Azure Key Vault** | Azure-hosted apps | Azure AD integration |
+| **Google Secret Manager** | GCP-hosted apps | IAM integration, versioning |
+| **Railway/Render Secrets** | Smaller deployments | Built-in, easy setup |
+
+**Benefits over `.env` files:**
+- Automatic token rotation
+- Audit logging (who accessed what, when)
+- Encryption at rest
+- Fine-grained access control
+- Version history and rollback
 
 ---
 
@@ -278,3 +359,18 @@ DISCORD_REDIRECT_URI="http://localhost:3000/api/auth/callback/discord"
 - [Discord.js Guide](https://discordjs.guide/)
 - [Discord API Documentation](https://discord.com/developers/docs)
 - [Discord Permissions Calculator](https://discordapi.com/permissions.html)
+
+---
+
+## Next Steps
+
+Now that Discord is configured:
+
+- [ ] Complete [Start.gg Setup](./STARTGG_SETUP.md) if you haven't already
+- [ ] Run `npm install` at the repository root
+- [ ] Copy `.env.example` to `.env` and add your credentials
+- [ ] Run `npm run dev --filter=@fightrise/bot` to start the bot
+- [ ] Invite the bot to your test server using the generated URL
+- [ ] Test with `/tournament setup` command
+
+See [Implementation Status](./IMPLEMENTATION_STATUS.md) to track progress or find ways to contribute.

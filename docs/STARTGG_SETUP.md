@@ -2,6 +2,28 @@
 
 This guide walks you through setting up Start.gg API access for FightRise.
 
+## Prerequisites
+
+Before you begin, make sure you have:
+
+- **Start.gg account** at [start.gg](https://start.gg)
+- **Text editor** for managing `.env` files
+- **curl or API client** (optional, for testing)
+
+**Estimated time:** 10-15 minutes
+
+## Related Documentation
+
+| Document | Description |
+|----------|-------------|
+| [README.md](../README.md) | Quick start guide |
+| [Discord Setup](./DISCORD_SETUP.md) | Discord bot configuration |
+| **Start.gg Setup** (this doc) | Start.gg API setup |
+| [Implementation Status](./IMPLEMENTATION_STATUS.md) | Current progress |
+| [Architecture Plan](../ARCHITECTURE_PLAN.md) | Full system design |
+
+---
+
 ## Table of Contents
 1. [Overview](#overview)
 2. [Getting an API Token](#getting-an-api-token)
@@ -189,11 +211,29 @@ After creating the application, you'll receive:
 |-------|-------------|-------------|
 | `user.identity` | Access user's basic profile | Always |
 | `user.email` | Access user's email | Optional |
-| `tournament.manager` | Manage tournaments | Admin verification |
-| `tournament.register` | Register for tournaments | Discord registration |
-| `tournament.report` | Report match results | Score reporting |
+| `tournament.manager` | Manage tournament seeding and brackets | Admin verification |
+| `tournament.reporter` | Report match results | Score reporting |
 
 ### OAuth Flow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as FightRise
+    participant S as Start.gg
+
+    U->>F: Click "Connect Start.gg"
+    F->>S: Redirect to authorize endpoint
+    S->>U: Show permission prompt
+    U->>S: Approve scopes
+    S->>F: Redirect with auth code
+    F->>S: POST /oauth/access_token
+    S->>F: Access token + refresh token
+    F->>F: Store encrypted token
+    F->>U: Account linked
+```
+
+#### Step-by-Step
 
 1. **Authorization URL**:
    ```
@@ -356,6 +396,69 @@ mutation ReportSet($setId: ID!, $winnerId: ID!) {
 
 ---
 
+## Security Best Practices
+
+### Token Security
+
+1. **Never commit tokens to version control**
+   - Use `.env` files and ensure `.env` is in `.gitignore`
+
+2. **Use environment variables**
+   - Never hardcode tokens in source code
+
+3. **Limit token access**
+   - Only share tokens with trusted team members through secure channels
+
+### Token Rotation
+
+Regular token rotation reduces the risk of compromised credentials.
+
+**Rotation Schedule:**
+| Token Type | Recommended Interval |
+|------------|---------------------|
+| API Token | Every 90 days |
+| OAuth Client Secret | Every 90 days |
+
+**When to Rotate Immediately:**
+- A team member with token access leaves the project
+- You suspect the token may have been exposed
+- After a security incident
+- Unusual API activity detected (check Developer Settings usage logs)
+
+**How to Rotate:**
+1. **API Token**: Developer Settings → Create new token → Update `.env` → Test → Delete old token
+2. **OAuth Secret**: OAuth Applications → Your App → Regenerate secret → Update `.env`
+
+**Best Practice:** Create the new token and verify it works before deleting the old one.
+
+### OAuth Token Storage
+
+User OAuth tokens (access and refresh tokens) should be:
+- Encrypted at rest using AES-256 or equivalent
+- Never logged or exposed in error messages
+- Stored with minimal retention (refresh as needed)
+
+### Production Secrets Management
+
+For production deployments, use a dedicated secrets manager instead of `.env` files:
+
+| Service | Best For | Key Features |
+|---------|----------|--------------|
+| **AWS Secrets Manager** | AWS-hosted apps | Automatic rotation, IAM integration |
+| **HashiCorp Vault** | Multi-cloud, K8s | Open-source, highly configurable |
+| **Azure Key Vault** | Azure-hosted apps | Azure AD integration |
+| **Google Secret Manager** | GCP-hosted apps | IAM integration, versioning |
+| **Railway/Render Secrets** | Smaller deployments | Built-in, easy setup |
+
+**Benefits over `.env` files:**
+- Automatic token rotation
+- Audit logging (who accessed what, when)
+- Encryption at rest
+- Fine-grained access control
+- Version history and rollback
+
+---
+
 ## Troubleshooting
 
 ### "Authentication failed"
@@ -391,3 +494,17 @@ mutation ReportSet($setId: ID!, $winnerId: ID!) {
 - [GraphQL Schema Reference](https://smashgg-schema.netlify.app/)
 - [Start.gg API Explorer](https://developer.start.gg/explorer)
 - [GraphQL Introduction](https://developer.start.gg/docs/intro-to-gql/)
+
+---
+
+## Next Steps
+
+Now that Start.gg is configured:
+
+- [ ] Complete [Discord Setup](./DISCORD_SETUP.md) if you haven't already
+- [ ] Run `npm install` at the repository root
+- [ ] Copy `.env.example` to `.env` and add your credentials
+- [ ] Run `npm run test:smoke --filter=@fightrise/startgg-client` to verify API access
+- [ ] Run `npm run dev` to start the full application
+
+See [Implementation Status](./IMPLEMENTATION_STATUS.md) to track progress or find ways to contribute.
