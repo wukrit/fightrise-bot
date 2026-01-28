@@ -136,7 +136,13 @@ export async function createMatchThread(
     // Build and send embed
     const embed = buildMatchEmbed(match, tournament.requireCheckIn, checkInDeadline);
     const components = tournament.requireCheckIn ? [buildCheckInButtons(matchId)] : [];
-    await thread!.send({ embeds: [embed], components });
+    const sentMessage = await thread!.send({ embeds: [embed], components });
+
+    // Store the message ID for future embed updates (e.g., from BullMQ jobs)
+    await prisma.match.update({
+      where: { id: matchId },
+      data: { discordMessageId: sentMessage.id },
+    });
 
     console.log(`[MatchService] Thread created for match: ${matchId} (${threadName})`);
     return thread!.id;
@@ -328,6 +334,18 @@ export async function checkInPlayer(
   if (!match) {
     console.warn(`[CheckIn] Match not found: ${matchId} (user: ${discordId})`);
     return { success: false, message: 'Match not found.', bothCheckedIn: false };
+  }
+
+  // Validate match is in CALLED state (check-in window is active)
+  if (match.state !== MatchState.CALLED) {
+    console.warn(
+      `[CheckIn] Invalid state: ${discordId} attempted check-in for ${match.identifier} in state ${match.state}`
+    );
+    return {
+      success: false,
+      message: 'Check-in is not available for this match.',
+      bothCheckedIn: false,
+    };
   }
 
   // Find the player by their linked Discord ID

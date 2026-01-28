@@ -123,6 +123,7 @@ model Match {
 
   // Discord thread
   discordThreadId String?   @unique
+  discordMessageId String?  // ID of the embed message for updates
 
   // Check-in tracking
   checkInDeadline DateTime?
