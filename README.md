@@ -103,7 +103,7 @@ docker compose -f docker/docker-compose.yml up -d postgres redis
 npm run dev --filter=@fightrise/web
 ```
 
-Your app will be accessible at `https://fightrise-dev.sukritwalia.com`
+Your app will be accessible at your configured tunnel hostname (e.g., `https://fightrise-dev.yourdomain.com`)
 
 See [Cloudflare Tunnel Setup](#cloudflare-tunnel-for-oauth) for initial configuration.
 
@@ -251,7 +251,7 @@ OAuth providers (Discord, Start.gg) require publicly accessible redirect URLs. C
 npm run tunnel
 ```
 
-Your local app will be accessible at your configured hostname (e.g., `https://fightrise-dev.sukritwalia.com`).
+Your local app will be accessible at your configured hostname (e.g., `https://fightrise-dev.yourdomain.com`).
 
 ### OAuth Redirect URIs
 

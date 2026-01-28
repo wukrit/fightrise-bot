@@ -89,7 +89,7 @@ Copy `.env.example` to `.env` and configure:
 OAuth providers require publicly accessible callback URLs. For local development:
 
 1. Start the Cloudflare Tunnel: `npm run tunnel`
-2. Use the tunnel URL in your `.env`: `NEXTAUTH_URL=https://fightrise-dev.sukritwalia.com`
+2. Use the tunnel URL in your `.env`: `NEXTAUTH_URL=https://fightrise-dev.yourdomain.com`
 3. Register the tunnel callback URLs with Discord and Start.gg OAuth settings
 
 See [Tunnel Setup Guide](./docs/TUNNEL_SETUP.md) for initial configuration.
