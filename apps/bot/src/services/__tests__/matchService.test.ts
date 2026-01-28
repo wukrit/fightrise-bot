@@ -34,7 +34,9 @@ vi.mock('@fightrise/database', () => ({
     CALLED: 'CALLED',
     CHECKED_IN: 'CHECKED_IN',
     IN_PROGRESS: 'IN_PROGRESS',
+    PENDING_CONFIRMATION: 'PENDING_CONFIRMATION',
     COMPLETED: 'COMPLETED',
+    DISPUTED: 'DISPUTED',
   },
   Prisma: {},
 }));
@@ -67,6 +69,8 @@ import {
   checkInPlayer,
   getMatchStatus,
   getPlayerMatches,
+  reportScore,
+  confirmResult,
 } from '../matchService.js';
 
 // Helper to create a mock thread with members.add method
@@ -648,6 +652,313 @@ describe('MatchService', () => {
       const result = await getPlayerMatches('discord-999');
 
       expect(result).toEqual([]);
+    });
+  });
+
+  // ============================================================================
+  // Score Reporting Tests
+  // ============================================================================
+
+  describe('reportScore', () => {
+    const mockMatchCheckedIn = {
+      id: 'match-123',
+      identifier: 'WF1',
+      roundText: 'Winners Finals',
+      state: 'CHECKED_IN',
+      startggSetId: 'set-456',
+      discordThreadId: 'thread-123',
+      checkInDeadline: null,
+      eventId: 'event-789',
+      event: {
+        id: 'event-789',
+        tournament: {
+          id: 'tournament-abc',
+          discordChannelId: 'channel-123',
+        },
+      },
+      players: [
+        {
+          id: 'player-1',
+          playerName: 'Player1',
+          isCheckedIn: true,
+          checkedInAt: new Date(),
+          startggEntrantId: 'entrant-1',
+          isWinner: null,
+          user: { id: 'user-1', discordId: 'discord-111' },
+        },
+        {
+          id: 'player-2',
+          playerName: 'Player2',
+          isCheckedIn: true,
+          checkedInAt: new Date(),
+          startggEntrantId: 'entrant-2',
+          isWinner: null,
+          user: { id: 'user-2', discordId: 'discord-222' },
+        },
+      ],
+    };
+
+    beforeEach(() => {
+      // Mock dynamic import for Start.gg client
+      vi.mock('@fightrise/startgg-client', () => ({
+        StartGGClient: vi.fn().mockImplementation(() => ({
+          reportSet: vi.fn().mockResolvedValue({ id: 'set-456', state: 3 }),
+        })),
+      }));
+    });
+
+    it('should auto-complete when loser confirms opponent won', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchCheckedIn as never);
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+        const tx = {
+          match: {
+            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          },
+          matchPlayer: {
+            update: vi.fn().mockResolvedValue({}),
+          },
+        };
+        return callback(tx as never);
+      });
+
+      // Player 1 (discord-111) reports Player 2 (slot 2) won = loser confirming
+      const result = await reportScore('match-123', 'discord-111', 2);
+
+      expect(result.success).toBe(true);
+      expect(result.autoCompleted).toBe(true);
+      expect(result.message).toContain('Player2 wins');
+      expect(result.matchStatus?.state).toBe('COMPLETED');
+    });
+
+    it('should go to pending confirmation when winner self-reports', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchCheckedIn as never);
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+        const tx = {
+          match: {
+            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          },
+          matchPlayer: {
+            update: vi.fn().mockResolvedValue({}),
+          },
+        };
+        return callback(tx as never);
+      });
+
+      // Player 1 (discord-111) reports Player 1 (slot 1) won = self-report
+      const result = await reportScore('match-123', 'discord-111', 1);
+
+      expect(result.success).toBe(true);
+      expect(result.autoCompleted).toBe(false);
+      expect(result.message).toContain('Waiting for Player2 to confirm');
+      expect(result.matchStatus?.state).toBe('PENDING_CONFIRMATION');
+    });
+
+    it('should return error when match not found', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(null);
+
+      const result = await reportScore('match-nonexistent', 'discord-111', 1);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Match not found.');
+    });
+
+    it('should return error when player not in match', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchCheckedIn as never);
+
+      const result = await reportScore('match-123', 'discord-999', 1);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('You are not a participant in this match.');
+    });
+
+    it('should return error when match already completed', async () => {
+      const completedMatch = { ...mockMatchCheckedIn, state: 'COMPLETED' };
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(completedMatch as never);
+
+      const result = await reportScore('match-123', 'discord-111', 1);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('This match has already been completed.');
+    });
+
+    it('should return error when match already has pending confirmation', async () => {
+      const pendingMatch = { ...mockMatchCheckedIn, state: 'PENDING_CONFIRMATION' };
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(pendingMatch as never);
+
+      const result = await reportScore('match-123', 'discord-111', 1);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('A result has already been reported. Waiting for confirmation.');
+    });
+
+    it('should return error when match not in CHECKED_IN state', async () => {
+      const calledMatch = { ...mockMatchCheckedIn, state: 'CALLED' };
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(calledMatch as never);
+
+      const result = await reportScore('match-123', 'discord-111', 1);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Score reporting is not available for this match.');
+    });
+
+    it('should return error for invalid winner slot', async () => {
+      const result = await reportScore('match-123', 'discord-111', 3);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Invalid winner selection.');
+    });
+
+    it('should handle concurrent report (state guard)', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchCheckedIn as never);
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+        const tx = {
+          match: {
+            updateMany: vi.fn().mockResolvedValue({ count: 0 }), // State already changed
+          },
+          matchPlayer: {
+            update: vi.fn().mockResolvedValue({}),
+          },
+        };
+        return callback(tx as never);
+      });
+
+      const result = await reportScore('match-123', 'discord-111', 1);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Match state changed. Please try again.');
+    });
+  });
+
+  describe('confirmResult', () => {
+    const mockMatchPending = {
+      id: 'match-123',
+      identifier: 'WF1',
+      roundText: 'Winners Finals',
+      state: 'PENDING_CONFIRMATION',
+      startggSetId: 'set-456',
+      discordThreadId: 'thread-123',
+      checkInDeadline: null,
+      players: [
+        {
+          id: 'player-1',
+          playerName: 'Player1',
+          isCheckedIn: true,
+          checkedInAt: new Date(),
+          startggEntrantId: 'entrant-1',
+          isWinner: true, // Player 1 self-reported as winner
+          user: { id: 'user-1', discordId: 'discord-111' },
+        },
+        {
+          id: 'player-2',
+          playerName: 'Player2',
+          isCheckedIn: true,
+          checkedInAt: new Date(),
+          startggEntrantId: 'entrant-2',
+          isWinner: null,
+          user: { id: 'user-2', discordId: 'discord-222' },
+        },
+      ],
+    };
+
+    it('should complete match when opponent confirms', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as never);
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+        const tx = {
+          match: {
+            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          },
+          matchPlayer: {
+            update: vi.fn().mockResolvedValue({}),
+          },
+        };
+        return callback(tx as never);
+      });
+
+      // Player 2 (discord-222) confirms Player 1's self-report
+      const result = await confirmResult('match-123', 'discord-222', true);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('Player1 wins');
+      expect(result.matchStatus?.state).toBe('COMPLETED');
+    });
+
+    it('should return dispute message when opponent disputes', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as never);
+
+      // Player 2 (discord-222) disputes Player 1's self-report
+      const result = await confirmResult('match-123', 'discord-222', false);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('disputes the result');
+      expect(result.matchStatus?.state).toBe('PENDING_CONFIRMATION');
+    });
+
+    it('should return error when reporter tries to confirm their own report', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as never);
+
+      // Player 1 (discord-111) tries to confirm their own report
+      const result = await confirmResult('match-123', 'discord-111', true);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('You cannot confirm your own report.');
+    });
+
+    it('should return error when match not found', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(null);
+
+      const result = await confirmResult('match-nonexistent', 'discord-222', true);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Match not found.');
+    });
+
+    it('should return error when match not pending confirmation', async () => {
+      const checkedInMatch = { ...mockMatchPending, state: 'CHECKED_IN' };
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(checkedInMatch as never);
+
+      const result = await confirmResult('match-123', 'discord-222', true);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('No result pending confirmation.');
+    });
+
+    it('should return error when match already completed', async () => {
+      const completedMatch = { ...mockMatchPending, state: 'COMPLETED' };
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(completedMatch as never);
+
+      const result = await confirmResult('match-123', 'discord-222', true);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('This match has already been completed.');
+    });
+
+    it('should return error when user not in match', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as never);
+
+      const result = await confirmResult('match-123', 'discord-999', true);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('You are not a participant in this match.');
+    });
+
+    it('should handle concurrent confirm (state guard)', async () => {
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as never);
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+        const tx = {
+          match: {
+            updateMany: vi.fn().mockResolvedValue({ count: 0 }), // Already transitioned
+          },
+          matchPlayer: {
+            update: vi.fn().mockResolvedValue({}),
+          },
+        };
+        return callback(tx as never);
+      });
+
+      const result = await confirmResult('match-123', 'discord-222', true);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Match state changed. Please try again.');
     });
   });
 });
