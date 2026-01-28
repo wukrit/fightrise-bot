@@ -17,6 +17,21 @@ RUN npm ci
 COPY packages/database/prisma ./packages/database/prisma
 RUN npm run db:generate --workspace=@fightrise/database
 
+# Copy root tsconfig (extended by all packages)
+COPY tsconfig.json ./
+
+# Copy and build internal packages (required for imports to work)
+COPY packages/shared/src ./packages/shared/src
+COPY packages/shared/tsconfig.json ./packages/shared/
+COPY packages/ui/src ./packages/ui/src
+COPY packages/ui/tsconfig.json ./packages/ui/
+COPY packages/database/src ./packages/database/src
+COPY packages/database/tsconfig.json ./packages/database/
+
+RUN npm run build --workspace=@fightrise/shared
+RUN npm run build --workspace=@fightrise/ui
+RUN npm run build --workspace=@fightrise/database
+
 # Source code will be mounted as volume
 EXPOSE 4000
 ENV PORT=4000
