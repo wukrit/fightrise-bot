@@ -1,8 +1,10 @@
 import { Queue, Worker, Job } from 'bullmq';
+import type { Client } from 'discord.js';
 import { getRedisConnection, closeRedisConnection } from '../lib/redis.js';
 import { prisma, TournamentState, MatchState, Prisma } from '@fightrise/database';
 import { StartGGClient, AuthError, Set } from '@fightrise/startgg-client';
 import { POLL_INTERVALS, STARTGG_SET_STATE } from '@fightrise/shared';
+import { createMatchThread } from './matchService.js';
 
 // Type for prefetched match data
 interface ExistingMatch {
@@ -19,19 +21,26 @@ const QUEUE_NAME = 'tournament-polling';
 
 let queue: Queue<PollJobData> | null = null;
 let worker: Worker<PollJobData> | null = null;
-let client: StartGGClient | null = null;
+let startggClient: StartGGClient | null = null;
+let discordClient: Client | null = null;
 
-export async function startPollingService(): Promise<void> {
+export async function startPollingService(discord?: Client): Promise<void> {
   // Validate env vars at startup
   const apiKey = process.env.STARTGG_API_KEY;
   if (!apiKey) {
     throw new Error('STARTGG_API_KEY environment variable is required');
   }
 
+  // Store Discord client for thread creation
+  discordClient = discord ?? null;
+  if (!discordClient) {
+    console.warn('[PollingService] No Discord client provided - thread creation disabled');
+  }
+
   const connection = getRedisConnection();
 
-  // Create client once, reuse for all polls
-  client = new StartGGClient({
+  // Create Start.gg client once, reuse for all polls
+  startggClient = new StartGGClient({
     apiKey,
     cache: { enabled: true, ttlMs: 30000, maxEntries: 500 },
     retry: { maxRetries: 3 },
@@ -174,7 +183,7 @@ async function syncEventMatches(
   startggEventId: string
 ): Promise<{ created: number; updated: number }> {
   const result = { created: 0, updated: 0 };
-  if (!client) return result;
+  if (!startggClient) return result;
 
   // P1 fix: Prefetch all existing matches for this event (eliminates N+1 queries)
   const existingMatches = await prisma.match.findMany({
@@ -189,7 +198,7 @@ async function syncEventMatches(
   const MAX_PAGES = 100;
 
   while (page <= MAX_PAGES) {
-    const setsConnection = await client.getEventSets(startggEventId, page, 50);
+    const setsConnection = await startggClient.getEventSets(startggEventId, page, 50);
     if (!setsConnection?.nodes?.length) break;
 
     for (const set of setsConnection.nodes) {
@@ -247,7 +256,20 @@ async function processSet(
       });
       result.created = true;
       console.log(`[Poll] Match ready: ${set.fullRoundText} - ${player1.name} vs ${player2.name}`);
-      // TODO: Create Discord thread here (Issue #10)
+
+      // Create Discord thread for the match (fire and forget - don't block polling)
+      if (discordClient) {
+        // Get the created match ID from the database
+        const createdMatch = await prisma.match.findUnique({
+          where: { startggSetId: set.id },
+          select: { id: true },
+        });
+        if (createdMatch) {
+          createMatchThread(discordClient, createdMatch.id).catch((err) => {
+            console.error(`[Poll] Thread creation failed for match ${createdMatch.id}:`, err);
+          });
+        }
+      }
     } catch (error) {
       // P2 fix: Use proper Prisma error type instead of unsafe assertion
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -378,7 +400,8 @@ export async function stopPollingService(): Promise<void> {
     queue = null;
   }
 
-  client = null;
+  startggClient = null;
+  discordClient = null;
   await closeRedisConnection();
   console.log('[PollingService] Stopped');
 }
