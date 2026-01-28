@@ -13,6 +13,9 @@ import {
 import type { ButtonHandler } from './buttonHandlers.js';
 import { reportScore, confirmResult } from '../services/matchService.js';
 
+// CUID format: starts with 'c', followed by 24 lowercase alphanumeric chars
+const CUID_REGEX = /^c[a-z0-9]{24}$/;
+
 /**
  * Handler for score reporting button interactions.
  * Handles three button prefixes:
@@ -31,6 +34,13 @@ export const scoreHandler: ButtonHandler = {
     }
 
     const [matchId, winnerSlotStr] = parts;
+
+    // Validate matchId format (CUID)
+    if (!CUID_REGEX.test(matchId)) {
+      await interaction.reply({ content: 'Invalid button.', ephemeral: true });
+      return;
+    }
+
     const winnerSlot = parseInt(winnerSlotStr, 10);
 
     if (isNaN(winnerSlot) || winnerSlot < 1 || winnerSlot > 2) {
@@ -38,14 +48,14 @@ export const scoreHandler: ButtonHandler = {
       return;
     }
 
+    // Defer immediately to get 15 minutes instead of 3 seconds
+    await interaction.deferReply({ ephemeral: true });
+
     // Delegate to service
     const result = await reportScore(matchId, interaction.user.id, winnerSlot);
 
-    // Reply first (must respond within 3 seconds)
-    await interaction.reply({
-      content: result.message,
-      ephemeral: true,
-    });
+    // Use editReply for deferred interactions
+    await interaction.editReply({ content: result.message });
 
     // Update embed if successful
     if (result.success && result.matchStatus) {
@@ -100,13 +110,19 @@ export const confirmHandler: ButtonHandler = {
 
     const [matchId] = parts;
 
+    // Validate matchId format (CUID)
+    if (!CUID_REGEX.test(matchId)) {
+      await interaction.reply({ content: 'Invalid button.', ephemeral: true });
+      return;
+    }
+
+    // Defer immediately to get 15 minutes instead of 3 seconds
+    await interaction.deferReply({ ephemeral: true });
+
     // Confirm the result
     const result = await confirmResult(matchId, interaction.user.id, true);
 
-    await interaction.reply({
-      content: result.message,
-      ephemeral: true,
-    });
+    await interaction.editReply({ content: result.message });
 
     if (result.success && result.matchStatus) {
       const match = result.matchStatus;
@@ -136,13 +152,19 @@ export const disputeHandler: ButtonHandler = {
 
     const [matchId] = parts;
 
+    // Validate matchId format (CUID)
+    if (!CUID_REGEX.test(matchId)) {
+      await interaction.reply({ content: 'Invalid button.', ephemeral: true });
+      return;
+    }
+
+    // Defer immediately to get 15 minutes instead of 3 seconds
+    await interaction.deferReply({ ephemeral: true });
+
     // Dispute the result
     const result = await confirmResult(matchId, interaction.user.id, false);
 
-    await interaction.reply({
-      content: result.message,
-      ephemeral: true,
-    });
+    await interaction.editReply({ content: result.message });
 
     if (result.success && result.matchStatus) {
       const match = result.matchStatus;

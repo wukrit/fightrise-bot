@@ -9,7 +9,7 @@ import {
   ButtonStyle,
   ChannelType,
 } from 'discord.js';
-import { prisma, MatchState, Prisma } from '@fightrise/database';
+import { prisma, MatchState, StartggSyncStatus, Prisma } from '@fightrise/database';
 import {
   createInteractionId,
   INTERACTION_PREFIX,
@@ -275,6 +275,52 @@ export interface MatchStatus {
     discordId: string | null;
     isWinner?: boolean | null;
   }>;
+}
+
+/**
+ * Helper to convert a match with players to MatchStatus format.
+ * Consolidates the repeated inline MatchStatus construction pattern.
+ */
+function toMatchStatus(
+  match: {
+    id: string;
+    identifier: string;
+    roundText: string;
+    state: MatchState;
+    discordThreadId: string | null;
+    checkInDeadline: Date | null;
+    players: Array<{
+      id: string;
+      playerName: string;
+      isCheckedIn: boolean;
+      checkedInAt: Date | null;
+      isWinner?: boolean | null;
+      user?: { discordId: string | null } | null;
+    }>;
+  },
+  overrides?: {
+    state?: MatchState;
+    playerWinnerMap?: Record<string, boolean | null>;
+  }
+): MatchStatus {
+  return {
+    id: match.id,
+    identifier: match.identifier,
+    roundText: match.roundText,
+    state: overrides?.state ?? match.state,
+    discordThreadId: match.discordThreadId,
+    checkInDeadline: match.checkInDeadline,
+    players: match.players.map((p) => ({
+      id: p.id,
+      playerName: p.playerName,
+      isCheckedIn: p.isCheckedIn,
+      checkedInAt: p.checkedInAt,
+      discordId: p.user?.discordId ?? null,
+      isWinner: overrides?.playerWinnerMap !== undefined
+        ? (overrides.playerWinnerMap[p.id] ?? null)
+        : (p.isWinner ?? null),
+    })),
+  };
 }
 
 /**
@@ -606,22 +652,10 @@ export async function reportScore(
       success: true,
       message: `You reported yourself as the winner. Waiting for ${loser.playerName} to confirm.`,
       autoCompleted: false,
-      matchStatus: {
-        id: match.id,
-        identifier: match.identifier,
-        roundText: match.roundText,
+      matchStatus: toMatchStatus(match, {
         state: MatchState.PENDING_CONFIRMATION,
-        discordThreadId: match.discordThreadId,
-        checkInDeadline: match.checkInDeadline,
-        players: match.players.map((p) => ({
-          id: p.id,
-          playerName: p.playerName,
-          isCheckedIn: p.isCheckedIn,
-          checkedInAt: p.checkedInAt,
-          discordId: p.user?.discordId ?? null,
-          isWinner: p.id === winner.id ? true : null,
-        })),
-      },
+        playerWinnerMap: { [winner.id]: true, [loser.id]: null },
+      }),
     };
   } else {
     // Loser confirmation: auto-complete the match
@@ -656,7 +690,7 @@ export async function reportScore(
     }
 
     // Sync to Start.gg (fire and forget - don't block Discord response)
-    syncToStartGG(match.startggSetId, winner.startggEntrantId).catch((err) => {
+    syncToStartGG(match.id, match.startggSetId, winner.startggEntrantId).catch((err) => {
       console.error(`[ReportScore] Start.gg sync failed for ${match.identifier}:`, err);
     });
 
@@ -666,22 +700,10 @@ export async function reportScore(
       success: true,
       message: `Match complete! ${winner.playerName} wins.`,
       autoCompleted: true,
-      matchStatus: {
-        id: match.id,
-        identifier: match.identifier,
-        roundText: match.roundText,
+      matchStatus: toMatchStatus(match, {
         state: MatchState.COMPLETED,
-        discordThreadId: match.discordThreadId,
-        checkInDeadline: match.checkInDeadline,
-        players: match.players.map((p) => ({
-          id: p.id,
-          playerName: p.playerName,
-          isCheckedIn: p.isCheckedIn,
-          checkedInAt: p.checkedInAt,
-          discordId: p.user?.discordId ?? null,
-          isWinner: p.id === winner.id ? true : false,
-        })),
-      },
+        playerWinnerMap: { [winner.id]: true, [loser.id]: false },
+      }),
     };
   }
 }
@@ -769,7 +791,7 @@ export async function confirmResult(
     }
 
     // Sync to Start.gg
-    syncToStartGG(match.startggSetId, winner.startggEntrantId).catch((err) => {
+    syncToStartGG(match.id, match.startggSetId, winner.startggEntrantId).catch((err) => {
       console.error(`[ConfirmResult] Start.gg sync failed for ${match.identifier}:`, err);
     });
 
@@ -778,22 +800,10 @@ export async function confirmResult(
     return {
       success: true,
       message: `Match complete! ${winner.playerName} wins.`,
-      matchStatus: {
-        id: match.id,
-        identifier: match.identifier,
-        roundText: match.roundText,
+      matchStatus: toMatchStatus(match, {
         state: MatchState.COMPLETED,
-        discordThreadId: match.discordThreadId,
-        checkInDeadline: match.checkInDeadline,
-        players: match.players.map((p) => ({
-          id: p.id,
-          playerName: p.playerName,
-          isCheckedIn: p.isCheckedIn,
-          checkedInAt: p.checkedInAt,
-          discordId: p.user?.discordId ?? null,
-          isWinner: p.id === winner.id ? true : false,
-        })),
-      },
+        playerWinnerMap: { [winner.id]: true, [loser.id]: false },
+      }),
     };
   } else {
     // Dispute: reset state to CHECKED_IN so players can re-report
@@ -822,38 +832,48 @@ export async function confirmResult(
 
     console.log(`[ConfirmResult] Disputed: ${opponent.playerName} disputes ${winner.playerName}'s claim for ${match.identifier}`);
 
+    // Build playerWinnerMap with all players set to null
+    const allNullWinners: Record<string, null> = {};
+    for (const p of match.players) {
+      allNullWinners[p.id] = null;
+    }
+
     return {
       success: true,
       message: 'Result disputed. Please report the correct winner.',
-      matchStatus: {
-        id: match.id,
-        identifier: match.identifier,
-        roundText: match.roundText,
+      matchStatus: toMatchStatus(match, {
         state: MatchState.CHECKED_IN,
-        discordThreadId: match.discordThreadId,
-        checkInDeadline: match.checkInDeadline,
-        players: match.players.map((p) => ({
-          id: p.id,
-          playerName: p.playerName,
-          isCheckedIn: p.isCheckedIn,
-          checkedInAt: p.checkedInAt,
-          discordId: p.user?.discordId ?? null,
-          isWinner: null,
-        })),
-      },
+        playerWinnerMap: allNullWinners,
+      }),
     };
   }
 }
 
 /**
- * Sync match result to Start.gg
- * This is a fire-and-forget helper that logs errors but doesn't throw
+ * Sync match result to Start.gg with status tracking.
+ * Updates the match record with sync status for retry/audit purposes.
+ *
+ * @param matchId - The internal match ID (for status tracking)
+ * @param setId - The Start.gg set ID
+ * @param winnerEntrantId - The Start.gg entrant ID of the winner
  */
-async function syncToStartGG(setId: string, winnerEntrantId: string | null): Promise<void> {
+async function syncToStartGG(
+  matchId: string,
+  setId: string,
+  winnerEntrantId: string | null
+): Promise<void> {
   if (!winnerEntrantId) {
     console.warn(`[StartGGSync] No entrant ID for winner, skipping sync for set ${setId}`);
     return;
   }
+
+  // Mark as pending
+  await prisma.match.update({
+    where: { id: matchId },
+    data: { startggSyncStatus: StartggSyncStatus.PENDING },
+  }).catch((err) => {
+    console.warn(`[StartGGSync] Failed to set PENDING status for ${matchId}:`, err);
+  });
 
   // Import StartGGClient dynamically to avoid circular deps
   const { StartGGClient } = await import('@fightrise/startgg-client');
@@ -861,6 +881,13 @@ async function syncToStartGG(setId: string, winnerEntrantId: string | null): Pro
   const apiKey = process.env.STARTGG_API_KEY;
   if (!apiKey) {
     console.error('[StartGGSync] STARTGG_API_KEY not configured');
+    await prisma.match.update({
+      where: { id: matchId },
+      data: {
+        startggSyncStatus: StartggSyncStatus.FAILED,
+        startggSyncError: 'STARTGG_API_KEY not configured',
+      },
+    }).catch(() => {});
     return;
   }
 
@@ -869,9 +896,27 @@ async function syncToStartGG(setId: string, winnerEntrantId: string | null): Pro
   try {
     const result = await client.reportSet(setId, winnerEntrantId);
     console.log(`[StartGGSync] Reported set ${setId} winner ${winnerEntrantId}, result:`, result);
+
+    // Mark as synced
+    await prisma.match.update({
+      where: { id: matchId },
+      data: {
+        startggSyncStatus: StartggSyncStatus.SYNCED,
+        startggSyncError: null,
+      },
+    });
   } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
     console.error(`[StartGGSync] Failed to report set ${setId}:`, err);
-    // Don't throw - this is fire-and-forget
+
+    // Mark as failed with error message
+    await prisma.match.update({
+      where: { id: matchId },
+      data: {
+        startggSyncStatus: StartggSyncStatus.FAILED,
+        startggSyncError: errorMessage.slice(0, 500), // Limit error message length
+      },
+    }).catch(() => {});
   }
 }
 
@@ -902,19 +947,5 @@ export async function getPlayerMatches(
     take: options?.limit ?? 10,
   });
 
-  return matches.map((match) => ({
-    id: match.id,
-    identifier: match.identifier,
-    roundText: match.roundText,
-    state: match.state,
-    discordThreadId: match.discordThreadId,
-    checkInDeadline: match.checkInDeadline,
-    players: match.players.map((p) => ({
-      id: p.id,
-      playerName: p.playerName,
-      isCheckedIn: p.isCheckedIn,
-      checkedInAt: p.checkedInAt,
-      discordId: p.user?.discordId ?? null,
-    })),
-  }));
+  return matches.map((match) => toMatchStatus(match));
 }
