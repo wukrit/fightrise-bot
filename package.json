@@ -21,6 +21,7 @@
     "db:generate": "turbo db:generate",
     "db:push": "turbo db:push",
     "db:migrate": "turbo db:migrate",
+    "tunnel": "cloudflared tunnel run fightrise-dev",
     "clean": "turbo clean && rm -rf node_modules"
   },
   "devDependencies": {

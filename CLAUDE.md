@@ -55,6 +55,9 @@ docker compose -f docker/docker-compose.yml up -d postgres redis
 
 # Docker Development (full stack with hot-reload - recommended)
 docker compose -f docker/docker-compose.dev.yml up
+
+# Cloudflare Tunnel (for OAuth development)
+npm run tunnel                 # Exposes localhost:3000 for OAuth callbacks
 ```
 
 ## Architecture
@@ -99,6 +102,16 @@ Copy `.env.example` to `.env` and configure:
 - `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` - Discord bot credentials
 - `STARTGG_API_KEY` - Start.gg API token
 - `NEXTAUTH_SECRET` - NextAuth encryption key
+
+### OAuth Development
+
+OAuth providers require publicly accessible callback URLs. For local development:
+
+1. Start the Cloudflare Tunnel: `npm run tunnel`
+2. Use the tunnel URL in your `.env`: `NEXTAUTH_URL=https://fightrise-dev.sukritwalia.com`
+3. Register the tunnel callback URLs with Discord and Start.gg OAuth settings
+
+See [Tunnel Setup Guide](./docs/TUNNEL_SETUP.md) for initial configuration.
 
 ## Key Integrations
 
