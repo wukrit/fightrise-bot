@@ -84,6 +84,21 @@ jobs:
   e2e-web:
     name: E2E Tests (Web)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -110,6 +125,12 @@ jobs:
           STARTGG_API_KEY: 'test-api-key'
           NEXTAUTH_SECRET: 'test-nextauth-secret'
           NEXTAUTH_URL: 'http://localhost:3000'
+
+      - name: Push database schema
+        run: npx prisma db push --skip-generate
+        working-directory: packages/database
+        env:
+          DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
