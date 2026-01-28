@@ -1,6 +1,6 @@
 # Work on GitHub Issue
 
-Work on a GitHub issue following the mandatory agentic workflow.
+Work on a GitHub issue following the compound-engineering workflow.
 
 ## Usage
 ```
@@ -12,7 +12,7 @@ Work on a GitHub issue following the mandatory agentic workflow.
 
 ## Workflow
 
-You MUST complete each step fully before proceeding to the next. Use the task list to track progress.
+You MUST complete each step fully before proceeding to the next.
 
 ### Step 1: Setup & Branch Creation
 
@@ -33,78 +33,31 @@ You MUST complete each step fully before proceeding to the next. Use the task li
 
 ---
 
-### Step 2: OpenSpec Proposal
+### Step 2: Planning with `/workflows:plan`
 
-1. Determine the change-id (use branch name or derive from issue)
-2. Create the proposal directory structure:
-   ```
-   openspec/changes/<change-id>/
-   ├── proposal.md
-   ├── tasks.md
-   └── specs/<capability>/spec.md  (if adding/modifying behavior)
-   ```
+1. Run `/workflows:plan` to create an implementation plan
+2. The plan should include:
+   - Problem statement and goals from the issue
+   - Technical approach and design decisions
+   - Task breakdown with testable items
+   - Risk assessment and edge cases
+3. Present the plan to the user and **STOP for approval**
 
-3. Write `proposal.md`:
-   ```markdown
-   # Change: <Title from issue>
-
-   GitHub Issue: #<number>
-
-   ## Why
-   <Problem or opportunity from issue description>
-
-   ## What Changes
-   - <Bullet list of changes>
-   - Mark breaking changes with **BREAKING**
-
-   ## Impact
-   - Affected specs: <list capabilities>
-   - Affected code: <key files/systems>
-   ```
-
-4. Write `tasks.md` with testable implementation steps:
-   ```markdown
-   # Tasks for <change-id>
-
-   ## 1. Implementation
-   - [ ] 1.1 <specific task>
-   - [ ] 1.2 <specific task>
-
-   ## 2. Testing
-   - [ ] 2.1 Write unit tests for <component>
-   - [ ] 2.2 Write integration tests for <feature>
-
-   ## 3. Verification
-   - [ ] 3.1 E2E verification of <behavior>
-   - [ ] 3.2 Manual verification of <edge case>
-   ```
-
-5. Write spec deltas if the change adds or modifies behavior (see openspec/AGENTS.md for format)
-
-6. Validate the proposal:
-   ```bash
-   openspec validate <change-id> --strict
-   ```
-
-7. Present the proposal to the user and **STOP for approval**
-
-**CRITICAL:** Do NOT proceed to implementation until the user approves the proposal.
+**CRITICAL:** Do NOT proceed to implementation until the user approves the plan.
 
 ---
 
-### Step 3: Implementation
+### Step 3: Implementation with `/workflows:work`
 
-Only proceed after user approval of the proposal.
+Only proceed after user approval of the plan.
 
-1. Read `tasks.md` to get the implementation checklist
-2. For each task in order:
+1. Run `/workflows:work` to execute the plan
+2. For each task:
    - Implement the change
-   - Update `tasks.md` to mark complete: `- [x]`
    - Commit with a descriptive message referencing the issue
-3. Follow patterns from `openspec/project.md`
-4. Keep commits atomic and focused
+3. Keep commits atomic and focused
 
-**Checkpoint:** All implementation tasks in `tasks.md` must be marked complete.
+**Checkpoint:** All implementation tasks must be complete.
 
 ---
 
@@ -125,8 +78,6 @@ Only proceed after user approval of the proposal.
    ```
 
 4. Fix any failures before proceeding
-
-5. Update `tasks.md` testing section to mark complete
 
 **CRITICAL:** Do NOT proceed if any tests fail. Fix them first.
 
@@ -163,11 +114,18 @@ Verify the implementation works in a realistic environment.
 
 Document what was verified and any issues found.
 
-**Checkpoint:** All verification tasks in `tasks.md` must be marked complete.
+**Checkpoint:** All verification complete.
 
 ---
 
-### Step 6: Pull Request
+### Step 6: Code Review with `/workflows:review`
+
+1. Run `/workflows:review` for multi-agent code review
+2. Address any issues identified
+
+---
+
+### Step 7: Pull Request
 
 1. Ensure all changes are committed
 2. Push the branch:
@@ -182,8 +140,6 @@ Document what was verified and any issues found.
 
    Closes #<issue-number>
 
-   OpenSpec Proposal: `openspec/changes/<change-id>/proposal.md`
-
    ## Changes
 
    - <Key change 1>
@@ -197,11 +153,12 @@ Document what was verified and any issues found.
 
    ## Checklist
 
-   - [x] OpenSpec proposal created and approved
-   - [x] Implementation complete per tasks.md
+   - [x] Plan created and approved
+   - [x] Implementation complete
    - [x] All tests passing
    - [x] Linting passing
    - [x] E2E verification complete
+   - [x] Code review complete
 
    ---
    Generated with Claude Code
@@ -218,7 +175,6 @@ Document what was verified and any issues found.
 - **Issue not found:** Ask user to verify the issue number/URL
 - **Branch already exists:** Ask user if they want to continue on existing branch or create new
 - **Tests fail:** Report failures, fix them, do not proceed until green
-- **Proposal validation fails:** Fix validation errors before requesting approval
 - **Blocked on approval:** Wait for explicit user approval, do not assume
 
 ## Final Output
@@ -226,6 +182,5 @@ Document what was verified and any issues found.
 After completing all steps, provide a summary:
 - Issue: #<number> - <title>
 - Branch: <branch-name>
-- Proposal: `openspec/changes/<change-id>/`
 - PR: <pr-url>
 - Status: Ready for review

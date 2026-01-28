@@ -2,25 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-<!-- OPENSPEC:START -->
-# OpenSpec Instructions
-
-These instructions are for AI assistants working in this project.
-
-Always open `@/openspec/AGENTS.md` when the request:
-- Mentions planning or proposals (words like proposal, spec, change, plan)
-- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
-- Sounds ambiguous and you need the authoritative spec before coding
-
-Use `@/openspec/AGENTS.md` to learn:
-- How to create and apply change proposals
-- Spec format and conventions
-- Project structure and guidelines
-
-Keep this managed block so 'openspec update' can refresh the instructions.
-
-<!-- OPENSPEC:END -->
-
 ## Project Overview
 
 FightRise is a Discord bot and web portal for running Start.gg fighting game tournaments entirely within Discord. It syncs tournament data from Start.gg's GraphQL API, creates match threads in Discord, handles player check-ins, and allows score reporting through Discord interactions.
@@ -156,28 +137,34 @@ When working on frontend features in `apps/web/`:
 
 ## Agentic Workflow (MANDATORY)
 
-When working on GitHub issues, you MUST follow this workflow. **Do not skip steps or proceed until each step is fully complete.**
+When working on GitHub issues or features, use the **compound-engineering** workflow. This emphasizes thorough planning (80%) before coding (20%).
 
-Use `/issue <url-or-number>` to start working on an issue, which will guide you through this process.
+### Core Workflow Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/workflows:plan` | Create detailed implementation plan from feature idea |
+| `/workflows:work` | Execute plan with task tracking |
+| `/workflows:review` | Multi-agent code review before merging |
+| `/workflows:compound` | Document learnings to make future work easier |
 
 ### Step 1: Branch Creation
 - Fetch the GitHub issue details using `gh issue view`
 - Create a new branch from `main` with format: `issue-<number>-<short-description>`
 - Example: `issue-42-add-match-notifications`
 
-### Step 2: OpenSpec Proposal
-- Create an OpenSpec proposal in `openspec/changes/<change-id>/`
-- The change-id should match the branch name or be descriptive of the change
-- Required files:
-  - `proposal.md` - Why, what changes, impact
-  - `tasks.md` - Implementation checklist with testable items
-  - `specs/<capability>/spec.md` - Delta specs if adding/modifying behavior
-- Run `openspec validate <change-id> --strict` to validate
+### Step 2: Planning with `/workflows:plan`
+- Run `/workflows:plan` to create a detailed implementation plan
+- The plan should include:
+  - Clear problem statement and goals
+  - Technical approach and design decisions
+  - Task breakdown with testable items
+  - Risk assessment and edge cases
 - **STOP and get user approval before proceeding**
 
-### Step 3: Implementation
-- Implement the changes according to `tasks.md`
-- Mark tasks complete as you go: `- [x]`
+### Step 3: Implementation with `/workflows:work`
+- Run `/workflows:work` to execute the plan systematically
+- Mark tasks complete as you go
 - Follow existing code patterns and conventions from `openspec/project.md`
 - Commit incrementally with clear messages
 
@@ -246,41 +233,48 @@ Use the multi-layered test suite based on what you're building:
 
 Document any manual verification steps performed.
 
-### Step 6: Pull Request
+### Step 6: Review with `/workflows:review`
+- Run `/workflows:review` for multi-agent code review
+- Address any issues identified before proceeding
+
+### Step 7: Pull Request
 - Push the branch to origin
 - Create PR using `gh pr create` with:
   - Title: Reference the issue (e.g., "Fix match notifications #42")
   - Body must include:
-    - **Summary**: Link to the OpenSpec proposal
+    - **Summary**: Brief description of changes
     - **Changes**: Key implementation details
     - **Testing**: What was tested and how
     - **Checklist**: Confirmation that all workflow steps were completed
 - Link the PR to the issue
 
+### Step 8: Document with `/workflows:compound`
+- After PR is merged, run `/workflows:compound` to document learnings
+- This makes future similar work easier for the team
+
 ### Workflow Enforcement
 
 **CRITICAL RULES:**
-1. Never write implementation code before the proposal is approved
+1. Never write implementation code before the plan is approved
 2. Never create a PR before all tests pass
 3. Never skip end-to-end verification
-4. Always update `tasks.md` to reflect actual completion status
+4. Always track task completion during `/workflows:work`
 5. If blocked at any step, stop and communicate the blocker to the user
 
 ### Quick Reference
 
 ```bash
-# Start working on an issue
-/issue 42
-/issue https://github.com/owner/repo/issues/42
-
-# Validate proposal
-openspec validate <change-id> --strict
+# Planning and execution
+/workflows:plan              # Create implementation plan
+/workflows:work              # Execute plan with task tracking
+/workflows:review            # Multi-agent code review
+/workflows:compound          # Document learnings
 
 # Run tests
-npm run test                   # Unit tests
-npm run test:integration       # Integration tests (bot commands, database)
-npm run test:e2e               # Playwright browser tests
-npm run lint                   # Linting
+npm run test                 # Unit tests
+npm run test:integration     # Integration tests (bot commands, database)
+npm run test:e2e             # Playwright browser tests
+npm run lint                 # Linting
 
 # Create PR
 gh pr create --title "Title #42" --body "..."
