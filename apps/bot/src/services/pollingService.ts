@@ -293,6 +293,70 @@ async function processSet(
   return result;
 }
 
+// ============================================================================
+// Agent-Native Functions
+// These functions allow agents and automated systems to inspect and trigger polls
+// ============================================================================
+
+/**
+ * Get the current poll status for a tournament
+ * Useful for agents to check when a tournament was last polled and when the next poll is scheduled
+ */
+export interface PollStatus {
+  tournamentId: string;
+  lastPolledAt: Date | null;
+  nextPollAt: Date | null;
+  state: TournamentState;
+  pollIntervalMs: number | null;
+}
+
+export async function getPollStatus(tournamentId: string): Promise<PollStatus | null> {
+  const tournament = await prisma.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { id: true, lastPolledAt: true, state: true },
+  });
+
+  if (!tournament) return null;
+
+  const interval = calculatePollInterval(tournament.state);
+  const nextPollAt =
+    tournament.lastPolledAt && interval ? new Date(tournament.lastPolledAt.getTime() + interval) : null;
+
+  return {
+    tournamentId: tournament.id,
+    lastPolledAt: tournament.lastPolledAt,
+    nextPollAt,
+    state: tournament.state,
+    pollIntervalMs: interval,
+  };
+}
+
+/**
+ * Trigger an immediate poll for a tournament
+ * Useful for agents to force a refresh of tournament data without waiting for the next scheduled poll
+ */
+export async function triggerImmediatePoll(tournamentId: string): Promise<{ scheduled: boolean; message: string }> {
+  const tournament = await prisma.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { id: true, state: true },
+  });
+
+  if (!tournament) {
+    return { scheduled: false, message: 'Tournament not found' };
+  }
+
+  if (tournament.state === TournamentState.COMPLETED || tournament.state === TournamentState.CANCELLED) {
+    return { scheduled: false, message: 'Tournament is completed or cancelled' };
+  }
+
+  if (!queue) {
+    return { scheduled: false, message: 'Polling service not running' };
+  }
+
+  await schedulePoll(tournamentId, 0); // Schedule with no delay
+  return { scheduled: true, message: 'Poll scheduled for immediate execution' };
+}
+
 export async function stopPollingService(): Promise<void> {
   if (worker) {
     await worker.pause();

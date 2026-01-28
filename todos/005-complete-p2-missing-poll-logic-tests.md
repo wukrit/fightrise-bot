@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "005"
 tags: [code-review, testing]
@@ -114,6 +114,7 @@ Use the existing Testcontainers setup for real database tests.
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-28 | Created from code review | Kieran noted missing test coverage |
+| 2026-01-28 | Fixed: Added 16 new tests for getPollStatus, triggerImmediatePoll, state logic | Tests now cover 65 cases (up from 49) |
 
 ## Resources
 

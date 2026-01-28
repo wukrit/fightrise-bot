@@ -16,6 +16,11 @@ export function getRedisConnection(): Redis {
     throw new Error('REDIS_URL environment variable is required');
   }
 
+  // Warn if not using TLS in production (security best practice)
+  if (process.env.NODE_ENV === 'production' && !redisUrl.startsWith('rediss://')) {
+    console.warn('[Redis] WARNING: Production should use rediss:// (TLS) URLs for security');
+  }
+
   redis = new Redis(redisUrl, {
     maxRetriesPerRequest: null, // Required for BullMQ
     enableReadyCheck: false,

@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "006"
 tags: [code-review, architecture, agent-native]
@@ -108,6 +108,7 @@ Add REST endpoints in the web app for agent access.
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-28 | Created from code review | Agent-native reviewer scored 2/8 |
+| 2026-01-28 | Fixed: Added getPollStatus() and triggerImmediatePoll() exports | Agents can now query poll state and trigger immediate polls |
 
 ## Resources
 
