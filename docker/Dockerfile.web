@@ -18,8 +18,8 @@ COPY packages/database/prisma ./packages/database/prisma
 RUN npm run db:generate --workspace=@fightrise/database
 
 # Source code will be mounted as volume
-EXPOSE 3000
-ENV PORT=3000
+EXPOSE 4000
+ENV PORT=4000
 ENV HOSTNAME="0.0.0.0"
 
 CMD ["npm", "run", "dev", "--workspace=@fightrise/web"]

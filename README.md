@@ -56,12 +56,12 @@ See the [Discord Setup Guide](./docs/DISCORD_SETUP.md) and [Start.gg Setup Guide
 
 ### 3. Start Development Environment
 
-**Option A: Docker (Recommended)**
+**Option A: Full Docker Stack (Recommended)**
 
-Start all services with hot-reload:
+Start all services with hot-reload in a single command:
 
 ```bash
-docker compose -f docker/docker-compose.dev.yml up
+npm run docker:dev
 ```
 
 This starts:
@@ -70,50 +70,69 @@ This starts:
 - Discord bot with hot-reload
 - Web portal at `localhost:3000` with hot-reload
 
-**Option B: Infrastructure Only + Local Dev**
+**Option B: Docker with Cloudflare Tunnel (for OAuth testing)**
 
-Start just the database and Redis:
+For OAuth flows that require public URLs:
 
 ```bash
-docker compose -f docker/docker-compose.yml up -d postgres redis
+npm run docker:dev:tunnel
 ```
 
-Then run the apps locally:
+This adds a Cloudflare Tunnel to the stack. Requires prior setup - see [Cloudflare Tunnel Setup](#cloudflare-tunnel-for-oauth).
+
+**Option C: Docker with Admin Tools**
+
+Include pgAdmin and Redis Commander for database administration:
 
 ```bash
+npm run docker:dev:tools
+```
+
+Access:
+- pgAdmin at `http://localhost:5050` (admin@fightrise.local / admin)
+- Redis Commander at `http://localhost:8081`
+
+**Option D: Everything**
+
+Run all services including tunnel and admin tools:
+
+```bash
+npm run docker:dev:all
+```
+
+**Option E: Infrastructure Only + Local Dev**
+
+Start just the database and Redis, run apps locally for faster iteration:
+
+```bash
+# Start infrastructure
+npm run docker:infra
+
 # Terminal 1: Run the bot
-npm run dev --filter=@fightrise/bot
+npm run dev -- --filter=@fightrise/bot
 
 # Terminal 2: Run the web portal
-npm run dev --filter=@fightrise/web
+npm run dev -- --filter=@fightrise/web
 ```
 
-**Option C: With Cloudflare Tunnel (for OAuth testing)**
-
-OAuth providers require publicly accessible redirect URLs. Use Cloudflare Tunnel to expose your local dev server:
+**Stopping Services**
 
 ```bash
-# Terminal 1: Start the tunnel (exposes localhost:3000)
-npm run tunnel
-
-# Terminal 2: Start infrastructure
-docker compose -f docker/docker-compose.yml up -d postgres redis
-
-# Terminal 3: Run the web portal
-npm run dev --filter=@fightrise/web
+npm run docker:down
 ```
-
-Your app will be accessible at your configured tunnel hostname (e.g., `https://fightrise-dev.yourdomain.com`)
-
-See [Cloudflare Tunnel Setup](#cloudflare-tunnel-for-oauth) for initial configuration.
 
 ### 4. Database Setup
 
 Generate the Prisma client and push the schema:
 
 ```bash
+# If running locally
 npm run db:generate
 npm run db:push
+
+# If using Docker
+npm run docker:db:generate
+npm run docker:db:push
 ```
 
 ### 5. Deploy Discord Commands
@@ -121,7 +140,11 @@ npm run db:push
 Register slash commands with Discord:
 
 ```bash
-npm run deploy --filter=@fightrise/bot
+# If running locally
+npm run deploy -- --filter=@fightrise/bot
+
+# If using Docker
+npm run docker:deploy
 ```
 
 ## Development
@@ -129,12 +152,25 @@ npm run deploy --filter=@fightrise/bot
 ### Commands
 
 ```bash
-# Run all apps in dev mode
-npm run dev
+# Docker development (recommended)
+npm run docker:dev          # Full stack with hot-reload
+npm run docker:dev:tunnel   # With Cloudflare Tunnel for OAuth
+npm run docker:dev:tools    # With pgAdmin and Redis Commander
+npm run docker:dev:all      # Everything
+npm run docker:down         # Stop all services
 
-# Run specific app
-npm run dev --filter=@fightrise/bot
-npm run dev --filter=@fightrise/web
+# Run commands in Docker containers
+npm run docker:db:generate  # Generate Prisma client
+npm run docker:db:push      # Push schema to database
+npm run docker:db:migrate   # Run migrations
+npm run docker:deploy       # Deploy Discord commands
+npm run docker:exec:web -- <cmd>  # Run any command in web container
+npm run docker:exec:bot -- <cmd>  # Run any command in bot container
+
+# Local development (without Docker for apps)
+npm run docker:infra        # Start just Postgres and Redis
+npm run dev -- --filter=@fightrise/bot   # Run bot locally
+npm run dev -- --filter=@fightrise/web   # Run web locally
 
 # Build all packages
 npm run build
@@ -147,7 +183,7 @@ npm run test:e2e           # Playwright browser tests
 # Run linting
 npm run lint
 
-# Database operations
+# Database operations (local)
 npm run db:generate    # Generate Prisma client
 npm run db:push        # Push schema to database (dev)
 npm run db:migrate     # Run migrations (production)

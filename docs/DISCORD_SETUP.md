@@ -339,7 +339,7 @@ For production deployments, use a dedicated secrets manager instead of `.env` fi
 ### Bot Not Responding to Commands
 
 1. **Check the bot is online** - Look for green status indicator
-2. **Verify commands are deployed** - Run `npm run deploy --filter=@fightrise/bot`
+2. **Verify commands are deployed** - Run `npm run deploy -- --filter=@fightrise/bot`
 3. **Check bot has permissions** - Ensure bot role has required permissions in the channel
 4. **Check intents are enabled** - Verify privileged intents in Developer Portal
 
@@ -373,7 +373,7 @@ Now that Discord is configured:
 - [ ] Complete [Start.gg Setup](./STARTGG_SETUP.md) if you haven't already
 - [ ] Run `npm install` at the repository root
 - [ ] Copy `.env.example` to `.env` and add your credentials
-- [ ] Run `npm run dev --filter=@fightrise/bot` to start the bot
+- [ ] Run `npm run dev -- --filter=@fightrise/bot` to start the bot
 - [ ] Invite the bot to your test server using the generated URL
 - [ ] Test with `/tournament setup` command
 

@@ -1,14 +1,30 @@
 # Development Docker Compose configuration
 # Usage: docker compose -f docker/docker-compose.dev.yml up
 #
-# This extends the base configuration with:
-# - Development Dockerfile stages (hot-reload enabled)
-# - Source code volume mounts for live editing
-# - Anonymous volumes to preserve container node_modules
+# This provides a complete local development environment with:
+# - PostgreSQL database
+# - Redis for job queues
+# - Discord bot with hot-reload
+# - Next.js web app with hot-reload
+# - Cloudflare Tunnel for OAuth development (optional)
+#
+# Prerequisites:
+# - Copy .env.example to .env and configure credentials
+# - For tunnel: run `cloudflared tunnel login` and create tunnel first
+#   See docs/TUNNEL_SETUP.md for details
+#
+# Profiles:
+# - Default (no profile): postgres, redis, bot, web
+# - With tunnel: docker compose -f docker/docker-compose.dev.yml --profile tunnel up
 
 services:
+  # ===================
+  # Infrastructure
+  # ===================
+
   postgres:
     image: postgres:15-alpine
+    container_name: fightrise-postgres
     environment:
       POSTGRES_USER: fightrise
       POSTGRES_PASSWORD: ${DB_PASSWORD:-devpassword}
@@ -25,6 +41,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    container_name: fightrise-redis
     ports:
       - "6379:6379"
     volumes:
@@ -35,11 +52,16 @@ services:
       timeout: 5s
       retries: 5
 
+  # ===================
+  # Applications
+  # ===================
+
   bot:
     build:
       context: ..
       dockerfile: docker/Dockerfile.bot
       target: dev
+    container_name: fightrise-bot
     environment:
       DATABASE_URL: postgresql://fightrise:${DB_PASSWORD:-devpassword}@postgres:5432/fightrise
       REDIS_URL: redis://redis:6379
@@ -72,19 +94,22 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.web
       target: dev
+    container_name: fightrise-web
     environment:
       DATABASE_URL: postgresql://fightrise:${DB_PASSWORD:-devpassword}@postgres:5432/fightrise
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:4000}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-dev-secret-change-in-production}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
       DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      PORT: 4000
     ports:
-      - "3000:3000"
+      - "4000:4000"
     volumes:
       # Mount source code for hot-reload
       - ../apps/web/src:/app/apps/web/src:ro
       - ../apps/web/app:/app/apps/web/app:ro
       - ../apps/web/public:/app/apps/web/public:ro
+      - ../apps/web/components:/app/apps/web/components:ro
       - ../packages/shared/src:/app/packages/shared/src:ro
       - ../packages/ui/src:/app/packages/ui/src:ro
       - ../packages/database/src:/app/packages/database/src:ro
@@ -96,12 +121,71 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
 
+  # ===================
+  # Development Tools
+  # ===================
+
+  # Cloudflare Tunnel for OAuth development
+  # Requires prior setup:
+  #   1. cloudflared tunnel login
+  #   2. cloudflared tunnel create fightrise-dev
+  #   3. cp docker/cloudflared-config.yml.example docker/cloudflared-config.yml
+  #   4. Edit docker/cloudflared-config.yml with your tunnel UUID and domain
+  # See docs/TUNNEL_SETUP.md for details
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: fightrise-tunnel
+    profiles:
+      - tunnel
+    command: tunnel --config /etc/cloudflared/config.yml run
+    volumes:
+      # Mount tunnel credentials from home directory
+      - ${HOME}/.cloudflared:/home/nonroot/.cloudflared:ro
+      # Mount docker-specific config from project
+      - ./cloudflared-config.yml:/etc/cloudflared/config.yml:ro
+    depends_on:
+      - web
+    restart: unless-stopped
+
+  # Database admin UI (optional)
+  # Access at http://localhost:5050
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: fightrise-pgadmin
+    profiles:
+      - tools
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@fightrise.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+
+  # Redis admin UI (optional)
+  # Access at http://localhost:8081
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: fightrise-redis-commander
+    profiles:
+      - tools
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+
 volumes:
   postgres_data:
   redis_data:
+  pgadmin_data:

@@ -1,0 +1,18 @@
+# Cloudflare Tunnel configuration for Docker development
+# Copy this to ~/.cloudflared/config-docker.yml and update with your values
+#
+# Prerequisites:
+# 1. Run: cloudflared tunnel login
+# 2. Run: cloudflared tunnel create fightrise-dev
+# 3. Copy this file: cp docker/cloudflared-config.yml.example ~/.cloudflared/config-docker.yml
+# 4. Update the values below with your tunnel UUID and domain
+
+tunnel: <TUNNEL-UUID>
+credentials-file: /home/nonroot/.cloudflared/<TUNNEL-UUID>.json
+
+ingress:
+  # Route to Next.js web app (Docker service name)
+  - hostname: fightrise-dev.yourdomain.com
+    service: http://web:4000
+  # Catch-all (required)
+  - service: http_status:404

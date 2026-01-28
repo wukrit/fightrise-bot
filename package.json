@@ -22,7 +22,21 @@
     "db:push": "turbo db:push",
     "db:migrate": "turbo db:migrate",
     "tunnel": "cloudflared tunnel run fightrise-dev",
-    "clean": "turbo clean && rm -rf node_modules"
+    "clean": "turbo clean && rm -rf node_modules",
+    "docker:dev": "docker compose --env-file .env -f docker/docker-compose.dev.yml up",
+    "docker:dev:build": "docker compose --env-file .env -f docker/docker-compose.dev.yml up --build",
+    "docker:dev:tunnel": "docker compose --env-file .env -f docker/docker-compose.dev.yml --profile tunnel up",
+    "docker:dev:tools": "docker compose --env-file .env -f docker/docker-compose.dev.yml --profile tools up",
+    "docker:dev:all": "docker compose --env-file .env -f docker/docker-compose.dev.yml --profile tunnel --profile tools up",
+    "docker:down": "docker compose --env-file .env -f docker/docker-compose.dev.yml --profile tunnel --profile tools down",
+    "docker:infra": "docker compose --env-file .env -f docker/docker-compose.dev.yml up -d postgres redis",
+    "docker:exec:web": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec web",
+    "docker:exec:bot": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec bot",
+    "docker:run": "docker compose --env-file .env -f docker/docker-compose.dev.yml run --rm web",
+    "docker:db:generate": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec web npm run db:generate",
+    "docker:db:push": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec web npm run db:push",
+    "docker:db:migrate": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec web npm run db:migrate",
+    "docker:deploy": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec bot npm run deploy"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",

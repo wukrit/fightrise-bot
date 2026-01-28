@@ -179,6 +179,43 @@ STARTGG_REDIRECT_URI="https://fightrise-dev.yourdomain.com/api/auth/callback/sta
 
 ## Development Workflow
 
+### Option A: Full Docker Stack with Tunnel (Recommended)
+
+Run everything in Docker with a single command:
+
+```bash
+npm run docker:dev:tunnel
+```
+
+This starts PostgreSQL, Redis, bot, web, and the Cloudflare Tunnel together.
+
+**Prerequisites for Docker tunnel:**
+1. Complete the tunnel setup above (steps 1-5)
+2. Create Docker-specific config:
+   ```bash
+   cp docker/cloudflared-config.yml.example docker/cloudflared-config.yml
+   ```
+3. Edit `docker/cloudflared-config.yml` with your tunnel UUID and domain
+4. Important: Change `service: http://localhost:3000` to `service: http://web:3000` (Docker networking)
+
+### Option B: Local Tunnel + Docker Infrastructure
+
+If you prefer running the tunnel locally:
+
+**Terminal 1:** Start the tunnel
+```bash
+npm run tunnel
+```
+
+**Terminal 2:** Start infrastructure and apps
+```bash
+npm run docker:dev
+```
+
+### Option C: Local Tunnel + Local Apps
+
+For maximum control:
+
 **Terminal 1:** Start the tunnel
 ```bash
 npm run tunnel
@@ -186,13 +223,15 @@ npm run tunnel
 
 **Terminal 2:** Start infrastructure
 ```bash
-docker compose -f docker/docker-compose.yml up -d postgres redis
+npm run docker:infra
 ```
 
 **Terminal 3:** Start the web app
 ```bash
-npm run dev --filter=@fightrise/web
+npm run dev -- --filter=@fightrise/web
 ```
+
+---
 
 Now visit `https://fightrise-dev.yourdomain.com` and OAuth flows will work.
 

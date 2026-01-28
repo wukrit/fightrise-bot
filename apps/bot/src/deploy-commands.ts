@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import { REST, Routes } from 'discord.js';
 import { loadCommands, getCommandsData } from './utils/commandLoader.js';
 
