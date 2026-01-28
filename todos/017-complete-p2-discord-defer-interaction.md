@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "017"
 tags: [code-review, performance, discord, bot, pr-55]
@@ -69,15 +69,16 @@ Option A - Defer all score-related interactions immediately.
 
 ## Acceptance Criteria
 
-- [ ] All three handlers (score, confirm, dispute) defer immediately
-- [ ] Use `editReply` instead of `reply` for the response
-- [ ] No interaction timeouts under normal load
+- [x] All three handlers (score, confirm, dispute) defer immediately
+- [x] Use `editReply` instead of `reply` for the response
+- [x] No interaction timeouts under normal load
 
 ## Work Log
 
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-28 | Identified during PR #55 code review | Always defer before async work |
+| 2026-01-28 | Added deferReply/editReply to all handlers | Defer after CUID validation for fast reject |
 
 ## Resources
 

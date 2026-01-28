@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "016"
 tags: [code-review, security, validation, bot, pr-55]
@@ -63,14 +63,15 @@ Option A - Add CUID format validation to all three handlers.
 
 ## Acceptance Criteria
 
-- [ ] matchId is validated against CUID format before database lookup
-- [ ] Same validation applied to confirmHandler and disputeHandler
+- [x] matchId is validated against CUID format before database lookup
+- [x] Same validation applied to confirmHandler and disputeHandler
 
 ## Work Log
 
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-28 | Identified during PR #55 code review | Validate all user-controlled input format |
+| 2026-01-28 | Added CUID_REGEX validation to all three handlers | Simple regex catches malformed IDs early |
 
 ## Resources
 

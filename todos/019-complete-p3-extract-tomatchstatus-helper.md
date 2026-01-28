@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p3
 issue_id: "019"
 tags: [code-review, refactor, quality, bot, pr-55]
@@ -65,15 +65,16 @@ Option A - Extract helper function.
 
 ## Acceptance Criteria
 
-- [ ] Helper function created
-- [ ] All 6 inline constructions replaced
-- [ ] Tests still pass
+- [x] Helper function created
+- [x] All 6 inline constructions replaced (5 of 6 - checkInPlayer kept local helper due to special logic)
+- [x] Tests still pass
 
 ## Work Log
 
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-28 | Identified during PR #55 code review | DRY for maintainability |
+| 2026-01-28 | Created toMatchStatus with state/playerWinnerMap overrides | ~50 LOC reduction achieved |
 
 ## Resources
 
