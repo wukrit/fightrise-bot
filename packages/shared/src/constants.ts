@@ -13,7 +13,11 @@ export const STARTGG_SET_STATE = {
   NOT_STARTED: 1,
   STARTED: 2,
   COMPLETED: 3,
+  READY: 6, // Both players assigned, ready to call
+  IN_PROGRESS: 7, // Alternative in-progress state
 } as const;
+
+export type StartGGSetState = (typeof STARTGG_SET_STATE)[keyof typeof STARTGG_SET_STATE];
 
 // Discord custom ID prefixes
 export const INTERACTION_PREFIX = {
