@@ -171,6 +171,7 @@ model MatchPlayer {
 
   @@unique([matchId, startggEntrantId])
   @@index([userId])
+  @@index([matchId])
 }
 
 // Tournament registrations

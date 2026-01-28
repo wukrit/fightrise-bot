@@ -11,7 +11,7 @@ import {
   createInteractionId,
 } from '@fightrise/shared';
 import type { ButtonHandler } from './buttonHandlers.js';
-import { checkInPlayer, getMatchStatus } from '../services/matchService.js';
+import { checkInPlayer } from '../services/matchService.js';
 
 /**
  * Handler for check-in button interactions.
@@ -50,11 +50,9 @@ export const checkinHandler: ButtonHandler = {
       ephemeral: true,
     });
 
-    // Update the embed if check-in was successful
-    if (result.success) {
-      const match = await getMatchStatus(matchId);
-      if (!match) return;
-
+    // Update the embed if check-in was successful (matchStatus included in result)
+    if (result.success && result.matchStatus) {
+      const match = result.matchStatus;
       const [p1, p2] = match.players;
       if (!p1 || !p2) return;
 

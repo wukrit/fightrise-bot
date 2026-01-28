@@ -253,6 +253,8 @@ export interface CheckInResult {
   success: boolean;
   message: string;
   bothCheckedIn: boolean;
+  /** Match status included on successful check-in to avoid duplicate DB queries */
+  matchStatus?: MatchStatus;
 }
 
 /**
@@ -436,6 +438,24 @@ export async function checkInPlayer(
     };
   }
 
+  // Build match status from already-fetched data (avoids duplicate query)
+  const buildMatchStatus = (): MatchStatus => ({
+    id: match.id,
+    identifier: match.identifier,
+    roundText: match.roundText,
+    state: result.bothCheckedIn ? MatchState.CHECKED_IN : match.state,
+    discordThreadId: match.discordThreadId,
+    checkInDeadline: match.checkInDeadline,
+    players: match.players.map((p) => ({
+      id: p.id,
+      playerName: p.playerName,
+      // Update check-in status: the current player just checked in
+      isCheckedIn: p.id === player.id ? true : p.isCheckedIn,
+      checkedInAt: p.id === player.id ? new Date() : p.checkedInAt,
+      discordId: p.user?.discordId ?? null,
+    })),
+  });
+
   if (result.bothCheckedIn) {
     console.log(
       `[CheckIn] Match ready: ${match.identifier} - both players checked in`
@@ -444,6 +464,7 @@ export async function checkInPlayer(
       success: true,
       message: 'Checked in! Both players are ready - match can begin!',
       bothCheckedIn: true,
+      matchStatus: buildMatchStatus(),
     };
   }
 
@@ -454,6 +475,7 @@ export async function checkInPlayer(
     success: true,
     message: 'Checked in! Waiting for your opponent.',
     bothCheckedIn: false,
+    matchStatus: buildMatchStatus(),
   };
 }
 

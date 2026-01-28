@@ -5,7 +5,6 @@ import type { MatchStatus } from '../../services/matchService.js';
 // Mock the service before imports
 vi.mock('../../services/matchService.js', () => ({
   checkInPlayer: vi.fn(),
-  getMatchStatus: vi.fn(),
 }));
 
 // Mock the shared package
@@ -59,7 +58,7 @@ vi.mock('discord.js', () => {
   };
 });
 
-import { checkInPlayer, getMatchStatus } from '../../services/matchService.js';
+import { checkInPlayer } from '../../services/matchService.js';
 import { checkinHandler } from '../checkin.js';
 
 // Mock match status data
@@ -133,8 +132,8 @@ describe('checkinHandler', () => {
       success: true,
       message: 'Checked in! Waiting for your opponent.',
       bothCheckedIn: false,
+      matchStatus: mockMatchStatus,
     });
-    vi.mocked(getMatchStatus).mockResolvedValue(mockMatchStatus);
 
     await checkinHandler.execute(mockInteraction as never, ['match-123', '1']);
 
@@ -167,8 +166,8 @@ describe('checkinHandler', () => {
       success: true,
       message: 'Checked in! Waiting for your opponent.',
       bothCheckedIn: false,
+      matchStatus: mockMatchStatus,
     });
-    vi.mocked(getMatchStatus).mockResolvedValue(mockMatchStatus);
 
     await checkinHandler.execute(mockInteraction as never, ['match-123', '1']);
 
@@ -176,7 +175,6 @@ describe('checkinHandler', () => {
       content: 'Checked in! Waiting for your opponent.',
       ephemeral: true,
     });
-    expect(getMatchStatus).toHaveBeenCalledWith('match-123');
     expect(mockInteraction.message.edit).toHaveBeenCalled();
     // Should not send announcement on partial check-in
     expect(mockInteraction.channel!.send).not.toHaveBeenCalled();
@@ -196,8 +194,8 @@ describe('checkinHandler', () => {
       success: true,
       message: 'Checked in! Both players are ready - match can begin!',
       bothCheckedIn: true,
+      matchStatus: bothCheckedInStatus,
     });
-    vi.mocked(getMatchStatus).mockResolvedValue(bothCheckedInStatus);
 
     await checkinHandler.execute(mockInteraction as never, ['match-123', '1']);
 
@@ -226,8 +224,8 @@ describe('checkinHandler', () => {
       success: true,
       message: 'Checked in! Both players are ready - match can begin!',
       bothCheckedIn: true,
+      matchStatus: bothCheckedInStatus,
     });
-    vi.mocked(getMatchStatus).mockResolvedValue(bothCheckedInStatus);
 
     // Set channel.isThread to return false
     mockInteraction.channel!.isThread.mockReturnValue(false);
@@ -275,8 +273,8 @@ describe('checkinHandler', () => {
       success: true,
       message: 'Checked in! Waiting for your opponent.',
       bothCheckedIn: false,
+      matchStatus: mockMatchStatus,
     });
-    vi.mocked(getMatchStatus).mockResolvedValue(mockMatchStatus);
 
     await checkinHandler.execute(mockInteraction as never, ['match-123', '2']);
 
@@ -297,8 +295,8 @@ describe('checkinHandler', () => {
       success: true,
       message: 'Checked in! Both players are ready - match can begin!',
       bothCheckedIn: true,
+      matchStatus: bothCheckedInStatus,
     });
-    vi.mocked(getMatchStatus).mockResolvedValue(bothCheckedInStatus);
 
     // Set channel to null
     mockInteraction.channel = null;
@@ -310,18 +308,18 @@ describe('checkinHandler', () => {
     // No error should be thrown
   });
 
-  it('should return early if getMatchStatus returns null', async () => {
+  it('should not update embed if matchStatus is undefined', async () => {
     vi.mocked(checkInPlayer).mockResolvedValue({
       success: true,
       message: 'Checked in!',
       bothCheckedIn: false,
+      // matchStatus not included
     });
-    vi.mocked(getMatchStatus).mockResolvedValue(null);
 
     await checkinHandler.execute(mockInteraction as never, ['match-123', '1']);
 
     expect(mockInteraction.reply).toHaveBeenCalled();
-    // Should not attempt to edit if match status is null
+    // Should not attempt to edit if matchStatus is undefined
     expect(mockInteraction.message.edit).not.toHaveBeenCalled();
   });
 });
