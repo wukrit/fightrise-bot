@@ -12,7 +12,7 @@
 
 import { PrismaClient, Prisma } from '@prisma/client';
 import {
-  decrypt,
+  decryptWithRotation,
   isEncrypted,
   validateEncryptionKey,
 } from '@fightrise/shared';
@@ -26,7 +26,15 @@ interface RollbackResult {
 
 async function rollbackTokens(dryRun: boolean): Promise<RollbackResult> {
   const encryptionKey = process.env.ENCRYPTION_KEY;
+  const previousKey = process.env.ENCRYPTION_KEY_PREVIOUS;
+
   validateEncryptionKey(encryptionKey);
+
+  // P1 FIX: Support key rotation - if tokens were encrypted with a previous key,
+  // we need to be able to decrypt them during rollback
+  if (previousKey) {
+    console.log('ℹ️  ENCRYPTION_KEY_PREVIOUS detected - will try both keys for decryption');
+  }
 
   const totalCount = await prisma.user.count({
     where: { startggToken: { startsWith: 'encrypted:' } },
@@ -56,11 +64,15 @@ async function rollbackTokens(dryRun: boolean): Promise<RollbackResult> {
     if (users.length === 0) break;
 
     if (!dryRun) {
-      // Decrypt each token and prepare updates
+      // P1 FIX: Use decryptWithRotation to handle tokens encrypted with previous key
       const updates = users
         .filter((u) => u.startggToken && isEncrypted(u.startggToken))
         .map((user) => {
-          const plaintext = decrypt(user.startggToken!, encryptionKey);
+          const plaintext = decryptWithRotation(
+            user.startggToken!,
+            encryptionKey,
+            previousKey
+          );
           return prisma.user.update({
             where: { id: user.id },
             data: { startggToken: plaintext },

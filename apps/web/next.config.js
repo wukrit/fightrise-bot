@@ -21,6 +21,10 @@ const cspHeader = `
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // P1 FIX: Enable instrumentation for startup validation
+  experimental: {
+    instrumentationHook: true,
+  },
   transpilePackages: ['@fightrise/ui', '@fightrise/shared'],
   images: {
     remotePatterns: [

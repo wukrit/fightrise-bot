@@ -3,7 +3,37 @@ import { createEncryptionExtension } from './extensions/encryption.js';
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
+  prismaInitialized: boolean | undefined;
 };
+
+/**
+ * Validates encryption key in production
+ * Throws if missing/invalid in production, returns false in dev
+ */
+function validateProductionEncryption(): boolean {
+  const encryptionKey = process.env.ENCRYPTION_KEY;
+
+  if (!encryptionKey && process.env.NODE_ENV === 'production') {
+    // P1 FIX: Fail-closed instead of fail-open in production
+    // Only throw at runtime, not during build (Next.js builds with NODE_ENV=production)
+    // Check for build-time indicators
+    const isBuildTime =
+      process.env.NEXT_PHASE === 'phase-production-build' ||
+      process.env.BUILDING === 'true' ||
+      process.argv.some((arg) => arg.includes('next') && arg.includes('build'));
+
+    if (!isBuildTime) {
+      throw new Error(
+        '[Database] ENCRYPTION_KEY is required in production. ' +
+          'OAuth tokens cannot be stored without encryption. ' +
+          'Generate a key with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'base64\'))"'
+      );
+    }
+    return false;
+  }
+
+  return !!encryptionKey;
+}
 
 /**
  * Create a PrismaClient, optionally with field-level encryption for OAuth tokens
@@ -20,12 +50,14 @@ function createPrismaClient(): PrismaClient {
   const encryptionKey = process.env.ENCRYPTION_KEY;
   const previousKey = process.env.ENCRYPTION_KEY_PREVIOUS;
 
-  // If no encryption key, return base client (for migrations, testing, etc.)
-  if (!encryptionKey) {
-    if (process.env.NODE_ENV === 'production') {
-      console.warn(
-        '[Database] WARNING: ENCRYPTION_KEY not set - OAuth tokens will NOT be encrypted'
-      );
+  // Check if encryption should be enabled
+  const shouldEncrypt = validateProductionEncryption();
+
+  if (!shouldEncrypt || !encryptionKey) {
+    if (process.env.NODE_ENV === 'development') {
+      // Silent in development - encryption is optional
+    } else if (process.env.NODE_ENV !== 'production') {
+      // Test environment - also optional
     }
     return basePrisma;
   }

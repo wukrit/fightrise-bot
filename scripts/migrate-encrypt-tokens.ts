@@ -7,14 +7,17 @@
  * - Multiple smaller transactions instead of one large transaction
  * - Fail-fast on any error (no silent continuation)
  * - Progress with ETA
+ * - Backup verification prompt before running
  *
  * Usage:
- *   npx tsx scripts/migrate-encrypt-tokens.ts --dry-run  # Preview changes
- *   npx tsx scripts/migrate-encrypt-tokens.ts            # Run migration
- *   npx tsx scripts/migrate-encrypt-tokens.ts --force    # Re-run even if some encrypted
+ *   npx tsx scripts/migrate-encrypt-tokens.ts --dry-run         # Preview changes
+ *   npx tsx scripts/migrate-encrypt-tokens.ts                   # Run migration (prompts for backup)
+ *   npx tsx scripts/migrate-encrypt-tokens.ts --force           # Re-run even if some encrypted
+ *   npx tsx scripts/migrate-encrypt-tokens.ts --skip-backup-check  # Skip backup prompt (for CI)
  */
 
 import { PrismaClient, Prisma } from '@prisma/client';
+import * as readline from 'readline';
 import {
   encrypt,
   isEncrypted,
@@ -131,13 +134,53 @@ async function migrateTokens(dryRun: boolean): Promise<MigrationResult> {
   return { migrated, skipped: alreadyEncryptedCount };
 }
 
+// P1 FIX: Prompt for backup confirmation before running migration
+async function confirmBackup(): Promise<boolean> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  console.log('\n⚠️  IMPORTANT: Database Backup Required');
+  console.log('━'.repeat(50));
+  console.log('Before encrypting tokens, ensure you have a database backup.');
+  console.log('If this migration fails mid-way, you will need the backup to recover.\n');
+  console.log('Create a backup with:');
+  console.log('  pg_dump "$DATABASE_URL" > backup-before-encryption-$(date +%Y%m%d).sql\n');
+
+  return new Promise((resolve) => {
+    rl.question('Have you created a database backup? (yes/no): ', (answer) => {
+      rl.close();
+      resolve(answer.toLowerCase() === 'yes' || answer.toLowerCase() === 'y');
+    });
+  });
+}
+
 // Parse arguments
 const dryRun = process.argv.includes('--dry-run');
+const skipBackupCheck = process.argv.includes('--skip-backup-check');
+const force = process.argv.includes('--force');
+
 console.log(
   dryRun ? '🔍 DRY RUN MODE - No changes will be made\n' : '🔒 ENCRYPTING TOKENS\n'
 );
 
-migrateTokens(dryRun)
+// P1 FIX: Require backup confirmation unless dry-run or explicitly skipped
+async function main() {
+  if (!dryRun && !skipBackupCheck) {
+    const hasBackup = await confirmBackup();
+    if (!hasBackup) {
+      console.log('\n❌ Migration aborted. Please create a backup first.');
+      console.log('Use --skip-backup-check to bypass this prompt (for CI/CD pipelines).\n');
+      process.exit(1);
+    }
+    console.log('\n✅ Backup confirmed. Proceeding with migration...\n');
+  }
+
+  return migrateTokens(dryRun);
+}
+
+main()
   .then((result) => {
     if (result.migrated === 0 && result.skipped === 0) {
       process.exit(0);
