@@ -56,3 +56,15 @@ export {
   fromUnixSeconds,
 } from './datetime.js';
 export type { WindowStatus } from './datetime.js';
+
+// Crypto utilities for token encryption
+export {
+  encrypt,
+  decrypt,
+  isEncrypted,
+  generateKey,
+  validateEncryptionKey,
+  decryptWithRotation,
+  decryptSafe,
+} from './crypto.js';
+export type { DecryptResult } from './crypto.js';
