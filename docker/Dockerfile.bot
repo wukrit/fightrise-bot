@@ -1,5 +1,8 @@
 FROM node:20-alpine AS base
 
+# Install OpenSSL for Prisma to detect the correct version
+RUN apk add --no-cache openssl
+
 # Development stage for hot-reload
 FROM base AS dev
 WORKDIR /app
@@ -17,8 +20,8 @@ RUN npm ci
 COPY packages/database/prisma ./packages/database/prisma
 RUN npm run db:generate --workspace=@fightrise/database
 
-# Copy root tsconfig (extended by all packages)
-COPY tsconfig.json ./
+# Copy root config files (extended by all packages)
+COPY tsconfig.json turbo.json ./
 
 # Copy and build internal packages (required for imports to work)
 COPY packages/shared/src ./packages/shared/src

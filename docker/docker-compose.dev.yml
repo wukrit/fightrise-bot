@@ -110,6 +110,7 @@ services:
       - ../apps/web/app:/app/apps/web/app:ro
       - ../apps/web/public:/app/apps/web/public:ro
       - ../apps/web/components:/app/apps/web/components:ro
+      - ../apps/web/lib:/app/apps/web/lib:ro
       - ../packages/shared/src:/app/packages/shared/src:ro
       - ../packages/ui/src:/app/packages/ui/src:ro
       - ../packages/database/src:/app/packages/database/src:ro

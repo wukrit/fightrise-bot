@@ -8,11 +8,36 @@ import DiscordProvider from 'next-auth/providers/discord';
 // 3. Using both adapter and signIn callback for user management causes conflicts
 //    (duplicate user creation with unique constraint violations)
 
+// Determine if we're behind HTTPS (tunnel/production)
+const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith('https://') ?? false;
+
 export const authOptions: NextAuthOptions = {
   // No adapter - we manage users directly in signIn callback
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  // Cookie configuration for running behind reverse proxy (Cloudflare Tunnel)
+  useSecureCookies,
+  cookies: {
+    pkceCodeVerifier: {
+      name: 'next-auth.pkce.code_verifier',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: useSecureCookies,
+      },
+    },
+    state: {
+      name: 'next-auth.state',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: useSecureCookies,
+      },
+    },
   },
   providers: [
     DiscordProvider({
