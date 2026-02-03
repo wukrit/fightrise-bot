@@ -1,5 +1,14 @@
-// Prisma Client Extension for transparent field-level encryption
-// Encrypts OAuth tokens on write, decrypts on read
+/**
+ * Prisma Client Extension for transparent field-level encryption
+ * Encrypts OAuth tokens on write, decrypts on read
+ *
+ * LIMITATIONS (P2 documented):
+ * - updateMany: Throws error if startggToken is in data (use individual updates)
+ * - Nested includes: Tokens in included relations (e.g., match.players.user) may
+ *   not be decrypted. Always fetch users directly when token is needed.
+ * - Key rotation: Old-key tokens are decrypted but not auto-re-encrypted.
+ *   Run migration script after rotation to re-encrypt all tokens with new key.
+ */
 
 import { Prisma } from '@prisma/client';
 import {
@@ -65,13 +74,17 @@ export function createEncryptionExtension(
     query: {
       user: {
         async create({ args, query }) {
-          if (args.data.startggToken) {
-            args.data.startggToken = encrypt(
-              args.data.startggToken,
-              encryptionKey
-            );
-          }
-          const result = await query(args);
+          // P2 FIX: Clone args to avoid mutating input
+          const modifiedArgs = args.data.startggToken
+            ? {
+                ...args,
+                data: {
+                  ...args.data,
+                  startggToken: encrypt(args.data.startggToken, encryptionKey),
+                },
+              }
+            : args;
+          const result = await query(modifiedArgs);
           if (result && shouldDecryptToken(args)) {
             return decryptUserToken(result, encryptionKey, previousKey);
           }
@@ -79,13 +92,22 @@ export function createEncryptionExtension(
         },
 
         async update({ args, query }) {
-          if (args.data.startggToken && typeof args.data.startggToken === 'string') {
-            args.data.startggToken = encrypt(
-              args.data.startggToken,
-              encryptionKey
-            );
-          }
-          const result = await query(args);
+          // P2 FIX: Clone args to avoid mutating input
+          const shouldEncrypt =
+            args.data.startggToken && typeof args.data.startggToken === 'string';
+          const modifiedArgs = shouldEncrypt
+            ? {
+                ...args,
+                data: {
+                  ...args.data,
+                  startggToken: encrypt(
+                    args.data.startggToken as string,
+                    encryptionKey
+                  ),
+                },
+              }
+            : args;
+          const result = await query(modifiedArgs);
           if (result && shouldDecryptToken(args)) {
             return decryptUserToken(result, encryptionKey, previousKey);
           }
@@ -93,22 +115,38 @@ export function createEncryptionExtension(
         },
 
         async upsert({ args, query }) {
-          if (args.create.startggToken) {
-            args.create.startggToken = encrypt(
-              args.create.startggToken,
-              encryptionKey
-            );
-          }
-          if (
+          // P2 FIX: Clone args to avoid mutating input
+          const encryptCreate = args.create.startggToken;
+          const encryptUpdate =
             args.update.startggToken &&
-            typeof args.update.startggToken === 'string'
-          ) {
-            args.update.startggToken = encrypt(
-              args.update.startggToken,
-              encryptionKey
-            );
-          }
-          const result = await query(args);
+            typeof args.update.startggToken === 'string';
+
+          const modifiedArgs =
+            encryptCreate || encryptUpdate
+              ? {
+                  ...args,
+                  create: encryptCreate
+                    ? {
+                        ...args.create,
+                        startggToken: encrypt(
+                          args.create.startggToken!,
+                          encryptionKey
+                        ),
+                      }
+                    : args.create,
+                  update: encryptUpdate
+                    ? {
+                        ...args.update,
+                        startggToken: encrypt(
+                          args.update.startggToken as string,
+                          encryptionKey
+                        ),
+                      }
+                    : args.update,
+                }
+              : args;
+
+          const result = await query(modifiedArgs);
           if (result && shouldDecryptToken(args)) {
             return decryptUserToken(result, encryptionKey, previousKey);
           }
@@ -158,32 +196,46 @@ export function createEncryptionExtension(
         },
 
         async updateMany({ args, query }) {
-          // Note: updateMany doesn't support field-level encryption
-          // because we can't identify individual tokens. Log warning.
+          // P2 FIX: Throw instead of warn to prevent accidental plaintext storage
+          // updateMany can't encrypt individual tokens - must use individual updates
           if (args.data?.startggToken) {
-            console.warn(
-              '[Encryption] updateMany with startggToken not supported - use individual updates'
+            throw new Error(
+              '[Encryption] updateMany with startggToken is not supported. ' +
+                'Use individual update() calls to ensure proper encryption.'
             );
           }
           return query(args);
         },
 
         async createMany({ args, query }) {
+          // P2 FIX: Clone args to avoid mutating input
           // Encrypt all tokens in batch create
+          let modifiedArgs = args;
+
           if (Array.isArray(args.data)) {
-            args.data = args.data.map((item) => ({
-              ...item,
-              startggToken: item.startggToken
-                ? encrypt(item.startggToken, encryptionKey)
-                : item.startggToken,
-            }));
+            const hasTokens = args.data.some((item) => item.startggToken);
+            if (hasTokens) {
+              modifiedArgs = {
+                ...args,
+                data: args.data.map((item) => ({
+                  ...item,
+                  startggToken: item.startggToken
+                    ? encrypt(item.startggToken, encryptionKey)
+                    : item.startggToken,
+                })),
+              };
+            }
           } else if (args.data.startggToken) {
-            args.data.startggToken = encrypt(
-              args.data.startggToken,
-              encryptionKey
-            );
+            modifiedArgs = {
+              ...args,
+              data: {
+                ...args.data,
+                startggToken: encrypt(args.data.startggToken, encryptionKey),
+              },
+            };
           }
-          return query(args);
+
+          return query(modifiedArgs);
         },
 
         async delete({ args, query }) {

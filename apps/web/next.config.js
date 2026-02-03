@@ -1,7 +1,10 @@
 const isDev = process.env.NODE_ENV === 'development';
 
 // Content Security Policy
-// Note: 'unsafe-inline' required for Next.js. Consider nonce-based CSP in future.
+// P2 LIMITATION: 'unsafe-inline' is required for Next.js styled-jsx and inline styles.
+// This weakens XSS protection but is necessary for Next.js functionality.
+// Future improvement: Implement nonce-based CSP using Next.js middleware.
+// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security-policy
 // Note: 'unsafe-eval' only in development for hot reload.
 const cspHeader = `
   default-src 'self';

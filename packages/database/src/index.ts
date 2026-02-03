@@ -62,8 +62,13 @@ function createPrismaClient(): PrismaClient {
     return basePrisma;
   }
 
-  // Extend with encryption - cast back to PrismaClient for type compatibility
-  // The extension only modifies User model queries, all other functionality is preserved
+  // Extend with encryption
+  // P2 NOTE: We cast to PrismaClient for type compatibility because:
+  // 1. Prisma's extended client type is different from PrismaClient
+  // 2. All existing code imports and expects PrismaClient type
+  // 3. The extension only modifies User.startggToken behavior, not the API surface
+  // 4. TypeScript's structural typing means the cast is safe for our use case
+  // The alternative (exporting the extended type) would require updating all consumers
   return basePrisma.$extends(
     createEncryptionExtension(encryptionKey, previousKey)
   ) as unknown as PrismaClient;

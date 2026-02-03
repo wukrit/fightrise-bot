@@ -2,18 +2,26 @@
 /**
  * Migration script to encrypt existing plain-text OAuth tokens
  *
- * P1 FIXES APPLIED:
- * - Removed cursor pagination (records leave result set after encryption)
- * - Multiple smaller transactions instead of one large transaction
- * - Fail-fast on any error (no silent continuation)
- * - Progress with ETA
- * - Backup verification prompt before running
+ * IMPORTANT - MAINTENANCE WINDOW RECOMMENDED (P2):
+ * Run this script during a maintenance window with the application scaled down.
+ * This prevents race conditions if users update their tokens during migration.
+ * The script is idempotent and can be safely re-run if interrupted.
+ *
+ * KEY ROTATION PROCEDURE (P2):
+ * After rotating encryption keys, run this script again to re-encrypt all tokens
+ * with the new key. Set both ENCRYPTION_KEY (new) and ENCRYPTION_KEY_PREVIOUS (old).
+ * The migration will decrypt with either key and encrypt with the new key.
  *
  * Usage:
  *   npx tsx scripts/migrate-encrypt-tokens.ts --dry-run         # Preview changes
  *   npx tsx scripts/migrate-encrypt-tokens.ts                   # Run migration (prompts for backup)
  *   npx tsx scripts/migrate-encrypt-tokens.ts --force           # Re-run even if some encrypted
  *   npx tsx scripts/migrate-encrypt-tokens.ts --skip-backup-check  # Skip backup prompt (for CI)
+ *
+ * Environment:
+ *   ENCRYPTION_KEY          - Current encryption key (required)
+ *   ENCRYPTION_KEY_PREVIOUS - Previous key for rotation (optional)
+ *   DATABASE_URL            - PostgreSQL connection string
  */
 
 import { PrismaClient, Prisma } from '@prisma/client';
