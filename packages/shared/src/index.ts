@@ -66,5 +66,7 @@ export {
   validateEncryptionKey,
   decryptWithRotation,
   decryptSafe,
+  verifyKey,
+  logEncryptionEvent,
 } from './crypto.js';
 export type { DecryptResult } from './crypto.js';

@@ -163,7 +163,21 @@ export type DecryptResult =
 
 /**
  * Safe decrypt that returns a result type instead of throwing
- * Useful when you need to handle different failure modes explicitly
+ *
+ * P3 DOCUMENTED USE CASES:
+ * - Batch validation of encrypted tokens (check which are corrupted/invalid)
+ * - Graceful degradation when token might be invalid
+ * - Migration scripts that need to handle mixed encryption states
+ * - Agent-native status checks without exception handling overhead
+ *
+ * @example
+ * const result = decryptSafe(token, key);
+ * if (result.success) {
+ *   console.log('Token:', result.plaintext);
+ * } else {
+ *   console.log('Failed:', result.error);
+ *   // Handle INVALID_FORMAT, WRONG_KEY, or CORRUPTED differently
+ * }
  */
 export function decryptSafe(
   encrypted: string,
@@ -185,5 +199,55 @@ export function decryptSafe(
       return { success: false, error: 'WRONG_KEY' };
     }
     return { success: false, error: 'CORRUPTED' };
+  }
+}
+
+/**
+ * Verify that an encryption key is valid (correct format and length)
+ * P3 FIX: Agent-native API for key verification without throwing
+ *
+ * @param key - The key to verify
+ * @returns Object with valid flag and optional error message
+ */
+export function verifyKey(key: string | undefined): {
+  valid: boolean;
+  error?: string;
+} {
+  if (!key) {
+    return { valid: false, error: 'Key is missing or empty' };
+  }
+
+  // Check for valid base64 format (Buffer.from doesn't throw for invalid base64)
+  const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+  if (!base64Regex.test(key)) {
+    return { valid: false, error: 'Key is not valid base64' };
+  }
+
+  const decoded = Buffer.from(key, 'base64');
+  if (decoded.length !== KEY_LENGTH) {
+    return {
+      valid: false,
+      error: `Key must be ${KEY_LENGTH} bytes, got ${decoded.length}`,
+    };
+  }
+  return { valid: true };
+}
+
+/**
+ * Debug logging for encryption operations (opt-in via ENCRYPTION_DEBUG env var)
+ * P3 FIX: Optional audit logging without adding overhead by default
+ */
+export function logEncryptionEvent(
+  event: 'encrypt' | 'decrypt' | 'rotation_fallback' | 'key_verify',
+  details?: Record<string, unknown>
+): void {
+  if (process.env.ENCRYPTION_DEBUG === 'true') {
+    console.log(
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        event: `encryption:${event}`,
+        ...details,
+      })
+    );
   }
 }

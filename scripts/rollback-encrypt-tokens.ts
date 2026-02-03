@@ -8,6 +8,7 @@
  * Usage:
  *   npx tsx scripts/rollback-encrypt-tokens.ts --dry-run  # Preview changes
  *   npx tsx scripts/rollback-encrypt-tokens.ts            # Run rollback
+ *   npx tsx scripts/rollback-encrypt-tokens.ts --json     # JSON output for CI/CD
  */
 
 import { PrismaClient, Prisma } from '@prisma/client';
@@ -19,6 +20,9 @@ import {
 
 const prisma = new PrismaClient();
 const BATCH_SIZE = 100;
+
+// Conditional logging - set after arg parsing
+let log: (message: string) => void = console.log;
 
 interface RollbackResult {
   rolledBack: number;
@@ -33,7 +37,7 @@ async function rollbackTokens(dryRun: boolean): Promise<RollbackResult> {
   // P1 FIX: Support key rotation - if tokens were encrypted with a previous key,
   // we need to be able to decrypt them during rollback
   if (previousKey) {
-    console.log('ℹ️  ENCRYPTION_KEY_PREVIOUS detected - will try both keys for decryption');
+    log('ℹ️  ENCRYPTION_KEY_PREVIOUS detected - will try both keys for decryption');
   }
 
   const totalCount = await prisma.user.count({
@@ -41,13 +45,13 @@ async function rollbackTokens(dryRun: boolean): Promise<RollbackResult> {
   });
 
   if (totalCount === 0) {
-    console.log('No encrypted tokens found. Nothing to rollback.');
+    log('No encrypted tokens found. Nothing to rollback.');
     return { rolledBack: 0 };
   }
 
-  console.log(`Found ${totalCount} encrypted tokens to rollback`);
-  console.log(`Batch size: ${BATCH_SIZE}`);
-  console.log('');
+  log(`Found ${totalCount} encrypted tokens to rollback`);
+  log(`Batch size: ${BATCH_SIZE}`);
+  log('');
 
   let rolledBack = 0;
   const startTime = Date.now();
@@ -90,36 +94,70 @@ async function rollbackTokens(dryRun: boolean): Promise<RollbackResult> {
     const elapsed = (Date.now() - startTime) / 1000;
     const rate = rolledBack / elapsed;
     const remaining = Math.round((totalCount - rolledBack) / rate);
-    console.log(
+    log(
       `Progress: ${rolledBack}/${totalCount} (${Math.round((rolledBack / totalCount) * 100)}%) - ` +
         `ETA: ${remaining}s`
     );
 
     // In dry-run mode, break after first batch
     if (dryRun) {
-      console.log(`[DRY-RUN] Would rollback ${users.length} users in this batch`);
-      console.log('[DRY-RUN] Stopping after first batch preview');
+      log(`[DRY-RUN] Would rollback ${users.length} users in this batch`);
+      log('[DRY-RUN] Stopping after first batch preview');
       break;
     }
   }
 
   const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-  console.log(`\n✅ Rollback complete: ${rolledBack} tokens decrypted`);
-  console.log(`  Duration: ${duration}s`);
+  log(`\n✅ Rollback complete: ${rolledBack} tokens decrypted`);
+  log(`  Duration: ${duration}s`);
 
   return { rolledBack };
 }
 
 const dryRun = process.argv.includes('--dry-run');
-console.log(
+const jsonOutput = process.argv.includes('--json');
+
+// P3 FIX: Support JSON output for CI/CD automation
+// Override the module-level log function
+log = jsonOutput ? () => {} : console.log;
+
+function logError(message: string) {
+  if (!jsonOutput) console.error(message);
+}
+
+log(
   dryRun ? '🔍 DRY RUN MODE\n' : '⚠️  ROLLING BACK ENCRYPTION - TOKENS WILL BE STORED IN PLAINTEXT\n'
 );
 
 rollbackTokens(dryRun)
-  .then(() => process.exit(0))
+  .then((result) => {
+    // P3 FIX: Output JSON summary for automation
+    if (jsonOutput) {
+      console.log(
+        JSON.stringify({
+          success: true,
+          rolledBack: result.rolledBack,
+          dryRun,
+        })
+      );
+    }
+    process.exit(0);
+  })
   .catch((error) => {
-    console.error('\n❌ Rollback FAILED:', error);
-    console.error('The batch transaction was rolled back.');
+    // P3 FIX: Output JSON error for automation
+    if (jsonOutput) {
+      console.log(
+        JSON.stringify({
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      );
+      process.exit(1);
+    }
+
+    logError('\n❌ Rollback FAILED:');
+    logError(error instanceof Error ? error.message : String(error));
+    logError('The batch transaction was rolled back.');
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());

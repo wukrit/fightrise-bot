@@ -168,21 +168,31 @@ async function confirmBackup(): Promise<boolean> {
 const dryRun = process.argv.includes('--dry-run');
 const skipBackupCheck = process.argv.includes('--skip-backup-check');
 const force = process.argv.includes('--force');
+const jsonOutput = process.argv.includes('--json');
 
-console.log(
+// P3 FIX: Support JSON output for CI/CD automation
+function log(message: string) {
+  if (!jsonOutput) console.log(message);
+}
+
+function logError(message: string) {
+  if (!jsonOutput) console.error(message);
+}
+
+log(
   dryRun ? '🔍 DRY RUN MODE - No changes will be made\n' : '🔒 ENCRYPTING TOKENS\n'
 );
 
 // P1 FIX: Require backup confirmation unless dry-run or explicitly skipped
 async function main() {
-  if (!dryRun && !skipBackupCheck) {
+  if (!dryRun && !skipBackupCheck && !jsonOutput) {
     const hasBackup = await confirmBackup();
     if (!hasBackup) {
-      console.log('\n❌ Migration aborted. Please create a backup first.');
-      console.log('Use --skip-backup-check to bypass this prompt (for CI/CD pipelines).\n');
+      log('\n❌ Migration aborted. Please create a backup first.');
+      log('Use --skip-backup-check to bypass this prompt (for CI/CD pipelines).\n');
       process.exit(1);
     }
-    console.log('\n✅ Backup confirmed. Proceeding with migration...\n');
+    log('\n✅ Backup confirmed. Proceeding with migration...\n');
   }
 
   return migrateTokens(dryRun);
@@ -190,23 +200,48 @@ async function main() {
 
 main()
   .then((result) => {
+    // P3 FIX: Output JSON summary for automation
+    if (jsonOutput) {
+      console.log(
+        JSON.stringify({
+          success: true,
+          migrated: result.migrated,
+          skipped: result.skipped,
+          dryRun,
+        })
+      );
+      process.exit(0);
+    }
+
     if (result.migrated === 0 && result.skipped === 0) {
       process.exit(0);
     }
-    console.log('\n📋 Post-migration verification:');
-    console.log(
+    log('\n📋 Post-migration verification:');
+    log(
       'Run: SELECT COUNT(*) FROM "User" WHERE "startggToken" NOT LIKE \'encrypted:%\' AND "startggToken" IS NOT NULL;'
     );
-    console.log('Expected result: 0');
+    log('Expected result: 0');
     process.exit(0);
   })
   .catch((error) => {
+    // P3 FIX: Output JSON error for automation
+    if (jsonOutput) {
+      console.log(
+        JSON.stringify({
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      );
+      process.exit(1);
+    }
+
     // P1 FIX: Any error stops the migration completely
-    console.error('\n❌ Migration FAILED:', error);
-    console.error(
+    logError('\n❌ Migration FAILED:');
+    logError(error instanceof Error ? error.message : String(error));
+    logError(
       '\nThe migration has been stopped. The batch transaction was rolled back.'
     );
-    console.error(
+    logError(
       'Fix the issue and re-run. The migration is idempotent (safe to re-run).'
     );
     process.exit(1);
