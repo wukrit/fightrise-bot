@@ -37,7 +37,9 @@
     "docker:db:generate": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec web npm run db:generate",
     "docker:db:push": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec web npm run db:push",
     "docker:db:migrate": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec web npm run db:migrate",
-    "docker:deploy": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec bot npm run deploy"
+    "docker:deploy": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec bot npm run deploy",
+    "db:migrate-encryption": "npx tsx scripts/migrate-encrypt-tokens.ts",
+    "db:rollback-encryption": "npx tsx scripts/rollback-encrypt-tokens.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",

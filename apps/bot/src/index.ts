@@ -1,8 +1,15 @@
 import { Client, Collection, GatewayIntentBits } from 'discord.js';
+import { validateEncryptionKey } from '@fightrise/shared';
 import { loadCommands } from './utils/commandLoader.js';
 import { loadEvents } from './utils/eventLoader.js';
 import { startPollingService, stopPollingService } from './services/pollingService.js';
 import type { Command, ExtendedClient } from './types.js';
+
+// Validate encryption key at startup - MUST be before any database operations
+// P1 FIX: Fail-fast prevents silent plaintext storage
+if (process.env.NODE_ENV === 'production') {
+  validateEncryptionKey(process.env.ENCRYPTION_KEY);
+}
 
 const client = new Client({
   intents: [
