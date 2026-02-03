@@ -264,6 +264,7 @@ const POLL_INTERVALS = {
 |---------|-------------|---------|
 | `/tournament setup` | Configure tournament Discord settings | tournament_slug, channel |
 | `/tournament status` | View current tournament status | tournament_slug |
+| `/tournament preflight` | Validate bot permissions & configuration in a channel | channel, thread_type |
 | `/register` | Register for a tournament | tournament_slug |
 | `/link-startgg` | Link Start.gg account | - (triggers OAuth) |
 | `/my-matches` | View your upcoming matches | - |
@@ -302,6 +303,45 @@ async function createMatchThread(
 
   return thread;
 }
+```
+
+#### Preflight Command (Permissions & Config Check)
+
+```typescript
+// apps/bot/commands/preflight.ts (spec-level sketch)
+// Goal: validate bot permissions and settings before tournament setup.
+export const preflightCommand = {
+  data: new SlashCommandBuilder()
+    .setName('tournament')
+    .setDescription('Tournament operations')
+    .addSubcommand(sc =>
+      sc
+        .setName('preflight')
+        .setDescription('Validate bot permissions and tournament config')
+        .addChannelOption(opt =>
+          opt.setName('channel').setDescription('Target channel').setRequired(false)
+        )
+        .addStringOption(opt =>
+          opt
+            .setName('thread_type')
+            .setDescription('public or private')
+            .addChoices(
+              { name: 'public', value: 'public' },
+              { name: 'private', value: 'private' }
+            )
+            .setRequired(false)
+        )
+    ),
+  async execute(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply({ ephemeral: true });
+
+    // Checks: channel type, VIEW_CHANNEL, SEND_MESSAGES,
+    // CREATE_PUBLIC_THREADS / CREATE_PRIVATE_THREADS,
+    // SEND_MESSAGES_IN_THREADS, MANAGE_THREADS (if sticky policy)
+    // Warn on missing Start.gg OAuth scopes if score reporting enabled.
+    // Warn on polling budget risk (estimated request rate).
+  },
+};
 ```
 
 #### Interactive Components
@@ -1228,6 +1268,9 @@ name = "web"
 startCommand = "npm run start:web"
 ```
 
+**Background Workers:**
+Run polling and thread keepalive scheduling in the bot service or split into a dedicated worker service if scaling requires isolation.
+
 ### Docker Compose (Development/Self-hosted)
 
 ```yaml
@@ -1326,32 +1369,39 @@ DISCORD_REDIRECT_URI="http://localhost:3000/api/auth/callback/discord"
 - [x] Docker development environment with hot-reload (Issue #6)
 
 ### Phase 2: Core Bot Features (IN PROGRESS)
-- [ ] `/tournament setup` command implementation
+- [x] `/tournament setup` command implementation
   - [x] Command registered and routed
-  - [ ] Fetch tournament from Start.gg
-  - [ ] Save tournament configuration to database
-  - [ ] Link Discord guild/channel
+  - [x] Fetch tournament from Start.gg
+  - [x] Save tournament configuration to database
+  - [x] Link Discord guild/channel
 - [ ] `/tournament status` command implementation
   - [x] Command registered and routed
   - [ ] Display tournament state, events, match counts
-- [ ] Start.gg polling service with BullMQ
+- [ ] `/tournament preflight` command implementation
+  - [ ] Validate channel type and bot permissions
+  - [ ] Validate thread policy (auto/sticky/never) and downgrade behavior
+  - [ ] Warn on Start.gg OAuth scope gaps
+  - [ ] Warn on polling budget risk
+- [x] Start.gg polling service with BullMQ
   - [x] BullMQ dependency installed
-  - [ ] Create polling job queue
-  - [ ] Implement tournament state sync worker
-  - [ ] Dynamic poll intervals based on tournament state
-- [ ] Match thread creation service
-  - [ ] Create Discord threads when matches are ready
-  - [ ] Add players to thread
-  - [ ] Send check-in message with buttons
-- [ ] Check-in button interactions
+  - [x] Create polling job queue
+  - [x] Implement tournament state sync worker
+  - [x] Dynamic poll intervals based on tournament state
+- [x] Match thread creation service
+  - [x] Create Discord threads when matches are ready
+  - [x] Add players to thread
+  - [x] Send check-in message with buttons
+  - [ ] Apply thread lifecycle policy (auto/sticky/never) — see "Thread Lifecycle Policy"
+  - [ ] Create keepalive scheduling for sticky threads
+- [x] Check-in button interactions
   - [x] Interaction ID helpers in @fightrise/shared
-  - [ ] Button interaction handler
-  - [ ] Check-in deadline enforcement
-  - [ ] Update match state on all checked-in
-- [ ] Basic score reporting
-  - [ ] Winner selection buttons
-  - [ ] Loser confirmation flow
-  - [ ] Report result to Start.gg via mutation
+  - [x] Button interaction handler
+  - [x] Check-in deadline enforcement
+  - [x] Update match state on all checked-in
+- [x] Basic score reporting
+  - [x] Winner selection buttons
+  - [x] Loser confirmation flow
+  - [x] Report result to Start.gg via mutation
 
 ### Phase 3: Registration & Account Linking
 - [ ] `/register` command implementation
@@ -1456,18 +1506,17 @@ DISCORD_REDIRECT_URI="http://localhost:3000/api/auth/callback/discord"
 - `@fightrise/ui` - Button component, icons
 
 **Apps:**
-- `apps/bot` - Discord.js client, command/event loaders, 7 slash commands (stubs)
+- `apps/bot` - Discord.js client, command/event loaders, polling service, match threads, check-in + score reporting handlers
 - `apps/web` - Next.js 14, NextAuth Discord OAuth, protected routes, auth components
 
 ### What's Missing (Gaps Identified)
 
-1. **No button/select interaction handlers** - `interactionCreate.ts` only handles chat commands
-2. **No BullMQ job setup** - Package installed but no queues or workers created
-3. **No Start.gg OAuth provider** - Only Discord OAuth configured in NextAuth
-4. **No service layer in bot** - Need `services/` directory for match, tournament, sync logic
-5. **No real-time updates** - Consider WebSocket or polling for web portal match status
-6. **No audit logging** - Need to track score reports, admin actions
-7. **No encryption for OAuth tokens** - `startggToken` stored as plain string
+1. **No Start.gg OAuth provider** - Only Discord OAuth configured in NextAuth
+2. **No real-time updates** - Consider WebSocket or polling for web portal match status
+3. **No audit logging** - Need to track score reports, admin actions
+4. **No encryption for OAuth tokens** - `startggToken` stored as plain string
+5. **No preflight command** - Missing permission/config validation before setup
+6. **Thread lifecycle policy not integrated** - No sticky/never modes or keepalive scheduling
 
 ---
 
@@ -1491,6 +1540,8 @@ DISCORD_REDIRECT_URI="http://localhost:3000/api/auth/callback/discord"
 - [ ] Graceful degradation if Start.gg is unavailable
 - [ ] Admin notifications for critical errors
 - [ ] Audit logging for all score reports
+- [ ] Explicit handling for permission failures (thread creation, member add)
+- [ ] Sticky-mode downgrade warning when `MANAGE_THREADS` is missing
 
 ### Security
 
@@ -1498,6 +1549,29 @@ DISCORD_REDIRECT_URI="http://localhost:3000/api/auth/callback/discord"
 - [ ] Validate all button interaction sources
 - [ ] Rate limit user actions
 - [ ] Audit trail for administrative actions
+
+### Thread Lifecycle Policy
+
+Threads can only auto-archive with fixed durations (1h, 1d, 3d, 7d). There is no "never auto-archive" setting. Support this with policy and fallback modes:
+
+- **Auto (default):** match threads auto-archive after configured duration.
+- **Sticky:** use max auto-archive (7d) and keepalive activity (e.g., daily bot ping) until resolved; requires `MANAGE_THREADS`.
+- **Never:** do not use threads; route to a dedicated channel (e.g., `#match-disputes`).
+
+Recommended defaults:
+- Match threads: Auto
+- Dispute threads: Sticky
+- Admin review: Never
+
+Config surface (per tournament):
+- `matchThreadsArchiveMode`: auto | sticky | never
+- `disputeThreadsArchiveMode`: auto | sticky | never
+- `archiveDuration`: 60m | 1d | 3d | 7d
+- `keepaliveInterval`: 24h (sticky only)
+
+Behavior rules:
+- If Sticky and bot lacks `MANAGE_THREADS`, downgrade to Auto and warn.
+- If Never, create a message in the target channel and link back to match context.
 
 ---
 
