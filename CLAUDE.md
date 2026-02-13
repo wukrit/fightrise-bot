@@ -24,12 +24,17 @@ npm run db:generate            # Generate Prisma client
 npm run db:push                # Push schema to database (dev)
 npm run db:migrate             # Run migrations (production)
 
-# Testing & Linting
-npm run test                   # Run unit tests (Vitest)
-npm run test:integration       # Run integration tests (Testcontainers)
-npm run test:e2e               # Run Playwright browser E2E tests
-npm run test:smoke             # Run smoke tests against real APIs
-npm run lint                   # Run ESLint
+# Testing & Linting (ALWAYS run in Docker for consistency)
+npm run docker:infra          # Start Postgres and Redis first
+npm run docker:db:push        # Push database schema
+npm run docker:test           # Run unit tests in Docker
+npm run docker:test:integration  # Run integration tests in Docker
+npm run docker:test:e2e       # Run Playwright E2E tests in Docker
+npm run docker:lint           # Run ESLint in Docker
+
+# Smoke tests (against real APIs - requires credentials)
+# Run on host with environment variables:
+#   SMOKE_DISCORD_TOKEN=xxx SMOKE_STARTGG_API_KEY=xxx npm run test:smoke
 
 # Docker Development (recommended)
 npm run docker:dev          # Full stack with hot-reload
@@ -180,13 +185,21 @@ When working on GitHub issues or features, use the **compound-engineering** work
 
 ### Step 4: Testing
 
+**IMPORTANT: Always run tests in Docker for consistency with CI/CD pipeline.**
+
 Use the multi-layered test suite based on what you're building:
 
 | Layer | Command | When to Use |
 |-------|---------|-------------|
-| **Unit** | `npm run test` | Pure functions, validators, utilities |
-| **Integration** | `npm run test:integration` | Services with database, bot command flows |
-| **E2E** | `npm run test:e2e` | Browser user flows (web portal) |
+| **Unit** | `npm run docker:test` | Pure functions, validators, utilities |
+| **Integration** | `npm run docker:test:integration` | Services with database, bot command flows |
+| **E2E** | `npm run docker:test:e2e` | Browser user flows (web portal) |
+
+**Prerequisites for all tests:**
+```bash
+npm run docker:infra    # Start Postgres and Redis
+npm run docker:db:push # Push database schema
+```
 
 **Test Infrastructure:**
 - **Discord Bot**: Use test harness in `apps/bot/src/__tests__/harness/`
@@ -206,14 +219,14 @@ Use the multi-layered test suite based on what you're building:
 - Write unit tests for all new functions/services
 - Write integration tests for Discord commands using the test harness
 - Write Playwright tests for new web UI features
-- Ensure all tests pass: `npm run test && npm run test:integration`
+- Ensure all tests pass: `npm run docker:test && npm run docker:test:integration`
 - Ensure linting passes: `npm run lint`
 - **Do not proceed if any tests fail**
 
 ### Step 5: End-to-End Verification
 
 **For Web Features:**
-1. Run Playwright E2E tests: `npm run test:e2e`
+1. Run Playwright E2E tests: `npm run docker:test:e2e`
 2. For manual verification, use Playwright MCP tools:
    - `mcp__playwright__browser_navigate` to load pages
    - `mcp__playwright__browser_snapshot` to verify content
@@ -229,7 +242,7 @@ Use the multi-layered test suite based on what you're building:
    const interaction = await client.executeCommand('mycommand', { option: 'value' });
    expect(interaction.lastReply?.content).toBe('Expected response');
    ```
-2. Run: `npm run test:integration -- --filter=@fightrise/bot`
+2. Run: `npm run docker:test:integration`
 
 **For Database Changes:**
 1. Verify migrations work: `npm run db:push`
@@ -280,11 +293,13 @@ Document any manual verification steps performed.
 /workflows:review            # Multi-agent code review
 /workflows:compound          # Document learnings
 
-# Run tests
-npm run test                 # Unit tests
-npm run test:integration     # Integration tests (bot commands, database)
-npm run test:e2e             # Playwright browser tests
-npm run lint                 # Linting
+# Run tests (ALWAYS in Docker)
+npm run docker:infra         # Start Postgres and Redis first
+npm run docker:db:push      # Push database schema
+npm run docker:test         # Unit tests
+npm run docker:test:integration  # Integration tests
+npm run docker:test:e2e     # Playwright E2E tests
+npm run docker:lint          # Linting
 
 # Create PR
 gh pr create --title "Title #42" --body "..."

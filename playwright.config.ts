@@ -63,17 +63,19 @@ export default defineConfig({
   ],
 
   // Run local dev server before starting the tests
-  webServer: {
-    // Use production mode in CI (already built), dev mode locally
-    // Run directly in apps/web to avoid turbo trying to start all packages
-    command: process.env.CI
-      ? 'npm run start --prefix apps/web'
-      : 'npm run dev -- --filter=@fightrise/web',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000, // 2 minutes for Next.js to start
-    // Capture stdout/stderr for debugging
-    stdout: 'pipe',
-    stderr: 'pipe',
-  },
+  webServer: process.env.USE_EXISTING_SERVER
+    ? undefined
+    : {
+        // Use production mode in CI (already built), dev mode locally
+        // Run directly in apps/web to avoid turbo trying to start all packages
+        command: process.env.CI
+          ? 'npm run start --prefix apps/web'
+          : 'npm run dev -- --filter=@fightrise/web',
+        url: 'http://localhost:3000',
+        reuseExistingServer: !process.env.CI,
+        timeout: 120 * 1000, // 2 minutes for Next.js to start
+        // Capture stdout/stderr for debugging
+        stdout: 'pipe',
+        stderr: 'pipe',
+      },
 });
