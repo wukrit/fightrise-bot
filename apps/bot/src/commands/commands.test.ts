@@ -12,6 +12,34 @@ vi.mock('../services/tournamentService.js', () => ({
   })),
 }));
 
+// Mock prisma for database queries
+vi.mock('@fightrise/database', () => ({
+  prisma: {
+    tournament: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      findUnique: vi.fn().mockResolvedValue(null),
+    },
+  },
+  TournamentState: {
+    CREATED: 'CREATED',
+    REGISTRATION_OPEN: 'REGISTRATION_OPEN',
+    REGISTRATION_CLOSED: 'REGISTRATION_CLOSED',
+    IN_PROGRESS: 'IN_PROGRESS',
+    COMPLETED: 'COMPLETED',
+    CANCELLED: 'CANCELLED',
+  },
+  MatchState: {
+    NOT_STARTED: 'NOT_STARTED',
+    CALLED: 'CALLED',
+    CHECKED_IN: 'CHECKED_IN',
+    IN_PROGRESS: 'IN_PROGRESS',
+    PENDING_CONFIRMATION: 'PENDING_CONFIRMATION',
+    COMPLETED: 'COMPLETED',
+    DISPUTED: 'DISPUTED',
+    DQ: 'DQ',
+  },
+}));
+
 // Helper to create a mock interaction
 function createMockInteraction(options: {
   commandName?: string;
@@ -245,7 +273,7 @@ describe('Command Handlers', () => {
     });
 
     describe('status subcommand', () => {
-      it('should respond with pending implementation message', async () => {
+      it('should defer reply and respond with no tournament message when none exists', async () => {
         const { default: command } = await import('./tournament.js');
         const interaction = createMockInteraction({
           commandName: 'tournament',
@@ -254,10 +282,10 @@ describe('Command Handlers', () => {
 
         await command.execute(interaction);
 
-        expect(interaction.reply).toHaveBeenCalledWith(
+        expect(interaction.deferReply).toHaveBeenCalledWith({ ephemeral: true });
+        expect(interaction.editReply).toHaveBeenCalledWith(
           expect.objectContaining({
-            content: expect.stringContaining('pending implementation'),
-            ephemeral: true,
+            content: expect.stringContaining('No tournament found'),
           })
         );
       });

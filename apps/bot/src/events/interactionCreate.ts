@@ -24,6 +24,23 @@ async function replyWithError(
 const event: Event = {
   name: Events.InteractionCreate,
   async execute(interaction: Interaction) {
+    // Handle autocomplete interactions
+    if (interaction.isAutocomplete()) {
+      const client = interaction.client as ExtendedClient;
+      const command = client.commands.get(interaction.commandName);
+
+      if (!command || !command.autocomplete) {
+        return;
+      }
+
+      try {
+        await command.autocomplete(interaction);
+      } catch (error) {
+        console.error(`Error handling autocomplete for ${interaction.commandName}:`, error);
+      }
+      return;
+    }
+
     // Handle slash commands
     if (interaction.isChatInputCommand()) {
       const client = interaction.client as ExtendedClient;
