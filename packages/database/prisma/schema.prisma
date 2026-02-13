@@ -35,6 +35,7 @@ model User {
 
   @@index([discordId])
   @@index([startggId])
+  @@index([startggGamerTag])
 }
 
 // Tournament configuration
@@ -192,7 +193,7 @@ model Registration {
   createdAt       DateTime  @default(now())
 
   // Start.gg reference
-  startggEntrantId String?
+  startggEntrantId String?  @map("startgg_entrant_id")
 
   // Registration source
   source          RegistrationSource @default(DISCORD)
@@ -204,15 +205,18 @@ model Registration {
   displayName     String?
 
   // Relations
-  userId          String
-  user            User      @relation(fields: [userId], references: [id])
-  tournamentId    String
+  userId          String?   @map("user_id")  // Nullable for ghost registrations (Start.gg only)
+  user            User?     @relation(fields: [userId], references: [id])
+  tournamentId    String    @map("tournament_id")
   tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  eventId         String?
+  eventId         String?   @map("event_id")  // Nullable for backwards compatibility
   event           Event?    @relation(fields: [eventId], references: [id])
 
+  // Note: Unique constraint on (eventId, startggEntrantId) is enforced at application level
+  // during sync to avoid breaking existing data
   @@unique([userId, eventId])
   @@index([tournamentId])
+  @@index([eventId])
 }
 
 enum RegistrationSource {

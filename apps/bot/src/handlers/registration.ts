@@ -63,13 +63,13 @@ async function handleApprove(interaction: ButtonInteraction, registrationId: str
     const embed = new EmbedBuilder()
       .setTitle('Registration Approved')
       .setColor(Colors.Green)
-      .setDescription(`You approved registration for **${registration.displayName || registration.user.discordUsername}**.`);
+      .setDescription(`You approved registration for **${registration.displayName || registration.user?.discordUsername}**.`);
 
     await interaction.editReply({ embeds: [embed] });
 
     // Notify the user
     try {
-      const user = await interaction.client.users.fetch(registration.user.discordId!);
+      const user = await interaction.client.users.fetch(registration.user?.discordId!);
       const notifyEmbed = new EmbedBuilder()
         .setTitle('Registration Approved!')
         .setColor(Colors.Green)
@@ -136,13 +136,13 @@ async function handleReject(interaction: ButtonInteraction, registrationId: stri
     const embed = new EmbedBuilder()
       .setTitle('Registration Rejected')
       .setColor(Colors.Red)
-      .setDescription(`You rejected registration for **${registration.displayName || registration.user.discordUsername}**.`);
+      .setDescription(`You rejected registration for **${registration.displayName || registration.user?.discordUsername}**.`);
 
     await interaction.editReply({ embeds: [embed] });
 
     // Notify the user
     try {
-      const user = await interaction.client.users.fetch(registration.user.discordId!);
+      const user = await interaction.client.users.fetch(registration.user?.discordId!);
       const notifyEmbed = new EmbedBuilder()
         .setTitle('Registration Update')
         .setColor(Colors.Red)
@@ -189,12 +189,12 @@ async function handleInfo(interaction: ButtonInteraction, registrationId: string
       .addFields(
         {
           name: 'Player',
-          value: registration.displayName || registration.user.discordUsername || 'Unknown',
+          value: registration.displayName || registration.user?.discordUsername || 'Unknown',
           inline: true,
         },
         {
           name: 'Discord ID',
-          value: registration.user.discordId || 'N/A',
+          value: registration.user?.discordId || 'N/A',
           inline: true,
         },
         {

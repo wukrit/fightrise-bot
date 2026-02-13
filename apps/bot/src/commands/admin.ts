@@ -314,7 +314,7 @@ async function handleAdminRegistrations(interaction: ChatInputCommandInteraction
 
     // Add registration entries
     for (const reg of registrations) {
-      const playerName = reg.displayName || reg.user.discordUsername || 'Unknown';
+      const playerName = reg.displayName || reg.user?.discordUsername || 'Unknown';
       embed.addFields({
         name: playerName,
         value: `Source: ${reg.source} • ID: ${reg.id}`,

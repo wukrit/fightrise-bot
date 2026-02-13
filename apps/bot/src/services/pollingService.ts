@@ -5,6 +5,7 @@ import { prisma, TournamentState, MatchState, Prisma } from '@fightrise/database
 import { StartGGClient, AuthError, Set } from '@fightrise/startgg-client';
 import { POLL_INTERVALS, STARTGG_SET_STATE } from '@fightrise/shared';
 import { createMatchThread } from './matchService.js';
+import { RegistrationSyncService } from './registrationSyncService.js';
 
 // Type for prefetched match data
 interface ExistingMatch {
@@ -142,6 +143,24 @@ async function pollTournament(tournamentId: string): Promise<void> {
   }
 
   try {
+    // Sync registrations from Start.gg for all events
+    // Use shorter interval during registration phase
+    const registrationSyncService = new RegistrationSyncService(process.env.STARTGG_API_KEY || '');
+    for (const event of tournament.events) {
+      try {
+        const syncResult = await registrationSyncService.syncEventRegistrations(event.id, discordClient ?? undefined);
+        if (syncResult.newRegistrations > 0 || syncResult.updatedRegistrations > 0) {
+          console.log(
+            `[Poll] Event ${event.id}: ${syncResult.newRegistrations} new, ` +
+            `${syncResult.updatedRegistrations} updated registrations`
+          );
+        }
+      } catch (syncError) {
+        console.error(`[Poll] Registration sync failed for event ${event.id}:`, syncError);
+        // Continue with match sync even if registration sync fails
+      }
+    }
+
     // Process all events in parallel (P1 fix: sequential → parallel)
     const results = await Promise.all(
       tournament.events.map((event) => syncEventMatches(event.id, event.startggId))
