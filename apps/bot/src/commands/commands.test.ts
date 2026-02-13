@@ -19,6 +19,12 @@ vi.mock('@fightrise/database', () => ({
       findFirst: vi.fn().mockResolvedValue(null),
       findUnique: vi.fn().mockResolvedValue(null),
     },
+    user: {
+      findUnique: vi.fn().mockResolvedValue(null),
+    },
+    matchPlayer: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
   },
   TournamentState: {
     CREATED: 'CREATED',
@@ -325,16 +331,16 @@ describe('Command Handlers', () => {
   });
 
   describe('/my-matches', () => {
-    it('should respond with pending implementation message', async () => {
+    it('should respond with not registered message when user not found', async () => {
       const { default: command } = await import('./my-matches.js');
       const interaction = createMockInteraction({ commandName: 'my-matches' });
 
       await command.execute(interaction);
 
-      expect(interaction.reply).toHaveBeenCalledWith(
+      expect(interaction.deferReply).toHaveBeenCalledWith({ ephemeral: true });
+      expect(interaction.editReply).toHaveBeenCalledWith(
         expect.objectContaining({
-          content: expect.stringContaining('pending implementation'),
-          ephemeral: true,
+          content: expect.stringContaining('not registered'),
         })
       );
     });
