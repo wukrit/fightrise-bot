@@ -18,12 +18,18 @@ vi.mock('@fightrise/database', () => ({
     tournament: {
       findFirst: vi.fn().mockResolvedValue(null),
       findUnique: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
     },
     user: {
       findUnique: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue({ id: 'user-123' }),
     },
     matchPlayer: {
       findMany: vi.fn().mockResolvedValue([]),
+    },
+    registration: {
+      findFirst: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue({ id: 'reg-123' }),
     },
   },
   TournamentState: {
@@ -42,6 +48,17 @@ vi.mock('@fightrise/database', () => ({
     PENDING_CONFIRMATION: 'PENDING_CONFIRMATION',
     COMPLETED: 'COMPLETED',
     DISPUTED: 'DISPUTED',
+    DQ: 'DQ',
+  },
+  RegistrationSource: {
+    STARTGG: 'STARTGG',
+    DISCORD: 'DISCORD',
+    MANUAL: 'MANUAL',
+  },
+  RegistrationStatus: {
+    PENDING: 'PENDING',
+    CONFIRMED: 'CONFIRMED',
+    CANCELLED: 'CANCELLED',
     DQ: 'DQ',
   },
 }));
@@ -299,16 +316,19 @@ describe('Command Handlers', () => {
   });
 
   describe('/register', () => {
-    it('should respond with pending implementation message', async () => {
+    it('should respond with tournament not found message when invalid tournament', async () => {
       const { default: command } = await import('./register.js');
-      const interaction = createMockInteraction({ commandName: 'register' });
+      const interaction = createMockInteraction({
+        commandName: 'register',
+        getString: vi.fn().mockReturnValue('invalid-tournament-id'),
+      });
 
       await command.execute(interaction);
 
-      expect(interaction.reply).toHaveBeenCalledWith(
+      expect(interaction.deferReply).toHaveBeenCalledWith({ ephemeral: true });
+      expect(interaction.editReply).toHaveBeenCalledWith(
         expect.objectContaining({
-          content: expect.stringContaining('pending implementation'),
-          ephemeral: true,
+          content: expect.stringContaining('not found'),
         })
       );
     });
