@@ -43,9 +43,8 @@ describe('Tournament Setup Integration', () => {
         _subcommand: 'status',
       });
 
-      expect(interaction.replied).toBe(true);
-      expect(interaction.lastReply).toBeDefined();
-      expect(interaction.lastReply?.content).toContain('pending implementation');
+      // The command should either reply (with tournament info) or defer then edit
+      expect(interaction.deferred || interaction.replied).toBe(true);
     });
 
     it('should respond to /tournament setup subcommand', async () => {
