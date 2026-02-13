@@ -3,6 +3,9 @@ import {
   ChatInputCommandInteraction,
   EmbedBuilder,
   Colors,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
 } from 'discord.js';
 import type { Command } from '../types.js';
 import { prisma, RegistrationSource, RegistrationStatus } from '@fightrise/database';
@@ -33,6 +36,18 @@ const command: Command = {
             .setName('display-name')
             .setDescription('Display name for the player')
             .setRequired(false)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('registrations')
+        .setDescription('View pending registrations for a tournament')
+        .addStringOption((option) =>
+          option
+            .setName('tournament')
+            .setDescription('Tournament name')
+            .setRequired(true)
+            .setAutocomplete(true)
         )
     ),
 
@@ -77,6 +92,8 @@ const command: Command = {
 
     if (subcommand === 'register') {
       await handleAdminRegister(interaction);
+    } else if (subcommand === 'registrations') {
+      await handleAdminRegistrations(interaction);
     }
   },
 };
@@ -220,6 +237,116 @@ async function handleAdminRegister(interaction: ChatInputCommandInteraction): Pr
     console.error('Error in admin register command:', error);
     await interaction.editReply({
       content: 'Failed to register player. Please try again.',
+    });
+  }
+}
+
+async function handleAdminRegistrations(interaction: ChatInputCommandInteraction): Promise<void> {
+  const guildId = interaction.guildId;
+  const adminId = interaction.user.id;
+
+  if (!guildId) {
+    await interaction.reply({
+      content: 'This command can only be used in a server.',
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const tournamentId = interaction.options.getString('tournament', true);
+
+  await interaction.deferReply({ ephemeral: true });
+
+  try {
+    // Verify admin permissions
+    const admin = await prisma.tournamentAdmin.findFirst({
+      where: {
+        user: { discordId: adminId },
+        tournamentId,
+      },
+    });
+
+    if (!admin) {
+      await interaction.editReply({
+        content: 'You are not an admin for this tournament.',
+      });
+      return;
+    }
+
+    // Get tournament
+    const tournament = await prisma.tournament.findUnique({
+      where: { id: tournamentId },
+    });
+
+    if (!tournament) {
+      await interaction.editReply({
+        content: 'Tournament not found.',
+      });
+      return;
+    }
+
+    // Get pending registrations
+    const registrations = await prisma.registration.findMany({
+      where: {
+        tournamentId,
+        status: RegistrationStatus.PENDING,
+      },
+      include: {
+        user: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    if (registrations.length === 0) {
+      await interaction.editReply({
+        content: 'No pending registrations for this tournament.',
+      });
+      return;
+    }
+
+    // Build embed with registrations
+    const embed = new EmbedBuilder()
+      .setTitle(`Pending Registrations - ${tournament.name}`)
+      .setColor(Colors.Blue)
+      .setDescription(`${registrations.length} registration(s) awaiting approval`);
+
+    // Add registration entries
+    for (const reg of registrations) {
+      const playerName = reg.displayName || reg.user.discordUsername || 'Unknown';
+      embed.addFields({
+        name: playerName,
+        value: `Source: ${reg.source} • ID: ${reg.id}`,
+        inline: false,
+      });
+    }
+
+    // Add action buttons for the first registration
+    const firstReg = registrations[0];
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setLabel('Approve')
+        .setStyle(ButtonStyle.Success)
+        .setCustomId(`reg-approve:${firstReg.id}`),
+      new ButtonBuilder()
+        .setLabel('Reject')
+        .setStyle(ButtonStyle.Danger)
+        .setCustomId(`reg-reject:${firstReg.id}`),
+      new ButtonBuilder()
+        .setLabel('Info')
+        .setStyle(ButtonStyle.Secondary)
+        .setCustomId(`reg-info:${firstReg.id}`)
+    );
+
+    await interaction.editReply({
+      embeds: [embed],
+      components: registrations.length > 0 ? [row] : [],
+    });
+  } catch (error) {
+    console.error('Error in admin registrations command:', error);
+    await interaction.editReply({
+      content: 'Failed to fetch registrations. Please try again.',
     });
   }
 }

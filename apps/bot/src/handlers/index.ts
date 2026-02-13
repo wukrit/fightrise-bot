@@ -6,9 +6,11 @@ export type { ButtonHandler } from './buttonHandlers.js';
 import { registerButtonHandler } from './buttonHandlers.js';
 import { checkinHandler } from './checkin.js';
 import { scoreHandler, confirmHandler, disputeHandler } from './scoreHandler.js';
+import { registrationHandler } from './registration.js';
 
 // Register handlers
 registerButtonHandler(checkinHandler);
 registerButtonHandler(scoreHandler);
 registerButtonHandler(confirmHandler);
 registerButtonHandler(disputeHandler);
+registerButtonHandler(registrationHandler);
