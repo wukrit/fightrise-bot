@@ -335,18 +335,14 @@ describe('Command Handlers', () => {
   });
 
   describe('/link-startgg', () => {
-    it('should respond with pending implementation message', async () => {
+    it('should defer reply and check for existing link', async () => {
       const { default: command } = await import('./link-startgg.js');
       const interaction = createMockInteraction({ commandName: 'link-startgg' });
 
       await command.execute(interaction);
 
-      expect(interaction.reply).toHaveBeenCalledWith(
-        expect.objectContaining({
-          content: expect.stringContaining('pending implementation'),
-          ephemeral: true,
-        })
-      );
+      expect(interaction.deferReply).toHaveBeenCalledWith({ ephemeral: true });
+      expect(interaction.editReply).toHaveBeenCalled();
     });
   });
 

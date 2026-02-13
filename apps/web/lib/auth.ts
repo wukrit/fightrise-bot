@@ -11,6 +11,19 @@ import DiscordProvider from 'next-auth/providers/discord';
 // Determine if we're behind HTTPS (tunnel/production)
 const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith('https://') ?? false;
 
+// Build providers list - Start.gg OAuth requires callback route
+const providers = [
+  DiscordProvider({
+    clientId: process.env.DISCORD_CLIENT_ID!,
+    clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+    authorization: {
+      params: {
+        scope: 'identify guilds',
+      },
+    },
+  }),
+];
+
 export const authOptions: NextAuthOptions = {
   // No adapter - we manage users directly in signIn callback
   session: {
@@ -39,19 +52,10 @@ export const authOptions: NextAuthOptions = {
       },
     },
   },
-  providers: [
-    DiscordProvider({
-      clientId: process.env.DISCORD_CLIENT_ID!,
-      clientSecret: process.env.DISCORD_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          scope: 'identify guilds',
-        },
-      },
-    }),
-  ],
+  providers: providers as NextAuthOptions['providers'],
   callbacks: {
     async signIn({ user, account, profile }) {
+      // Handle Discord OAuth
       if (account?.provider === 'discord' && profile) {
         const discordProfile = profile as {
           id: string;
@@ -87,6 +91,10 @@ export const authOptions: NextAuthOptions = {
           user.id = newUser.id;
         }
       }
+
+      // Note: Start.gg OAuth handling is done in the callback route
+      // See apps/web/app/api/auth/callback/startgg/route.ts
+
       return true;
     },
 
