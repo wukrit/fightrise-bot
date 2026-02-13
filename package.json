@@ -37,7 +37,11 @@
     "docker:db:generate": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec web npm run db:generate",
     "docker:db:push": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec web npm run db:push",
     "docker:db:migrate": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec web npm run db:migrate",
-    "docker:deploy": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec bot npm run deploy"
+    "docker:deploy": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec bot npm run deploy",
+    "docker:test": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec web npm run test",
+    "docker:test:integration": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec web npm run test:integration",
+    "docker:test:e2e": "PLAYWRIGHT_BASE_URL=http://localhost:4000 USE_EXISTING_SERVER=true npx playwright test apps/web/__tests__/e2e",
+    "docker:lint": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec web npm run lint"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
