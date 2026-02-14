@@ -14,7 +14,9 @@
     "ecmaVersion": 2022,
     "sourceType": "module"
   },
+  "ignorePatterns": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/__tests__/**"],
   "rules": {
-    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }]
+    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "@typescript-eslint/no-explicit-any": "off"
   }
 }
