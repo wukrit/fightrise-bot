@@ -32,17 +32,7 @@ The CI lint check failed with:
 10:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 ```
 
-The `.mcp.json` config was found to have:
-```json
-"args": [
-  "run",
-  "--rm",
-  "-i",
-  "-e",
-  "DISCORD_TOKEN=<REDACTED>",
-  ...
-]
-```
+The `.mcp.json` config was found to have hardcoded credentials.
 
 ## Solution
 
@@ -70,10 +60,10 @@ Replaced hardcoded token with environment variable reference:
       "--rm",
       "-i",
       "-e",
--      "DISCORD_TOKEN=MTQ2NDI2Mjg5NTA1NDYyMjcyA.Gs91QL...",
+-      "DISCORD_TOKEN=<hardcoded-token>",
 +      "DISCORD_TOKEN=${DISCORD_TOKEN}",
       "-e",
--      "DISCORD_GUILD_ID=1465418958294225154",
+-      "DISCORD_GUILD_ID=<hardcoded-id>",
 +      "DISCORD_GUILD_ID=${DISCORD_GUILD_ID}",
       "saseq/discord-mcp:latest"
     ]

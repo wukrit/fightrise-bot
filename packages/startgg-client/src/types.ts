@@ -17,7 +17,7 @@ export interface Connection<T> {
 export interface User {
   id: string;
   slug: string;
-  gamerTag?: string;
+  name?: string;
 }
 
 // Participant types

@@ -260,7 +260,7 @@ export class RegistrationSyncService {
    */
   private validateEntrant(entrant: Entrant): boolean {
     if (!entrant.id) return false;
-    if (!entrant.name && !entrant.participants?.[0]?.user?.gamerTag) return false;
+    if (!entrant.name && !entrant.participants?.[0]?.user?.name) return false;
     return true;
   }
 

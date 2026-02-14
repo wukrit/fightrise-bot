@@ -36,7 +36,7 @@ RUN npm run build --workspace=@fightrise/ui
 RUN npm run build --workspace=@fightrise/database
 
 # Copy web app config files (source code will be mounted as volume)
-COPY apps/web/tsconfig.json apps/web/next.config.js apps/web/next-env.d.ts ./apps/web/
+COPY apps/web/tsconfig.json apps/web/next.config.js apps/web/next-env.d.ts apps/web/vitest.config.ts apps/web/vitest.setup.ts ./apps/web/
 EXPOSE 4000
 ENV PORT=4000
 ENV HOSTNAME="0.0.0.0"

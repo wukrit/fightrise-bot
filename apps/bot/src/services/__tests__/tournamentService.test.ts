@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach, type MockInstance } from 'vitest';
 import { TournamentService } from '../tournamentService.js';
+import { createMockTransaction } from '../../__tests__/utils/transactionMock.js';
 
 // Mock the database
 vi.mock('@fightrise/database', () => ({
@@ -159,7 +160,7 @@ describe('TournamentService', () => {
       vi.mocked(prisma.user.findUnique).mockResolvedValue({
         ...mockUser,
         startggId: null,
-      } as never);
+      } as unknown);
 
       const result = await service.setupTournament(mockSetupParams);
 
@@ -170,7 +171,7 @@ describe('TournamentService', () => {
     });
 
     it('should return OAUTH_REQUIRED error if user has no OAuth token', async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUserWithoutToken as never);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUserWithoutToken as unknown);
       mockStartGGClient.getTournament.mockResolvedValue(mockTournament);
 
       const result = await service.setupTournament(mockSetupParams);
@@ -183,7 +184,7 @@ describe('TournamentService', () => {
     });
 
     it('should return TOURNAMENT_NOT_FOUND error if tournament does not exist', async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as unknown);
       mockStartGGClient.getTournament.mockResolvedValue(null);
 
       const result = await service.setupTournament(mockSetupParams);
@@ -194,7 +195,7 @@ describe('TournamentService', () => {
       }
     });
 
-    // Helper to set up transaction mock
+    // Helper to set up transaction mock using the reusable helper
     function setupTransactionMock(existingTournament: { id: string } | null = null) {
       const dbTournament = {
         id: existingTournament?.id || 'new-tournament-id',
@@ -206,23 +207,12 @@ describe('TournamentService', () => {
         events: mockTournament.events,
       };
 
-      // Create a mock transaction client with all required methods
-      const txClient = {
+      const txClient = createMockTransaction({
         tournament: {
           findUnique: vi.fn().mockResolvedValue(existingTournament),
           upsert: vi.fn().mockResolvedValue(dbTournament),
         },
-        event: {
-          upsert: vi.fn().mockResolvedValue({}),
-          deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-        },
-        tournamentAdmin: {
-          upsert: vi.fn().mockResolvedValue({}),
-        },
-        guildConfig: {
-          upsert: vi.fn().mockResolvedValue({}),
-        },
-      };
+      });
 
       // Mock $transaction to execute the callback with our tx client
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -231,13 +221,13 @@ describe('TournamentService', () => {
       });
 
       // Mock final tournament fetch (outside transaction)
-      vi.mocked(prisma.tournament.findUnique).mockResolvedValue(dbTournament as never);
+      vi.mocked(prisma.tournament.findUnique).mockResolvedValue(dbTournament as unknown);
 
       return { txClient, dbTournament };
     }
 
     it('should successfully create tournament when all validations pass', async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as unknown);
       mockStartGGClient.getTournament.mockResolvedValue(mockTournament);
       // Mock admin validation to succeed
       mockStartGGClient.getTournamentsByOwner.mockResolvedValue({
@@ -254,7 +244,7 @@ describe('TournamentService', () => {
     });
 
     it('should mark as update when tournament already exists', async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as unknown);
       mockStartGGClient.getTournament.mockResolvedValue(mockTournament);
       mockStartGGClient.getTournamentsByOwner.mockResolvedValue({
         nodes: [{ slug: 'test-tournament' }],
@@ -270,7 +260,7 @@ describe('TournamentService', () => {
     });
 
     it('should create events for each tournament event', async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as unknown);
       mockStartGGClient.getTournament.mockResolvedValue(mockTournament);
       mockStartGGClient.getTournamentsByOwner.mockResolvedValue({
         nodes: [{ slug: 'test-tournament' }],
@@ -283,7 +273,7 @@ describe('TournamentService', () => {
     });
 
     it('should delete orphaned events not in Start.gg response', async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as unknown);
       mockStartGGClient.getTournament.mockResolvedValue(mockTournament);
       mockStartGGClient.getTournamentsByOwner.mockResolvedValue({
         nodes: [{ slug: 'test-tournament' }],
@@ -302,7 +292,7 @@ describe('TournamentService', () => {
     });
 
     it('should wrap all database operations in a transaction', async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as unknown);
       mockStartGGClient.getTournament.mockResolvedValue(mockTournament);
       mockStartGGClient.getTournamentsByOwner.mockResolvedValue({
         nodes: [{ slug: 'test-tournament' }],
@@ -315,7 +305,7 @@ describe('TournamentService', () => {
     });
 
     it('should normalize slug before fetching tournament', async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never);
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as unknown);
       mockStartGGClient.getTournament.mockResolvedValue(null);
 
       await service.setupTournament({

@@ -13,18 +13,38 @@
  * - SMOKE_DISCORD_TOKEN: Discord bot token for a test bot
  * - SMOKE_DISCORD_GUILD_ID: ID of a test Discord server
  * - SMOKE_DISCORD_CHANNEL_ID: ID of a test channel in that server
+ *
+ * NOTE: These tests read .env file directly to bypass vitest's automatic
+ * redaction of sensitive environment variables (TOKEN, KEY, SECRET, etc.)
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { Client, GatewayIntentBits, REST, Routes } from 'discord.js';
+import * as fs from 'fs';
+import * as path from 'path';
 
-// Skip all tests if smoke test credentials aren't provided
-const SKIP_SMOKE_TESTS = !process.env.SMOKE_DISCORD_TOKEN;
+// Read .env file directly to avoid vitest env redaction
+function getEnvVar(key: string): string | undefined {
+  const envPath = path.resolve(process.cwd(), '../../.env');
+  if (!fs.existsSync(envPath)) return undefined;
+
+  const content = fs.readFileSync(envPath, 'utf-8');
+  const match = content.match(new RegExp(`^${key}=(.*)$`, 'm'));
+  if (!match) return undefined;
+  // Strip surrounding quotes if present
+  let value = match[1].trim();
+  if (value.startsWith('"') && value.endsWith('"')) {
+    value = value.slice(1, -1);
+  }
+  return value;
+}
+
+const token = getEnvVar('SMOKE_DISCORD_TOKEN');
+const SKIP_SMOKE_TESTS = !token;
 
 describe.skipIf(SKIP_SMOKE_TESTS)('Discord API Smoke Tests', () => {
-  const token = process.env.SMOKE_DISCORD_TOKEN!;
-  const guildId = process.env.SMOKE_DISCORD_GUILD_ID!;
-  const channelId = process.env.SMOKE_DISCORD_CHANNEL_ID!;
+  const guildId = getEnvVar('SMOKE_DISCORD_GUILD_ID')!;
+  const channelId = getEnvVar('SMOKE_DISCORD_CHANNEL_ID')!;
 
   let client: Client | null = null;
   let rest: REST | null = null;
