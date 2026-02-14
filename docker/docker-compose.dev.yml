@@ -68,12 +68,24 @@ services:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
       STARTGG_API_KEY: ${STARTGG_API_KEY}
+      # Smoke test environment variables (optional - tests will skip if not set)
+      SMOKE_DISCORD_TOKEN: ${SMOKE_DISCORD_TOKEN}
+      SMOKE_STARTGG_API_KEY: ${SMOKE_STARTGG_API_KEY}
+      SMOKE_DISCORD_GUILD_ID: ${SMOKE_DISCORD_GUILD_ID}
+      SMOKE_DISCORD_CHANNEL_ID: ${SMOKE_DISCORD_CHANNEL_ID}
+      SMOKE_DISCORD_CLIENT_ID: ${SMOKE_DISCORD_CLIENT_ID}
+      SMOKE_DISCORD_CLIENT_SECRET: ${SMOKE_DISCORD_CLIENT_SECRET}
+      SMOKE_STARTGG_TOURNAMENT_SLUG: ${SMOKE_STARTGG_TOURNAMENT_SLUG}
     volumes:
       # Mount source code for hot-reload
       - ../apps/bot/src:/app/apps/bot/src
       - ../packages/shared/src:/app/packages/shared/src
       - ../packages/startgg-client/src:/app/packages/startgg-client/src
       - ../packages/database/src:/app/packages/database/src
+      # Mount test config for smoke tests
+      - ../apps/bot/vitest.smoke.config.ts:/app/apps/bot/vitest.smoke.config.ts:ro
+      # Mount .env file for smoke tests
+      - ../.env:/app/.env:ro
       # Preserve container node_modules
       - /app/node_modules
       - /app/apps/bot/node_modules

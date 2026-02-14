@@ -32,14 +32,15 @@ npm run docker:test:integration  # Run integration tests in Docker
 npm run docker:test:e2e       # Run Playwright E2E tests in Docker
 npm run docker:lint           # Run ESLint in Docker
 
+# Smoke tests (against real APIs - requires credentials)
+npm run docker:test:smoke        # Run all smoke tests in Docker
+npm run docker:test:smoke:bot    # Run Discord bot smoke tests
+npm run docker:test:smoke:startgg  # Run Start.gg API smoke tests
+
 # QA Skills (requires .env with credentials)
 npm run qa:run-tests         # Run full test suite (unit + integration + lint)
 npm run qa:generate-mocks    # Generate MSW handlers from Start.gg API
 npm run qa:smoke             # Run smoke tests against real APIs
-
-# Smoke tests (against real APIs - requires credentials)
-# Run on host with environment variables:
-#   SMOKE_DISCORD_TOKEN=xxx SMOKE_STARTGG_API_KEY=xxx npm run test:smoke
 
 # Docker Development (recommended)
 npm run docker:dev          # Full stack with hot-reload
@@ -304,7 +305,8 @@ npm run docker:db:push      # Push database schema
 npm run docker:test         # Unit tests
 npm run docker:test:integration  # Integration tests
 npm run docker:test:e2e     # Playwright E2E tests
-npm run docker:lint          # Linting
+npm run docker:lint         # Linting
+npm run docker:test:smoke   # Smoke tests (all packages)
 
 # QA Skills (run with .env credentials)
 npm run qa:run-tests        # Full test suite (unit + integration + lint)

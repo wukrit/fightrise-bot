@@ -43,6 +43,8 @@
     "docker:test:e2e": "PLAYWRIGHT_BASE_URL=http://localhost:4000 USE_EXISTING_SERVER=true npx playwright test apps/web/__tests__/e2e",
     "docker:lint": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec web npm run lint",
     "docker:test:smoke": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec bot npm run test:smoke",
+    "docker:test:smoke:bot": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec bot npm run test:smoke",
+    "docker:test:smoke:startgg": "docker compose --env-file .env -f docker/docker-compose.dev.yml exec bot npm run --workspace=@fightrise/startgg-client test:smoke",
     "qa": "npx tsx .claude/skills/qa/src/index.ts",
     "qa:run-tests": "dotenv -e .env -- npx tsx .claude/skills/qa/src/index.ts run-tests",
     "qa:generate-mocks": "dotenv -e .env -- npx tsx .claude/skills/qa/src/index.ts generate-mocks",
