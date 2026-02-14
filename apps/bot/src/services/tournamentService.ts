@@ -1,6 +1,8 @@
 import { prisma, TournamentState, AdminRole, Prisma } from '@fightrise/database';
 import { StartGGClient, Tournament as StartGGTournament } from '@fightrise/startgg-client';
+import { Client } from 'discord.js';
 import { schedulePoll, calculatePollInterval } from './pollingService.js';
+import { RegistrationSyncService } from './registrationSyncService.js';
 
 // Type for tournament with events included
 type TournamentWithEvents = Prisma.TournamentGetPayload<{
@@ -26,6 +28,7 @@ export type TournamentSetupError =
  */
 export class TournamentService {
   private startggClient: StartGGClient;
+  private registrationSyncService: RegistrationSyncService;
 
   constructor(startggApiKey: string) {
     this.startggClient = new StartGGClient({
@@ -33,6 +36,7 @@ export class TournamentService {
       cache: { enabled: true, ttlMs: 60000 },
       retry: { maxRetries: 3 },
     });
+    this.registrationSyncService = new RegistrationSyncService(startggApiKey);
   }
 
   /**
@@ -43,8 +47,9 @@ export class TournamentService {
     discordGuildId: string;
     matchChannelId: string;
     tournamentSlug: string;
+    discordClient?: Client;
   }): Promise<TournamentSetupResult> {
-    const { discordUserId, discordGuildId, matchChannelId, tournamentSlug } = params;
+    const { discordUserId, discordGuildId, matchChannelId, tournamentSlug, discordClient } = params;
 
     // Step 1: Verify user has linked Start.gg account
     const user = await prisma.user.findUnique({
@@ -104,6 +109,7 @@ export class TournamentService {
       discordGuildId,
       matchChannelId,
       userId: user.id,
+      discordClient,
     });
 
     return result;
@@ -194,8 +200,9 @@ export class TournamentService {
     discordGuildId: string;
     matchChannelId: string;
     userId: string;
+    discordClient?: Client;
   }): Promise<TournamentSetupResult> {
-    const { startggTournament, normalizedSlug, discordGuildId, matchChannelId, userId } = params;
+    const { startggTournament, normalizedSlug, discordGuildId, matchChannelId, userId, discordClient } = params;
 
     try {
       // Map Start.gg state to our TournamentState enum
@@ -309,6 +316,26 @@ export class TournamentService {
         const interval = calculatePollInterval(completeTournament.state);
         if (interval !== null) {
           await schedulePoll(completeTournament.id, interval);
+        }
+      }
+
+      // Sync registrations from Start.gg for all events
+      if (completeTournament?.events) {
+        for (const event of completeTournament.events) {
+          try {
+            const syncResult = await this.registrationSyncService.syncEventRegistrations(event.id, discordClient);
+            if (!syncResult.success) {
+              console.error(`Registration sync failed for event ${event.id}:`, syncResult.errors);
+            } else {
+              console.log(
+                `Synced registrations for event ${event.id}: ` +
+                `${syncResult.newRegistrations} new, ${syncResult.updatedRegistrations} updated`
+              );
+            }
+          } catch (error) {
+            // Don't fail tournament setup if sync fails
+            console.error(`Error syncing registrations for event ${event.id}:`, error);
+          }
         }
       }
 

@@ -5,6 +5,7 @@ import { prisma, TournamentState, MatchState, Prisma } from '@fightrise/database
 import { StartGGClient, AuthError, Set } from '@fightrise/startgg-client';
 import { POLL_INTERVALS, STARTGG_SET_STATE } from '@fightrise/shared';
 import { createMatchThread } from './matchService.js';
+import { RegistrationSyncService } from './registrationSyncService.js';
 
 // Type for prefetched match data
 interface ExistingMatch {
@@ -22,6 +23,7 @@ const QUEUE_NAME = 'tournament-polling';
 let queue: Queue<PollJobData> | null = null;
 let worker: Worker<PollJobData> | null = null;
 let startggClient: StartGGClient | null = null;
+let registrationSyncService: RegistrationSyncService | null = null;
 let discordClient: Client | null = null;
 
 export async function startPollingService(discord?: Client): Promise<void> {
@@ -45,6 +47,9 @@ export async function startPollingService(discord?: Client): Promise<void> {
     cache: { enabled: true, ttlMs: 30000, maxEntries: 500 },
     retry: { maxRetries: 3 },
   });
+
+  // Create RegistrationSyncService once, reuse for all polls
+  registrationSyncService = new RegistrationSyncService(apiKey);
 
   queue = new Queue<PollJobData>(QUEUE_NAME, {
     connection,
@@ -126,6 +131,16 @@ export function calculatePollInterval(state: TournamentState): number | null {
   }
 }
 
+/**
+ * Get the RegistrationSyncService instance (creates if not exists)
+ */
+export function getRegistrationSyncService(): RegistrationSyncService {
+  if (!registrationSyncService) {
+    throw new Error('PollingService not started - call startPollingService first');
+  }
+  return registrationSyncService;
+}
+
 async function pollTournament(tournamentId: string): Promise<void> {
   const tournament = await prisma.tournament.findUnique({
     where: { id: tournamentId },
@@ -142,6 +157,24 @@ async function pollTournament(tournamentId: string): Promise<void> {
   }
 
   try {
+    // Sync registrations from Start.gg for all events
+    // Use shorter interval during registration phase
+    const syncService = getRegistrationSyncService();
+    for (const event of tournament.events) {
+      try {
+        const syncResult = await syncService.syncEventRegistrations(event.id, discordClient ?? undefined);
+        if (syncResult.newRegistrations > 0 || syncResult.updatedRegistrations > 0) {
+          console.log(
+            `[Poll] Event ${event.id}: ${syncResult.newRegistrations} new, ` +
+            `${syncResult.updatedRegistrations} updated registrations`
+          );
+        }
+      } catch (syncError) {
+        console.error(`[Poll] Registration sync failed for event ${event.id}:`, syncError);
+        // Continue with match sync even if registration sync fails
+      }
+    }
+
     // Process all events in parallel (P1 fix: sequential → parallel)
     const results = await Promise.all(
       tournament.events.map((event) => syncEventMatches(event.id, event.startggId))
@@ -401,6 +434,7 @@ export async function stopPollingService(): Promise<void> {
   }
 
   startggClient = null;
+  registrationSyncService = null;
   discordClient = null;
   await closeRedisConnection();
   console.log('[PollingService] Stopped');
