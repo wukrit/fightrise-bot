@@ -58,3 +58,4 @@ docker/cloudflared-config.yml
 
 # MCP server configs (may contain tokens)
 .mcp.json
+tmp/
