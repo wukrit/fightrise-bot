@@ -8,6 +8,7 @@
   "scripts": {
     "build": "tsc",
     "test": "[ -f ../../.env ] && dotenv -e ../../.env -- vitest run || vitest run",
+    "test:smoke": "[ -f ../../.env ] && dotenv -e ../../.env -- vitest run --config vitest.smoke.config.ts || vitest run --config vitest.smoke.config.ts",
     "db:generate": "prisma generate",
     "db:push": "[ -f ../../.env ] && dotenv -e ../../.env -- prisma db push --accept-data-loss || prisma db push --accept-data-loss",
     "db:migrate": "[ -f ../../.env ] && dotenv -e ../../.env -- prisma migrate dev || prisma migrate dev",

@@ -82,8 +82,10 @@ services:
       - ../packages/shared/src:/app/packages/shared/src
       - ../packages/startgg-client/src:/app/packages/startgg-client/src
       - ../packages/database/src:/app/packages/database/src
-      # Mount test config for smoke tests
+      # Mount test configs for smoke, integration, and e2e tests
       - ../apps/bot/vitest.smoke.config.ts:/app/apps/bot/vitest.smoke.config.ts:ro
+      - ../apps/bot/vitest.integration.config.ts:/app/apps/bot/vitest.integration.config.ts:ro
+      - ../apps/bot/vitest.e2e.config.ts:/app/apps/bot/vitest.e2e.config.ts:ro
       # Mount .env file for smoke tests
       - ../.env:/app/.env:ro
       # Preserve container node_modules
