@@ -135,7 +135,7 @@ describe('checkinHandler', () => {
       matchStatus: mockMatchStatus,
     });
 
-    await checkinHandler.execute(mockInteraction as never, ['match-123', '1']);
+    await checkinHandler.execute(mockInteraction as unknown, ['match-123', '1']);
 
     expect(checkInPlayer).toHaveBeenCalledWith('match-123', 'discord-111');
     expect(mockInteraction.reply).toHaveBeenCalledWith({
@@ -151,7 +151,7 @@ describe('checkinHandler', () => {
       bothCheckedIn: false,
     });
 
-    await checkinHandler.execute(mockInteraction as never, ['match-123', '1']);
+    await checkinHandler.execute(mockInteraction as unknown, ['match-123', '1']);
 
     expect(mockInteraction.reply).toHaveBeenCalledWith({
       content: 'Match not found.',
@@ -169,7 +169,7 @@ describe('checkinHandler', () => {
       matchStatus: mockMatchStatus,
     });
 
-    await checkinHandler.execute(mockInteraction as never, ['match-123', '1']);
+    await checkinHandler.execute(mockInteraction as unknown, ['match-123', '1']);
 
     expect(mockInteraction.reply).toHaveBeenCalledWith({
       content: 'Checked in! Waiting for your opponent.',
@@ -197,7 +197,7 @@ describe('checkinHandler', () => {
       matchStatus: bothCheckedInStatus,
     });
 
-    await checkinHandler.execute(mockInteraction as never, ['match-123', '1']);
+    await checkinHandler.execute(mockInteraction as unknown, ['match-123', '1']);
 
     expect(mockInteraction.reply).toHaveBeenCalledWith({
       content: 'Checked in! Both players are ready - match can begin!',
@@ -230,7 +230,7 @@ describe('checkinHandler', () => {
     // Set channel.isThread to return false
     mockInteraction.channel!.isThread.mockReturnValue(false);
 
-    await checkinHandler.execute(mockInteraction as never, ['match-123', '1']);
+    await checkinHandler.execute(mockInteraction as unknown, ['match-123', '1']);
 
     expect(mockInteraction.message.edit).toHaveBeenCalled();
     // Should not send announcement if not in a thread
@@ -238,7 +238,7 @@ describe('checkinHandler', () => {
   });
 
   it('should reject with invalid player slot', async () => {
-    await checkinHandler.execute(mockInteraction as never, ['match-123', '3']);
+    await checkinHandler.execute(mockInteraction as unknown, ['match-123', '3']);
 
     expect(checkInPlayer).not.toHaveBeenCalled();
     expect(mockInteraction.reply).toHaveBeenCalledWith({
@@ -248,7 +248,7 @@ describe('checkinHandler', () => {
   });
 
   it('should reject with malformed customId parts (missing matchId)', async () => {
-    await checkinHandler.execute(mockInteraction as never, ['', '1']);
+    await checkinHandler.execute(mockInteraction as unknown, ['', '1']);
 
     expect(checkInPlayer).not.toHaveBeenCalled();
     expect(mockInteraction.reply).toHaveBeenCalledWith({
@@ -258,7 +258,7 @@ describe('checkinHandler', () => {
   });
 
   it('should reject with malformed customId parts (wrong length)', async () => {
-    await checkinHandler.execute(mockInteraction as never, ['match-123']);
+    await checkinHandler.execute(mockInteraction as unknown, ['match-123']);
 
     expect(checkInPlayer).not.toHaveBeenCalled();
     expect(mockInteraction.reply).toHaveBeenCalledWith({
@@ -276,7 +276,7 @@ describe('checkinHandler', () => {
       matchStatus: mockMatchStatus,
     });
 
-    await checkinHandler.execute(mockInteraction as never, ['match-123', '2']);
+    await checkinHandler.execute(mockInteraction as unknown, ['match-123', '2']);
 
     expect(checkInPlayer).toHaveBeenCalledWith('match-123', 'discord-222');
   });
@@ -301,7 +301,7 @@ describe('checkinHandler', () => {
     // Set channel to null
     mockInteraction.channel = null;
 
-    await checkinHandler.execute(mockInteraction as never, ['match-123', '1']);
+    await checkinHandler.execute(mockInteraction as unknown, ['match-123', '1']);
 
     // Should still edit the message
     expect(mockInteraction.message.edit).toHaveBeenCalled();
@@ -316,7 +316,7 @@ describe('checkinHandler', () => {
       // matchStatus not included
     });
 
-    await checkinHandler.execute(mockInteraction as never, ['match-123', '1']);
+    await checkinHandler.execute(mockInteraction as unknown, ['match-123', '1']);
 
     expect(mockInteraction.reply).toHaveBeenCalled();
     // Should not attempt to edit if matchStatus is undefined
