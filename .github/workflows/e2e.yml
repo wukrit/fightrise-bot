@@ -145,10 +145,11 @@ jobs:
           STARTGG_API_KEY: 'test-api-key'
           NEXTAUTH_SECRET: 'test-nextauth-secret'
           NEXTAUTH_URL: 'http://localhost:3000'
-        background: true
 
-      - name: Wait for web server
-        run: sleep 15
+      - name: Start web server
+        run: |
+          nohup npm run start --prefix apps/web > server.log 2>&1 &
+          sleep 15
 
       - name: Run Playwright tests
         run: npm run test:e2e -- --project=chromium
