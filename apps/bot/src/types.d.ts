@@ -7,7 +7,7 @@ export interface Command {
 export interface Event {
     name: string;
     once?: boolean;
-    execute: (...args: any[]) => void | Promise<void>;
+    execute: (...args: unknown[]) => void | Promise<void>;
 }
 export interface ExtendedClient extends Client {
     commands: Collection<string, Command>;
