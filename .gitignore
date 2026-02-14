@@ -53,8 +53,8 @@ packages/database/prisma/*.db
 # Docker (user-specific configs)
 docker/cloudflared-config.yml
 
-# Claude (local state, ephemeral prompts)
-.claude/
+# Claude (ephemeral prompts only)
+.claude/ralph-issues-prompt.md
 
 # MCP server configs (may contain tokens)
 .mcp.json
