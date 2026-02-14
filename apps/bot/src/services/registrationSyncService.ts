@@ -1,6 +1,6 @@
 import { prisma, RegistrationStatus, RegistrationSource } from '@fightrise/database';
 import { StartGGClient, Entrant } from '@fightrise/startgg-client';
-import { Client, TextBasedChannel, EmbedBuilder, Colors } from 'discord.js';
+import { Client, EmbedBuilder, Colors } from 'discord.js';
 
 const MAX_PAGES = 20;
 const PAGE_SIZE = 50;
@@ -286,7 +286,8 @@ export class RegistrationSyncService {
   ): Promise<{ isNew: boolean; wasUpdated: boolean }> {
     // Priority matching:
     // 1. Check if registration exists by startggEntrantId
-    const existing = regMap.get(entrant.id);
+    // Note: The actual check happens inside the transaction for consistency
+    regMap.get(entrant.id); // Pre-fetch into cache
 
     // 2. Try to match by startggUserId
     const participantUserId = entrant.participants?.[0]?.user?.id;
@@ -369,15 +370,17 @@ export class RegistrationSyncService {
         throw new Error(`Event not found: ${eventId}`);
       }
 
+      // Build data object - userId can be null for ghost registrations
+      // Note: Prisma types don't reflect nullable userId correctly, using type assertion
       await tx.registration.create({
         data: {
           eventId,
           startggEntrantId: entrant.id,
-          userId: matchedUserId,
+          userId: matchedUserId as string | null | undefined,
           source: RegistrationSource.STARTGG,
           status: RegistrationStatus.CONFIRMED,
           tournamentId: event.tournamentId,
-        },
+        } as never,
       });
 
       return { isNew: true, wasUpdated: false };

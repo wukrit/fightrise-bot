@@ -69,7 +69,9 @@ async function handleApprove(interaction: ButtonInteraction, registrationId: str
 
     // Notify the user
     try {
-      const user = await interaction.client.users.fetch(registration.user?.discordId!);
+      const discordId = registration.user?.discordId;
+      if (!discordId) return;
+      const user = await interaction.client.users.fetch(discordId);
       const notifyEmbed = new EmbedBuilder()
         .setTitle('Registration Approved!')
         .setColor(Colors.Green)
@@ -142,7 +144,9 @@ async function handleReject(interaction: ButtonInteraction, registrationId: stri
 
     // Notify the user
     try {
-      const user = await interaction.client.users.fetch(registration.user?.discordId!);
+      const discordId = registration.user?.discordId;
+      if (!discordId) return;
+      const user = await interaction.client.users.fetch(discordId);
       const notifyEmbed = new EmbedBuilder()
         .setTitle('Registration Update')
         .setColor(Colors.Red)

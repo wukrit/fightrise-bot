@@ -70,10 +70,10 @@ services:
       STARTGG_API_KEY: ${STARTGG_API_KEY}
     volumes:
       # Mount source code for hot-reload
-      - ../apps/bot/src:/app/apps/bot/src:ro
-      - ../packages/shared/src:/app/packages/shared/src:ro
-      - ../packages/startgg-client/src:/app/packages/startgg-client/src:ro
-      - ../packages/database/src:/app/packages/database/src:ro
+      - ../apps/bot/src:/app/apps/bot/src
+      - ../packages/shared/src:/app/packages/shared/src
+      - ../packages/startgg-client/src:/app/packages/startgg-client/src
+      - ../packages/database/src:/app/packages/database/src
       # Preserve container node_modules
       - /app/node_modules
       - /app/apps/bot/node_modules
