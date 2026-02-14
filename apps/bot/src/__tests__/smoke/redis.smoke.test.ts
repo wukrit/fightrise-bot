@@ -11,8 +11,8 @@
  * redaction of sensitive environment variables (TOKEN, KEY, SECRET, etc.)
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import Redis from 'ioredis';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import { Redis } from 'ioredis';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -70,7 +70,7 @@ describe.skipIf(SKIP_SMOKE_TESTS)('Redis Connection Smoke Tests', () => {
         clearTimeout(timeout);
         resolve();
       });
-      client!.once('error', (err) => {
+      client!.once('error', (err: Error) => {
         clearTimeout(timeout);
         reject(err);
       });
@@ -173,7 +173,7 @@ describe.skipIf(SKIP_SMOKE_TESTS)('Redis Connection Smoke Tests', () => {
 
       const messagePromise = new Promise<string>((resolve) => {
         subscriber.subscribe('smoke:test:channel');
-        subscriber.on('message', (channel, message) => {
+        subscriber.on('message', (channel: string, message: string) => {
           if (channel === 'smoke:test:channel') {
             resolve(message);
           }

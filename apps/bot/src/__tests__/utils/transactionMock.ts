@@ -1,59 +1,59 @@
-import { vi, type MockFn } from 'vitest';
+import { vi, type Mock } from 'vitest';
 
 export interface MockMatch {
-  findUnique: MockFn;
-  findMany: MockFn;
-  update: MockFn;
-  updateMany: MockFn;
-  create: MockFn;
-  deleteMany: MockFn;
+  findUnique: Mock;
+  findMany: Mock;
+  update: Mock;
+  updateMany: Mock;
+  create: Mock;
+  deleteMany: Mock;
 }
 
 export interface MockMatchPlayer {
-  findUnique: MockFn;
-  findMany: MockFn;
-  update: MockFn;
-  updateMany: MockFn;
-  create: MockFn;
-  count: MockFn;
+  findUnique: Mock;
+  findMany: Mock;
+  update: Mock;
+  updateMany: Mock;
+  create: Mock;
+  count: Mock;
 }
 
 export interface MockTournament {
-  findUnique: MockFn;
-  findMany: MockFn;
-  upsert: MockFn;
-  update: MockFn;
-  create: MockFn;
+  findUnique: Mock;
+  findMany: Mock;
+  upsert: Mock;
+  update: Mock;
+  create: Mock;
 }
 
 export interface MockEvent {
-  findUnique: MockFn;
-  findMany: MockFn;
-  upsert: MockFn;
-  deleteMany: MockFn;
-  create: MockFn;
+  findUnique: Mock;
+  findMany: Mock;
+  upsert: Mock;
+  deleteMany: Mock;
+  create: Mock;
 }
 
 export interface MockTournamentAdmin {
-  upsert: MockFn;
+  upsert: Mock;
 }
 
 export interface MockGuildConfig {
-  upsert: MockFn;
+  upsert: Mock;
 }
 
 export interface MockUser {
-  findUnique: MockFn;
-  upsert: MockFn;
-  update: MockFn;
+  findUnique: Mock;
+  upsert: Mock;
+  update: Mock;
 }
 
 export interface MockRegistration {
-  findUnique: MockFn;
-  findMany: MockFn;
-  upsert: MockFn;
-  delete: MockFn;
-  create: MockFn;
+  findUnique: Mock;
+  findMany: Mock;
+  upsert: Mock;
+  delete: Mock;
+  create: Mock;
 }
 
 export interface MockTransactionClient {
@@ -153,7 +153,7 @@ export function createMockTransaction(
  * @returns The mock transaction client for assertions
  */
 export function setupTransactionMock(
-  prisma: { $transaction: MockFn },
+  prisma: { $transaction: Mock },
   overrides?: TransactionOverrides
 ): MockTransactionClient {
   const txClient = createMockTransaction(overrides);

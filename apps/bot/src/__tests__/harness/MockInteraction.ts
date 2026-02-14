@@ -314,6 +314,10 @@ export class MockChatInputInteraction extends EventEmitter {
     return false;
   }
 
+  isAutocomplete(): boolean {
+    return false;
+  }
+
   inGuild(): boolean {
     return this.guildId !== null;
   }
@@ -444,6 +448,36 @@ export class MockButtonInteraction extends EventEmitter {
     this.emit('update', update);
 
     return {} as unknown as Message;
+  }
+
+  async editReply(options: string | InteractionReplyOptions): Promise<Message> {
+    if (!this.replied && !this.deferred) {
+      throw new Error('Interaction has not been acknowledged');
+    }
+
+    const edit: InteractionReply = typeof options === 'string'
+      ? { content: options }
+      : {
+          content: options.content,
+          embeds: options.embeds as unknown[],
+          components: options.components as unknown[],
+        };
+
+    // Replace the last reply
+    if (this.replies.length > 0) {
+      this.replies[this.replies.length - 1] = edit;
+    } else {
+      this.replies.push(edit);
+    }
+
+    this.emit('editReply', edit);
+
+    return {
+      id: `msg-${Date.now()}`,
+      content: edit.content ?? '',
+      embeds: edit.embeds ?? [],
+      components: edit.components ?? [],
+    } as unknown as Message;
   }
 
   isChatInputCommand(): boolean {

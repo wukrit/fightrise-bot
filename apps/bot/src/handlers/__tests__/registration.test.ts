@@ -53,7 +53,7 @@ vi.mock('discord.js', () => {
 import { prisma, RegistrationStatus as RegStatus } from '@fightrise/database';
 import { registrationHandler } from '../registration.js';
 
-const mockPrisma = prisma as jest.Mocked<typeof prisma>;
+const mockPrisma = prisma as typeof prisma;
 
 describe('registrationHandler', () => {
   let mockInteraction: MockButtonInteraction;
