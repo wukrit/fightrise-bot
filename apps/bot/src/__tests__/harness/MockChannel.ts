@@ -19,6 +19,7 @@ export interface MockMessage {
   createdAt: Date;
   channelId: string;
   guildId: string | null;
+  edit(options: { content?: string; embeds?: unknown[]; components?: unknown[] }): Promise<MockMessage>;
 }
 
 export interface MockThreadOptions {
@@ -70,6 +71,12 @@ export class MockThreadChannel extends EventEmitter {
       createdAt: new Date(),
       channelId: this.id,
       guildId: this.guildId,
+      edit: async (opts: { content?: string; embeds?: unknown[]; components?: unknown[] }) => {
+        if (opts.content !== undefined) message.content = opts.content;
+        if (opts.embeds !== undefined) message.embeds = opts.embeds;
+        if (opts.components !== undefined) message.components = opts.components;
+        return message;
+      },
     };
 
     this.messages.push(message);
@@ -157,6 +164,12 @@ export class MockTextChannel extends EventEmitter {
       createdAt: new Date(),
       channelId: this.id,
       guildId: this.guildId,
+      edit: async (opts: { content?: string; embeds?: unknown[]; components?: unknown[] }) => {
+        if (opts.content !== undefined) message.content = opts.content;
+        if (opts.embeds !== undefined) message.embeds = opts.embeds;
+        if (opts.components !== undefined) message.components = opts.components;
+        return message;
+      },
     };
 
     this.messages.push(message);

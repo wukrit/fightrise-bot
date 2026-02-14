@@ -314,11 +314,18 @@ export class MockChatInputInteraction extends EventEmitter {
     return false;
   }
 
+  isAutocomplete(): boolean {
+    return false;
+  }
+
+  isRepliable(): boolean {
+    return !this.replied;
+  }
+
   inGuild(): boolean {
     return this.guildId !== null;
   }
 
-  // Assertion helpers
   get lastReply(): InteractionReply | null {
     return this.replies.length > 0 ? this.replies[this.replies.length - 1] : null;
   }
@@ -446,6 +453,61 @@ export class MockButtonInteraction extends EventEmitter {
     return {} as unknown as Message;
   }
 
+  async editReply(options: string | InteractionReplyOptions): Promise<Message> {
+    if (!this.replied && !this.deferred) {
+      throw new Error('Interaction has not been acknowledged');
+    }
+
+    const edit: InteractionReply = typeof options === 'string'
+      ? { content: options }
+      : {
+          content: options.content,
+          embeds: options.embeds as unknown[],
+          components: options.components as unknown[],
+        };
+
+    // Replace the last reply
+    if (this.replies.length > 0) {
+      this.replies[this.replies.length - 1] = edit;
+    } else {
+      this.replies.push(edit);
+    }
+
+    this.emit('editReply', edit);
+
+    return {
+      id: `msg-${Date.now()}`,
+      content: edit.content ?? '',
+      embeds: edit.embeds ?? [],
+      components: edit.components ?? [],
+    } as unknown as Message;
+  }
+
+  async followUp(options: string | InteractionReplyOptions): Promise<Message> {
+    if (!this.replied && !this.deferred) {
+      throw new Error('Interaction has not been acknowledged');
+    }
+
+    const followUp: InteractionReply = typeof options === 'string'
+      ? { content: options }
+      : {
+          content: options.content,
+          embeds: options.embeds as unknown[],
+          components: options.components as unknown[],
+          ephemeral: options.ephemeral,
+        };
+
+    this.replies.push(followUp);
+    this.emit('followUp', followUp);
+
+    return {
+      id: `msg-${Date.now()}`,
+      content: followUp.content ?? '',
+      embeds: followUp.embeds ?? [],
+      components: followUp.components ?? [],
+    } as unknown as Message;
+  }
+
   isChatInputCommand(): boolean {
     return false;
   }
@@ -456,6 +518,14 @@ export class MockButtonInteraction extends EventEmitter {
 
   isStringSelectMenu(): boolean {
     return false;
+  }
+
+  isAutocomplete(): boolean {
+    return false;
+  }
+
+  isRepliable(): boolean {
+    return !this.replied;
   }
 
   inGuild(): boolean {
