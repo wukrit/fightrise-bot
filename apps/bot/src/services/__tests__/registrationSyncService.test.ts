@@ -96,7 +96,7 @@ describe('RegistrationSyncService', () => {
           {
             id: 'entrant-1',
             name: 'Player1',
-            participants: [{ user: { id: 'user-1', slug: 'player1', gamerTag: 'Player1' } }],
+            participants: [{ user: { id: 'user-1', slug: 'player1', name: 'Player1' } }],
           },
         ],
         pageInfo: { total: 1, totalPages: 1 },
@@ -248,7 +248,7 @@ describe('RegistrationSyncService', () => {
           {
             id: 'entrant-new',
             name: 'NewPlayer',
-            participants: [{ user: { id: 'startgg-user-new', slug: 'newplayer', gamerTag: 'NewPlayer' } }],
+            participants: [{ user: { id: 'startgg-user-new', slug: 'newplayer', name: 'NewPlayer' } }],
           },
         ],
         pageInfo: { total: 1, totalPages: 1 },
@@ -297,7 +297,7 @@ describe('RegistrationSyncService', () => {
           {
             id: 'entrant-1',
             name: 'DifferentName',
-            participants: [{ user: { id: 'startgg-user-1', slug: 'player1', gamerTag: 'Player1' } }],
+            participants: [{ user: { id: 'startgg-user-1', slug: 'player1', name: 'Player1' } }],
           },
         ],
         pageInfo: { total: 1, totalPages: 1 },
@@ -344,7 +344,7 @@ describe('RegistrationSyncService', () => {
           {
             id: 'entrant-1',
             name: 'PlayerOne',
-            participants: [{ user: { id: 'unknown', slug: 'unknown', gamerTag: 'Unknown' } }],
+            participants: [{ user: { id: 'unknown', slug: 'unknown', name: 'Unknown' } }],
           },
         ],
         pageInfo: { total: 1, totalPages: 1 },
@@ -391,7 +391,7 @@ describe('RegistrationSyncService', () => {
           {
             id: 'entrant-1',
             name: 'UnknownPlayer',
-            participants: [{ user: { id: 'unknown', slug: 'unknown', gamerTag: 'Unknown' } }],
+            participants: [{ user: { id: 'unknown', slug: 'unknown', name: 'Unknown' } }],
           },
         ],
         pageInfo: { total: 1, totalPages: 1 },
@@ -439,7 +439,7 @@ describe('RegistrationSyncService', () => {
           {
             id: 'entrant-1',
             name: 'ExistingPlayer',
-            participants: [{ user: { id: 'user-1', slug: 'existing', gamerTag: 'Existing' } }],
+            participants: [{ user: { id: 'user-1', slug: 'existing', name: 'Existing' } }],
           },
         ],
         pageInfo: { total: 1, totalPages: 1 },
@@ -479,7 +479,7 @@ describe('RegistrationSyncService', () => {
           {
             id: 'entrant-1',
             name: 'DQPlayer',
-            participants: [{ user: { id: 'user-1', slug: 'dqplayer', gamerTag: 'DQPlayer' } }],
+            participants: [{ user: { id: 'user-1', slug: 'dqplayer', name: 'DQPlayer' } }],
           },
         ],
         pageInfo: { total: 1, totalPages: 1 },

@@ -35,22 +35,22 @@ export const mockUsers = {
   player1: {
     id: 'user-1',
     slug: 'user/player1',
-    gamerTag: 'Player1',
+    name: 'Player1',
   },
   player2: {
     id: 'user-2',
     slug: 'user/player2',
-    gamerTag: 'Player2',
+    name: 'Player2',
   },
   player3: {
     id: 'user-3',
     slug: 'user/player3',
-    gamerTag: 'Player3',
+    name: 'Player3',
   },
   player4: {
     id: 'user-4',
     slug: 'user/player4',
-    gamerTag: 'Player4',
+    name: 'Player4',
   },
 };
 
@@ -86,7 +86,7 @@ export function createEntrant(overrides: Partial<Entrant> = {}): Entrant {
   return {
     id,
     name: `Test Player ${id}`,
-    participants: [{ user: { id: `user-${id}`, slug: `user/${id}`, gamerTag: `TestPlayer${id}` } }],
+    participants: [{ user: { id: `user-${id}`, slug: `user/${id}`, name: `TestPlayer${id}` } }],
     ...overrides,
   };
 }

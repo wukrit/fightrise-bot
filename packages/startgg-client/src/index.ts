@@ -198,7 +198,7 @@ export class StartGGClient {
                 user {
                   id
                   slug
-                  gamerTag
+                  name
                 }
               }
             }

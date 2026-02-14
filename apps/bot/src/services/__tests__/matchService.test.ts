@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { ChannelType } from 'discord.js';
+import { ChannelType, Client } from 'discord.js';
+import { setupTransactionMock } from '../../__tests__/utils/transactionMock.js';
 
 // Mock the database before imports
 vi.mock('@fightrise/database', () => ({
@@ -88,12 +89,16 @@ function createMockThread(id: string, name: string, addSuccess = true) {
 }
 
 describe('MatchService', () => {
-  // Mock Discord client
-  let mockClient: {
-    channels: {
-      fetch: ReturnType<typeof vi.fn>;
+  // Mock Discord client with proper typing
+  let mockClient: Pick<Client, 'channels'>;
+
+  // Properly typed mock for channels.fetch return value
+  interface MockChannel {
+    type: ChannelType;
+    threads?: {
+      create: ReturnType<typeof vi.fn>;
     };
-  };
+  }
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -161,10 +166,10 @@ describe('MatchService', () => {
     };
 
     it('should create thread for valid match', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
-      vi.mocked(prisma.match.updateMany).mockResolvedValue({ count: 1 } as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as unknown);
+      vi.mocked(prisma.match.updateMany).mockResolvedValue({ count: 1 } as unknown);
 
-      const result = await createMatchThread(mockClient as never, 'match-123');
+      const result = await createMatchThread(mockClient as unknown as Client, 'match-123');
 
       expect(result).toBe('thread-new-123');
       expect(prisma.match.updateMany).toHaveBeenCalledWith({
@@ -179,7 +184,7 @@ describe('MatchService', () => {
     it('should return null when match not found', async () => {
       vi.mocked(prisma.match.findUnique).mockResolvedValue(null);
 
-      const result = await createMatchThread(mockClient as never, 'match-nonexistent');
+      const result = await createMatchThread(mockClient as unknown as Client, 'match-nonexistent');
 
       expect(result).toBeNull();
       expect(prisma.match.updateMany).not.toHaveBeenCalled();
@@ -190,9 +195,9 @@ describe('MatchService', () => {
         ...mockMatch,
         discordThreadId: 'existing-thread-456',
       };
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(matchWithThread as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(matchWithThread as unknown);
 
-      const result = await createMatchThread(mockClient as never, 'match-123');
+      const result = await createMatchThread(mockClient as unknown as Client, 'match-123');
 
       expect(result).toBe('existing-thread-456');
       expect(prisma.match.updateMany).not.toHaveBeenCalled();
@@ -209,36 +214,36 @@ describe('MatchService', () => {
           },
         },
       };
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(matchNoChannel as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(matchNoChannel as unknown);
 
-      const result = await createMatchThread(mockClient as never, 'match-123');
+      const result = await createMatchThread(mockClient as unknown as Client, 'match-123');
 
       expect(result).toBeNull();
     });
 
     it('should return null when channel fetch fails', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as unknown);
       mockClient.channels.fetch.mockRejectedValue(new Error('Channel not found'));
 
-      const result = await createMatchThread(mockClient as never, 'match-123');
+      const result = await createMatchThread(mockClient as unknown as Client, 'match-123');
 
       expect(result).toBeNull();
     });
 
     it('should return null when channel is wrong type', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as unknown);
       mockClient.channels.fetch.mockResolvedValue({
         type: ChannelType.GuildVoice, // Wrong type
       });
 
-      const result = await createMatchThread(mockClient as never, 'match-123');
+      const result = await createMatchThread(mockClient as unknown as Client, 'match-123');
 
       expect(result).toBeNull();
     });
 
     it('should continue when player add fails', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
-      vi.mocked(prisma.match.updateMany).mockResolvedValue({ count: 1 } as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as unknown);
+      vi.mocked(prisma.match.updateMany).mockResolvedValue({ count: 1 } as unknown);
 
       // Override channel mock to have member add fail
       mockClient.channels.fetch.mockResolvedValue({
@@ -250,7 +255,7 @@ describe('MatchService', () => {
         },
       });
 
-      const result = await createMatchThread(mockClient as never, 'match-123');
+      const result = await createMatchThread(mockClient as unknown as Client, 'match-123');
 
       // Should still succeed even though adding players failed
       expect(result).toBe('thread-new-123');
@@ -267,8 +272,8 @@ describe('MatchService', () => {
           },
         },
       };
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(matchNoCheckIn as never);
-      vi.mocked(prisma.match.updateMany).mockResolvedValue({ count: 1 } as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(matchNoCheckIn as unknown);
+      vi.mocked(prisma.match.updateMany).mockResolvedValue({ count: 1 } as unknown);
 
       // Track what was sent to thread
       let sentComponents: unknown[] = [];
@@ -291,17 +296,17 @@ describe('MatchService', () => {
         },
       });
 
-      const result = await createMatchThread(mockClient as never, 'match-123');
+      const result = await createMatchThread(mockClient as unknown as Client, 'match-123');
 
       expect(result).toBe('thread-new-123');
       expect(sentComponents).toHaveLength(0); // No buttons when check-in disabled
     });
 
     it('should set checkInDeadline when requireCheckIn is true', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
-      vi.mocked(prisma.match.updateMany).mockResolvedValue({ count: 1 } as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as unknown);
+      vi.mocked(prisma.match.updateMany).mockResolvedValue({ count: 1 } as unknown);
 
-      await createMatchThread(mockClient as never, 'match-123');
+      await createMatchThread(mockClient as unknown as Client, 'match-123');
 
       expect(prisma.match.updateMany).toHaveBeenCalledWith({
         where: { id: 'match-123', state: 'NOT_STARTED' },
@@ -316,9 +321,9 @@ describe('MatchService', () => {
         ...mockMatch,
         players: [mockMatch.players[0]],
       };
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(matchOnePlayer as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(matchOnePlayer as unknown);
 
-      const result = await createMatchThread(mockClient as never, 'match-123');
+      const result = await createMatchThread(mockClient as unknown as Client, 'match-123');
 
       expect(result).toBeNull();
     });
@@ -387,19 +392,12 @@ describe('MatchService', () => {
     };
 
     it('should check in player successfully', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as unknown);
       // Transaction mock returns partial check-in (1 player)
-      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
-        const tx = {
-          matchPlayer: {
-            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-            count: vi.fn().mockResolvedValue(1), // Only 1 player checked in
-          },
-          match: {
-            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-          },
-        };
-        return callback(tx as never);
+      const txClient = setupTransactionMock(prisma, {
+        matchPlayer: {
+          count: vi.fn().mockResolvedValue(1), // Only 1 player checked in
+        },
       });
 
       const result = await checkInPlayer('match-123', 'discord-111');
@@ -410,19 +408,12 @@ describe('MatchService', () => {
     });
 
     it('should return both checked in when both players are ready', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as unknown);
       // Transaction mock returns both players checked in
-      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
-        const tx = {
-          matchPlayer: {
-            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-            count: vi.fn().mockResolvedValue(2), // Both players checked in
-          },
-          match: {
-            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-          },
-        };
-        return callback(tx as never);
+      const txClient = setupTransactionMock(prisma, {
+        matchPlayer: {
+          count: vi.fn().mockResolvedValue(2), // Both players checked in
+        },
       });
 
       const result = await checkInPlayer('match-123', 'discord-111');
@@ -442,7 +433,7 @@ describe('MatchService', () => {
     });
 
     it('should return error when player not in match', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as unknown);
 
       const result = await checkInPlayer('match-123', 'discord-999');
 
@@ -458,7 +449,7 @@ describe('MatchService', () => {
           mockMatch.players[1],
         ],
       };
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(matchWithCheckedIn as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(matchWithCheckedIn as unknown);
 
       const result = await checkInPlayer('match-123', 'discord-111');
 
@@ -467,19 +458,13 @@ describe('MatchService', () => {
     });
 
     it('should return error when concurrent check-in detected (optimistic lock)', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as unknown);
       // Transaction mock simulates concurrent check-in (updateMany returns 0)
-      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
-        const tx = {
-          matchPlayer: {
-            updateMany: vi.fn().mockResolvedValue({ count: 0 }), // Already checked in
-            count: vi.fn().mockResolvedValue(1),
-          },
-          match: {
-            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-          },
-        };
-        return callback(tx as never);
+      setupTransactionMock(prisma, {
+        matchPlayer: {
+          updateMany: vi.fn().mockResolvedValue({ count: 0 }), // Already checked in
+          count: vi.fn().mockResolvedValue(1),
+        },
       });
 
       const result = await checkInPlayer('match-123', 'discord-111');
@@ -493,7 +478,7 @@ describe('MatchService', () => {
         ...mockMatch,
         checkInDeadline: new Date(Date.now() - 1000), // 1 second ago
       };
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(matchDeadlinePassed as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(matchDeadlinePassed as unknown);
 
       const result = await checkInPlayer('match-123', 'discord-111');
 
@@ -506,7 +491,7 @@ describe('MatchService', () => {
         ...mockMatch,
         state: 'NOT_STARTED',
       };
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(matchNotCalled as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(matchNotCalled as unknown);
 
       const result = await checkInPlayer('match-123', 'discord-111');
 
@@ -542,7 +527,7 @@ describe('MatchService', () => {
     };
 
     it('should return match status with player info', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatch as unknown);
 
       const result = await getMatchStatus('match-123');
 
@@ -610,7 +595,7 @@ describe('MatchService', () => {
     ];
 
     it('should return matches for player', async () => {
-      vi.mocked(prisma.match.findMany).mockResolvedValue(mockMatches as never);
+      vi.mocked(prisma.match.findMany).mockResolvedValue(mockMatches as unknown);
 
       const result = await getPlayerMatches('discord-111');
 
@@ -620,9 +605,9 @@ describe('MatchService', () => {
     });
 
     it('should filter by state when provided', async () => {
-      vi.mocked(prisma.match.findMany).mockResolvedValue([mockMatches[1]] as never);
+      vi.mocked(prisma.match.findMany).mockResolvedValue([mockMatches[1]] as unknown);
 
-      const result = await getPlayerMatches('discord-111', { state: 'CALLED' as never });
+      const result = await getPlayerMatches('discord-111', { state: 'CALLED' });
 
       expect(prisma.match.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -635,7 +620,7 @@ describe('MatchService', () => {
     });
 
     it('should respect limit option', async () => {
-      vi.mocked(prisma.match.findMany).mockResolvedValue([mockMatches[0]] as never);
+      vi.mocked(prisma.match.findMany).mockResolvedValue([mockMatches[0]] as unknown);
 
       await getPlayerMatches('discord-111', { limit: 1 });
 
@@ -708,17 +693,14 @@ describe('MatchService', () => {
     });
 
     it('should auto-complete when loser confirms opponent won', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchCheckedIn as never);
-      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
-        const tx = {
-          match: {
-            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-          },
-          matchPlayer: {
-            update: vi.fn().mockResolvedValue({}),
-          },
-        };
-        return callback(tx as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchCheckedIn as unknown);
+      setupTransactionMock(prisma, {
+        match: {
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        },
+        matchPlayer: {
+          update: vi.fn().mockResolvedValue({}),
+        },
       });
 
       // Player 1 (discord-111) reports Player 2 (slot 2) won = loser confirming
@@ -731,17 +713,14 @@ describe('MatchService', () => {
     });
 
     it('should go to pending confirmation when winner self-reports', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchCheckedIn as never);
-      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
-        const tx = {
-          match: {
-            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-          },
-          matchPlayer: {
-            update: vi.fn().mockResolvedValue({}),
-          },
-        };
-        return callback(tx as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchCheckedIn as unknown);
+      setupTransactionMock(prisma, {
+        match: {
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        },
+        matchPlayer: {
+          update: vi.fn().mockResolvedValue({}),
+        },
       });
 
       // Player 1 (discord-111) reports Player 1 (slot 1) won = self-report
@@ -763,7 +742,7 @@ describe('MatchService', () => {
     });
 
     it('should return error when player not in match', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchCheckedIn as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchCheckedIn as unknown);
 
       const result = await reportScore('match-123', 'discord-999', 1);
 
@@ -773,7 +752,7 @@ describe('MatchService', () => {
 
     it('should return error when match already completed', async () => {
       const completedMatch = { ...mockMatchCheckedIn, state: 'COMPLETED' };
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(completedMatch as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(completedMatch as unknown);
 
       const result = await reportScore('match-123', 'discord-111', 1);
 
@@ -783,7 +762,7 @@ describe('MatchService', () => {
 
     it('should return error when match already has pending confirmation', async () => {
       const pendingMatch = { ...mockMatchCheckedIn, state: 'PENDING_CONFIRMATION' };
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(pendingMatch as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(pendingMatch as unknown);
 
       const result = await reportScore('match-123', 'discord-111', 1);
 
@@ -793,7 +772,7 @@ describe('MatchService', () => {
 
     it('should return error when match not in CHECKED_IN state', async () => {
       const calledMatch = { ...mockMatchCheckedIn, state: 'CALLED' };
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(calledMatch as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(calledMatch as unknown);
 
       const result = await reportScore('match-123', 'discord-111', 1);
 
@@ -809,17 +788,14 @@ describe('MatchService', () => {
     });
 
     it('should handle concurrent report (state guard)', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchCheckedIn as never);
-      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
-        const tx = {
-          match: {
-            updateMany: vi.fn().mockResolvedValue({ count: 0 }), // State already changed
-          },
-          matchPlayer: {
-            update: vi.fn().mockResolvedValue({}),
-          },
-        };
-        return callback(tx as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchCheckedIn as unknown);
+      setupTransactionMock(prisma, {
+        match: {
+          updateMany: vi.fn().mockResolvedValue({ count: 0 }), // State already changed
+        },
+        matchPlayer: {
+          update: vi.fn().mockResolvedValue({}),
+        },
       });
 
       const result = await reportScore('match-123', 'discord-111', 1);
@@ -861,17 +837,14 @@ describe('MatchService', () => {
     };
 
     it('should complete match when opponent confirms', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as never);
-      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
-        const tx = {
-          match: {
-            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-          },
-          matchPlayer: {
-            update: vi.fn().mockResolvedValue({}),
-          },
-        };
-        return callback(tx as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as unknown);
+      setupTransactionMock(prisma, {
+        match: {
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        },
+        matchPlayer: {
+          update: vi.fn().mockResolvedValue({}),
+        },
       });
 
       // Player 2 (discord-222) confirms Player 1's self-report
@@ -883,17 +856,14 @@ describe('MatchService', () => {
     });
 
     it('should reset state and return dispute message when opponent disputes', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as never);
-      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
-        const tx = {
-          match: {
-            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-          },
-          matchPlayer: {
-            updateMany: vi.fn().mockResolvedValue({ count: 2 }),
-          },
-        };
-        return callback(tx as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as unknown);
+      setupTransactionMock(prisma, {
+        match: {
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        },
+        matchPlayer: {
+          updateMany: vi.fn().mockResolvedValue({ count: 2 }),
+        },
       });
 
       // Player 2 (discord-222) disputes Player 1's self-report
@@ -905,7 +875,7 @@ describe('MatchService', () => {
     });
 
     it('should return error when reporter tries to confirm their own report', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as unknown);
 
       // Player 1 (discord-111) tries to confirm their own report
       const result = await confirmResult('match-123', 'discord-111', true);
@@ -925,7 +895,7 @@ describe('MatchService', () => {
 
     it('should return error when match not pending confirmation', async () => {
       const checkedInMatch = { ...mockMatchPending, state: 'CHECKED_IN' };
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(checkedInMatch as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(checkedInMatch as unknown);
 
       const result = await confirmResult('match-123', 'discord-222', true);
 
@@ -935,7 +905,7 @@ describe('MatchService', () => {
 
     it('should return error when match already completed', async () => {
       const completedMatch = { ...mockMatchPending, state: 'COMPLETED' };
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(completedMatch as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(completedMatch as unknown);
 
       const result = await confirmResult('match-123', 'discord-222', true);
 
@@ -944,7 +914,7 @@ describe('MatchService', () => {
     });
 
     it('should return error when user not in match', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as unknown);
 
       const result = await confirmResult('match-123', 'discord-999', true);
 
@@ -953,17 +923,14 @@ describe('MatchService', () => {
     });
 
     it('should handle concurrent confirm (state guard)', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as never);
-      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
-        const tx = {
-          match: {
-            updateMany: vi.fn().mockResolvedValue({ count: 0 }), // Already transitioned
-          },
-          matchPlayer: {
-            update: vi.fn().mockResolvedValue({}),
-          },
-        };
-        return callback(tx as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as unknown);
+      setupTransactionMock(prisma, {
+        match: {
+          updateMany: vi.fn().mockResolvedValue({ count: 0 }), // Already transitioned
+        },
+        matchPlayer: {
+          update: vi.fn().mockResolvedValue({}),
+        },
       });
 
       const result = await confirmResult('match-123', 'discord-222', true);
@@ -973,17 +940,14 @@ describe('MatchService', () => {
     });
 
     it('should reset state to CHECKED_IN when disputed', async () => {
-      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as never);
-      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
-        const tx = {
-          match: {
-            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-          },
-          matchPlayer: {
-            updateMany: vi.fn().mockResolvedValue({ count: 2 }),
-          },
-        };
-        return callback(tx as never);
+      vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as unknown);
+      setupTransactionMock(prisma, {
+        match: {
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        },
+        matchPlayer: {
+          updateMany: vi.fn().mockResolvedValue({ count: 2 }),
+        },
       });
 
       // Player 2 disputes
