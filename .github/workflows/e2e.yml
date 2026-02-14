@@ -135,6 +135,21 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      - name: Start web server
+        run: npm run start --prefix apps/web &
+        env:
+          DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
+          DISCORD_TOKEN: 'test-token'
+          DISCORD_CLIENT_ID: 'test-client-id'
+          DISCORD_CLIENT_SECRET: 'test-client-secret'
+          STARTGG_API_KEY: 'test-api-key'
+          NEXTAUTH_SECRET: 'test-nextauth-secret'
+          NEXTAUTH_URL: 'http://localhost:3000'
+        background: true
+
+      - name: Wait for web server
+        run: sleep 15
+
       - name: Run Playwright tests
         run: npm run test:e2e -- --project=chromium
         env:
@@ -146,6 +161,7 @@ jobs:
           NEXTAUTH_SECRET: 'test-nextauth-secret'
           NEXTAUTH_URL: 'http://localhost:3000'
           PLAYWRIGHT_BASE_URL: 'http://localhost:3000'
+          USE_EXISTING_SERVER: 'true'
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
