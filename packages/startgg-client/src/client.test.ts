@@ -158,7 +158,7 @@ describe('StartGGClient', () => {
           {
             id: '1',
             name: 'Player1',
-            participants: [{ user: { id: 'u1', slug: 'player1', gamerTag: 'P1' } }],
+            participants: [{ user: { id: 'u1', slug: 'player1', name: 'P1' } }],
           },
         ],
       };

@@ -35,10 +35,14 @@ export async function runTestSuite(): Promise<TestRunResult> {
     NPM_COMMANDS.DOCKER_DB_PUSH,
   ];
 
+  // Note: E2E tests are excluded by default as they require:
+  // - Running web server (USE_EXISTING_SERVER=true)
+  // - Playwright browsers installed
+  // - Additional infrastructure setup
+  // Run them separately with: npm run docker:test:e2e
   const testCommands = [
     NPM_COMMANDS.DOCKER_TEST,
     NPM_COMMANDS.DOCKER_TEST_INTEGRATION,
-    NPM_COMMANDS.DOCKER_TEST_E2E,
     NPM_COMMANDS.DOCKER_LINT,
   ];
 
@@ -58,6 +62,7 @@ export async function runTestSuite(): Promise<TestRunResult> {
   }
 
   console.log('🧪 Running tests...\n');
+  console.log('📝 Note: E2E tests are skipped. Run separately with: npm run docker:test:e2e\n');
 
   // Run test commands
   for (const cmd of testCommands) {

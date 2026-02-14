@@ -23,14 +23,14 @@ function validateCredentials(): void {
   }
 }
 
-// Generate MSW handler from GraphQL response
+// Generate MSW handler from GraphQL response (MSW v2 syntax)
 function generateHandler(queryName: string, response: Record<string, unknown>): string {
   const sanitized = sanitizeResponse(response);
 
-  return `  graphql.query('${queryName}', (req, res, ctx) => {
-    return res(
-      ctx.data(${JSON.stringify(sanitized, null, 6).replace(/\n/g, '\n      ')})
-    );
+  return `  startgg.query('${queryName}', () => {
+    return HttpResponse.json({
+      data: ${JSON.stringify(sanitized, null, 6).replace(/\n/g, '\n      ')}
+    });
   }),`;
 }
 
@@ -107,7 +107,10 @@ export async function generateMocks(): Promise<void> {
   const handlerCode = `// Auto-generated MSW handlers
 // Generated: ${new Date().toISOString()}
 
-import { graphql } from 'msw';
+import { graphql, HttpResponse } from 'msw';
+
+const STARTGG_API = 'https://api.start.gg/gql/alpha';
+const startgg = graphql.link(STARTGG_API);
 
 export const handlers = [
 ${handlers.join('\n')}

@@ -112,6 +112,9 @@ services:
       - ../apps/web/components:/app/apps/web/components:ro
       - ../apps/web/lib:/app/apps/web/lib:ro
       - ../apps/web/__tests__:/app/apps/web/__tests__:ro
+      - ../apps/web/vitest.config.ts:/app/apps/web/vitest.config.ts:ro
+      - ../apps/web/vitest.setup.ts:/app/apps/web/vitest.setup.ts:ro
+      - ../apps/web/.eslintrc.json:/app/apps/web/.eslintrc.json:ro
       - ../packages/shared/src:/app/packages/shared/src:ro
       - ../packages/ui/src:/app/packages/ui/src:ro
       - ../packages/database/src:/app/packages/database/src:ro

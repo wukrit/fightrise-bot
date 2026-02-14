@@ -9,7 +9,7 @@
     "build": "tsc",
     "test": "[ -f ../../.env ] && dotenv -e ../../.env -- vitest run || vitest run",
     "db:generate": "prisma generate",
-    "db:push": "[ -f ../../.env ] && dotenv -e ../../.env -- prisma db push || prisma db push",
+    "db:push": "[ -f ../../.env ] && dotenv -e ../../.env -- prisma db push --accept-data-loss || prisma db push --accept-data-loss",
     "db:migrate": "[ -f ../../.env ] && dotenv -e ../../.env -- prisma migrate dev || prisma migrate dev",
     "db:studio": "dotenv -e ../../.env -- prisma studio"
   },
