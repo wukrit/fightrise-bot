@@ -9,13 +9,14 @@
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:smoke": "vitest run src/__tests__/smoke/"
+    "test:smoke": "dotenv -e ../../.env -- vitest run --config vitest.smoke.config.ts"
   },
   "dependencies": {
     "graphql": "^16.8.0",
     "graphql-request": "^6.1.0"
   },
   "devDependencies": {
+    "dotenv": "^16.6.1",
     "msw": "^2.0.0",
     "typescript": "^5.3.0",
     "vitest": "^1.0.0"
