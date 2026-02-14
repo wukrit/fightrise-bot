@@ -171,6 +171,8 @@ describe('RegistrationSyncService', () => {
 
       mockPrisma.registration.findMany.mockResolvedValue([]);
       mockPrisma.user.findMany.mockResolvedValue([]);
+      // Mock event fetch outside transaction
+      mockPrisma.event.findUnique.mockResolvedValue({ id: 'event-123', tournamentId: 'tournament-1' });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockPrisma.$transaction.mockImplementation(async (callback: any) => {
         const tx = {
@@ -203,6 +205,8 @@ describe('RegistrationSyncService', () => {
 
       mockPrisma.registration.findMany.mockResolvedValue([]);
       mockPrisma.user.findMany.mockResolvedValue([]);
+      // Mock event fetch outside transaction
+      mockPrisma.event.findUnique.mockResolvedValue({ id: 'event-123', tournamentId: 'tournament-1' });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockPrisma.$transaction.mockImplementation(async (callback: any) => {
         const tx = {
@@ -252,6 +256,8 @@ describe('RegistrationSyncService', () => {
 
       mockPrisma.registration.findMany.mockResolvedValue([]);
       mockPrisma.user.findMany.mockResolvedValue([]);
+      // Mock event fetch outside transaction
+      mockPrisma.event.findUnique.mockResolvedValue({ id: 'event-123', tournamentId: 'tournament-1' });
 
       let createdData: unknown = null;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -301,6 +307,8 @@ describe('RegistrationSyncService', () => {
       mockPrisma.user.findMany.mockResolvedValue([
         { id: 'user-1', startggId: 'startgg-user-1', startggGamerTag: 'Player1' },
       ]);
+      // Mock event fetch outside transaction
+      mockPrisma.event.findUnique.mockResolvedValue({ id: 'event-123', tournamentId: 'tournament-1' });
 
       let createdData: unknown = null;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -346,6 +354,8 @@ describe('RegistrationSyncService', () => {
       mockPrisma.user.findMany.mockResolvedValue([
         { id: 'user-1', startggId: null, startggGamerTag: 'playerone' },
       ]);
+      // Mock event fetch outside transaction
+      mockPrisma.event.findUnique.mockResolvedValue({ id: 'event-123', tournamentId: 'tournament-1' });
 
       let createdData: unknown = null;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -389,6 +399,8 @@ describe('RegistrationSyncService', () => {
 
       mockPrisma.registration.findMany.mockResolvedValue([]);
       mockPrisma.user.findMany.mockResolvedValue([]);
+      // Mock event fetch outside transaction
+      mockPrisma.event.findUnique.mockResolvedValue({ id: 'event-123', tournamentId: 'tournament-1' });
 
       let createdData: unknown = null;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -421,6 +433,7 @@ describe('RegistrationSyncService', () => {
 
     it('should not create duplicate registrations for same entrant', async () => {
       // Test that when an entrant already has a registration, it doesn't create duplicate
+      // With batch implementation, uses prefetched regMap to detect existing registrations
       mockStartGGClient.getEventEntrants.mockResolvedValue({
         nodes: [
           {
@@ -438,18 +451,16 @@ describe('RegistrationSyncService', () => {
       ]);
 
       mockPrisma.user.findMany.mockResolvedValue([]);
+      // Mock event fetch outside transaction
+      mockPrisma.event.findUnique.mockResolvedValue({ id: 'event-123', tournamentId: 'tournament-1' });
 
+      // Mock transaction - batch implementation only calls create/updateMany
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockPrisma.$transaction.mockImplementation(async (callback: any) => {
         const tx = {
           registration: {
-            findUnique: vi.fn().mockResolvedValue(null), // Simulate not finding in transaction
-            findFirst: vi.fn().mockResolvedValue(null),
             create: vi.fn().mockResolvedValue({ id: 'reg-new' }),
-            updateMany: vi.fn().mockResolvedValue({ count: 0 }),
-          },
-          event: {
-            findUnique: vi.fn().mockResolvedValue({ id: 'event-123', tournamentId: 'tournament-1' }),
+            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
           },
         };
         return callback(tx);
@@ -457,8 +468,9 @@ describe('RegistrationSyncService', () => {
 
       const result = await service.syncEventRegistrations('event-123');
 
-      // Should create exactly one new registration (the transaction still runs create)
-      expect(result.newRegistrations).toBe(1);
+      // Should UPDATE the existing registration, not create a new one
+      expect(result.newRegistrations).toBe(0);
+      expect(result.updatedRegistrations).toBe(1);
     });
 
     it('should not overwrite DQ status', async () => {

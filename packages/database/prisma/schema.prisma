@@ -212,8 +212,16 @@ model Registration {
   eventId         String?   @map("event_id")  // Nullable for backwards compatibility
   event           Event?    @relation(fields: [eventId], references: [id])
 
-  // Note: Unique constraint on (eventId, startggEntrantId) is enforced at application level
-  // during sync to avoid breaking existing data
+  // Note: Unique constraint on (eventId, startggEntrantId) is NOT added to the database schema
+  // because existing production data may contain duplicates from before this was enforced.
+  // Adding a unique constraint would require a data migration to clean duplicates.
+  //
+  // Application-level enforcement is implemented as follows:
+  // 1. RegistrationSyncService uses a transaction with atomic operations to prevent race conditions
+  // 2. The /register and /admin register commands check for existing registrations before creating
+  // 3. The unique constraint on (userId, eventId) provides some protection for Discord-based registrations
+  //
+  // TODO: Consider adding unique constraint after cleaning duplicate data in production
   @@unique([userId, eventId])
   @@index([tournamentId])
   @@index([eventId])

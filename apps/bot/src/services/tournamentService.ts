@@ -1,5 +1,6 @@
 import { prisma, TournamentState, AdminRole, Prisma } from '@fightrise/database';
 import { StartGGClient, Tournament as StartGGTournament } from '@fightrise/startgg-client';
+import { Client } from 'discord.js';
 import { schedulePoll, calculatePollInterval } from './pollingService.js';
 import { RegistrationSyncService } from './registrationSyncService.js';
 
@@ -46,8 +47,9 @@ export class TournamentService {
     discordGuildId: string;
     matchChannelId: string;
     tournamentSlug: string;
+    discordClient?: Client;
   }): Promise<TournamentSetupResult> {
-    const { discordUserId, discordGuildId, matchChannelId, tournamentSlug } = params;
+    const { discordUserId, discordGuildId, matchChannelId, tournamentSlug, discordClient } = params;
 
     // Step 1: Verify user has linked Start.gg account
     const user = await prisma.user.findUnique({
@@ -107,6 +109,7 @@ export class TournamentService {
       discordGuildId,
       matchChannelId,
       userId: user.id,
+      discordClient,
     });
 
     return result;
@@ -197,8 +200,9 @@ export class TournamentService {
     discordGuildId: string;
     matchChannelId: string;
     userId: string;
+    discordClient?: Client;
   }): Promise<TournamentSetupResult> {
-    const { startggTournament, normalizedSlug, discordGuildId, matchChannelId, userId } = params;
+    const { startggTournament, normalizedSlug, discordGuildId, matchChannelId, userId, discordClient } = params;
 
     try {
       // Map Start.gg state to our TournamentState enum
@@ -319,7 +323,7 @@ export class TournamentService {
       if (completeTournament?.events) {
         for (const event of completeTournament.events) {
           try {
-            const syncResult = await this.registrationSyncService.syncEventRegistrations(event.id);
+            const syncResult = await this.registrationSyncService.syncEventRegistrations(event.id, discordClient);
             if (!syncResult.success) {
               console.error(`Registration sync failed for event ${event.id}:`, syncResult.errors);
             } else {

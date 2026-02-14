@@ -23,6 +23,7 @@ const QUEUE_NAME = 'tournament-polling';
 let queue: Queue<PollJobData> | null = null;
 let worker: Worker<PollJobData> | null = null;
 let startggClient: StartGGClient | null = null;
+let registrationSyncService: RegistrationSyncService | null = null;
 let discordClient: Client | null = null;
 
 export async function startPollingService(discord?: Client): Promise<void> {
@@ -46,6 +47,9 @@ export async function startPollingService(discord?: Client): Promise<void> {
     cache: { enabled: true, ttlMs: 30000, maxEntries: 500 },
     retry: { maxRetries: 3 },
   });
+
+  // Create RegistrationSyncService once, reuse for all polls
+  registrationSyncService = new RegistrationSyncService(apiKey);
 
   queue = new Queue<PollJobData>(QUEUE_NAME, {
     connection,
@@ -127,6 +131,16 @@ export function calculatePollInterval(state: TournamentState): number | null {
   }
 }
 
+/**
+ * Get the RegistrationSyncService instance (creates if not exists)
+ */
+export function getRegistrationSyncService(): RegistrationSyncService {
+  if (!registrationSyncService) {
+    throw new Error('PollingService not started - call startPollingService first');
+  }
+  return registrationSyncService;
+}
+
 async function pollTournament(tournamentId: string): Promise<void> {
   const tournament = await prisma.tournament.findUnique({
     where: { id: tournamentId },
@@ -145,10 +159,10 @@ async function pollTournament(tournamentId: string): Promise<void> {
   try {
     // Sync registrations from Start.gg for all events
     // Use shorter interval during registration phase
-    const registrationSyncService = new RegistrationSyncService(process.env.STARTGG_API_KEY || '');
+    const syncService = getRegistrationSyncService();
     for (const event of tournament.events) {
       try {
-        const syncResult = await registrationSyncService.syncEventRegistrations(event.id, discordClient ?? undefined);
+        const syncResult = await syncService.syncEventRegistrations(event.id, discordClient ?? undefined);
         if (syncResult.newRegistrations > 0 || syncResult.updatedRegistrations > 0) {
           console.log(
             `[Poll] Event ${event.id}: ${syncResult.newRegistrations} new, ` +
@@ -420,6 +434,7 @@ export async function stopPollingService(): Promise<void> {
   }
 
   startggClient = null;
+  registrationSyncService = null;
   discordClient = null;
   await closeRedisConnection();
   console.log('[PollingService] Stopped');

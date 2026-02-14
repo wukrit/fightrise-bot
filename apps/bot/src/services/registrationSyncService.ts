@@ -53,6 +53,15 @@ export class RegistrationSyncService {
         return result;
       }
 
+      // Fetch event once to get tournamentId (needed for new registrations)
+      const event = await prisma.event.findUnique({
+        where: { id: eventId },
+        select: { tournamentId: true },
+      });
+      if (!event) {
+        throw new Error(`Event not found: ${eventId}`);
+      }
+
       // Prefetch existing registrations for this event
       const existingRegistrations = await prisma.registration.findMany({
         where: { eventId },
@@ -103,30 +112,44 @@ export class RegistrationSyncService {
           .map((u) => [u.startggGamerTag!.toLowerCase(), u])
       );
 
-      // Process each entrant
+      // Pre-compute all operations using prefetched data (avoids O(n) transactions)
+      const operations = this.computeBatchOperations(
+        entrants,
+        eventId,
+        event.tournamentId,
+        regMap,
+        usersByStartggId,
+        usersByGamerTag
+      );
+
+      // Execute all database operations in a single transaction
+      if (operations.updates.length > 0 || operations.creates.length > 0) {
+        await prisma.$transaction(async (tx) => {
+          // Perform all updates
+          for (const update of operations.updates) {
+            await tx.registration.updateMany({
+              where: update.where,
+              data: update.data,
+            });
+          }
+
+          // Perform all creates
+          for (const create of operations.creates) {
+            await tx.registration.create({
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              data: create as any,
+            });
+          }
+        });
+
+        result.newRegistrations = operations.creates.length;
+        result.updatedRegistrations = operations.updates.length;
+      }
+
+      // Validate entrants and collect errors (no DB operations)
       for (const entrant of entrants) {
         if (!this.validateEntrant(entrant)) {
           result.errors.push(`Invalid entrant data: ${entrant.id}`);
-          continue;
-        }
-
-        try {
-          const syncResult = await this.processEntrant(
-            entrant,
-            eventId,
-            regMap,
-            usersByStartggId,
-            usersByGamerTag
-          );
-
-          if (syncResult.isNew) {
-            result.newRegistrations++;
-          } else if (syncResult.wasUpdated) {
-            result.updatedRegistrations++;
-          }
-        } catch (error) {
-          const message = error instanceof Error ? error.message : 'Unknown error';
-          result.errors.push(`Failed to sync entrant ${entrant.id}: ${message}`);
         }
       }
     } catch (error) {
@@ -209,9 +232,7 @@ export class RegistrationSyncService {
 
     for (let page = 1; page <= MAX_PAGES; page++) {
       try {
-        const connection = await this.fetchWithRetry(() =>
-          this.startggClient.getEventEntrants(eventId, page, PAGE_SIZE)
-        );
+        const connection = await this.startggClient.getEventEntrants(eventId, page, PAGE_SIZE);
 
         if (!connection?.nodes) {
           break;
@@ -235,37 +256,6 @@ export class RegistrationSyncService {
   }
 
   /**
-   * Fetch with exponential backoff for rate limiting
-   */
-  private async fetchWithRetry<T>(
-    query: () => Promise<T>,
-    maxRetries = 3
-  ): Promise<T> {
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        return await query();
-      } catch (error: unknown) {
-        const err = error as { status?: number; message?: string };
-        if (err.status === 429 && attempt < maxRetries - 1) {
-          const delay = Math.min(
-            1000 * Math.pow(2, attempt) + Math.random() * 1000,
-            30000
-          );
-          console.log(`Rate limited, waiting ${delay}ms before retry...`);
-          await this.sleep(delay);
-          continue;
-        }
-        throw error;
-      }
-    }
-    throw new Error('Max retries exceeded');
-  }
-
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  /**
    * Validate entrant data before processing
    */
   private validateEntrant(entrant: Entrant): boolean {
@@ -275,115 +265,149 @@ export class RegistrationSyncService {
   }
 
   /**
-   * Process a single entrant: match to user and create/update registration
+   * Compute all batch operations using prefetched data (avoids O(n) transactions)
+   * This replaces the per-entrant processEntrant method with a single batch operation
    */
-  private async processEntrant(
-    entrant: Entrant,
+  private computeBatchOperations(
+    entrants: Entrant[],
     eventId: string,
+    tournamentId: string,
     regMap: Map<string, { id: string; userId: string | null; status: RegistrationStatus }>,
     usersByStartggId: Map<string, { id: string; startggGamerTag: string | null }>,
     usersByGamerTag: Map<string, { id: string; startggGamerTag: string | null }>
-  ): Promise<{ isNew: boolean; wasUpdated: boolean }> {
-    // Priority matching:
-    // 1. Check if registration exists by startggEntrantId
-    // Note: The actual check happens inside the transaction for consistency
-    regMap.get(entrant.id); // Pre-fetch into cache
+  ): {
+    updates: Array<{
+      where: { id: string; status?: { not: RegistrationStatus } };
+      data: { status: RegistrationStatus; userId?: string; startggEntrantId?: string };
+    }>;
+    creates: Array<{
+      eventId: string;
+      startggEntrantId: string;
+      userId: string | null;
+      source: RegistrationSource;
+      status: RegistrationStatus;
+      tournamentId: string;
+    }>;
+  } {
+    const updates: Array<{
+      where: { id: string; status?: { not: RegistrationStatus } };
+      data: { status: RegistrationStatus; userId?: string; startggEntrantId?: string };
+    }> = [];
+    const creates: Array<{
+      eventId: string;
+      startggEntrantId: string;
+      userId: string | null;
+      source: RegistrationSource;
+      status: RegistrationStatus;
+      tournamentId: string;
+    }> = [];
 
-    // 2. Try to match by startggUserId
-    const participantUserId = entrant.participants?.[0]?.user?.id;
-    let matchedUserId: string | null = null;
-
-    if (participantUserId) {
-      const matchedUser = usersByStartggId.get(participantUserId);
-      if (matchedUser) {
-        matchedUserId = matchedUser.id;
+    // Track userId -> registration for linking existing Discord registrations
+    const userIdToRegId = new Map<string, string>();
+    for (const [, reg] of regMap) {
+      if (reg.userId) {
+        userIdToRegId.set(reg.userId, reg.id);
       }
     }
 
-    // 3. Try to match by gamer tag (case-insensitive)
-    if (!matchedUserId && entrant.name) {
-      const matchedUser = usersByGamerTag.get(entrant.name.toLowerCase());
-      if (matchedUser) {
-        matchedUserId = matchedUser.id;
+    for (const entrant of entrants) {
+      if (!this.validateEntrant(entrant)) {
+        continue;
       }
-    }
 
-    // Use transaction for atomic upsert
-    return await prisma.$transaction(async (tx) => {
-      // Check for existing registration by startggEntrantId (no unique constraint, use findFirst)
-      const existingInTx = await tx.registration.findFirst({
-        where: {
-          eventId,
-          startggEntrantId: entrant.id,
-        },
-      });
+      // Try to match by startggUserId
+      const participantUserId = entrant.participants?.[0]?.user?.id;
+      let matchedUserId: string | null = null;
 
-      if (existingInTx) {
+      if (participantUserId) {
+        const matchedUser = usersByStartggId.get(participantUserId);
+        if (matchedUser) {
+          matchedUserId = matchedUser.id;
+        }
+      }
+
+      // Try to match by gamer tag (case-insensitive)
+      if (!matchedUserId && entrant.name) {
+        const matchedUser = usersByGamerTag.get(entrant.name.toLowerCase());
+        if (matchedUser) {
+          matchedUserId = matchedUser.id;
+        }
+      }
+
+      // Check if registration exists by startggEntrantId (using prefetched data)
+      const existingByEntrantId = entrant.id ? regMap.get(entrant.id) : null;
+
+      if (existingByEntrantId) {
         // Update existing registration
-        const updateData: { status: RegistrationStatus; userId?: string } = {
+        const updateData: { status: RegistrationStatus; userId?: string; startggEntrantId?: string } = {
           status: RegistrationStatus.CONFIRMED,
         };
 
         // Link user if matched and currently unlinked
-        if (matchedUserId && !existingInTx.userId) {
+        if (matchedUserId && !existingByEntrantId.userId) {
           updateData.userId = matchedUserId;
         }
 
-        await tx.registration.updateMany({
+        updates.push({
           where: {
-            id: existingInTx.id,
+            id: existingByEntrantId.id,
             status: { not: RegistrationStatus.DQ }, // Don't overwrite DQ status
           },
           data: updateData,
         });
+      } else if (matchedUserId) {
+        // Check if there's an existing Discord registration to link
+        const existingRegId = userIdToRegId.get(matchedUserId);
 
-        return { isNew: false, wasUpdated: true };
-      }
-
-      // Check if there's an existing Discord registration to link
-      if (matchedUserId) {
-        const existingByUser = await tx.registration.findUnique({
-          where: {
-            userId_eventId: {
-              userId: matchedUserId,
-              eventId,
-            },
-          },
-        });
-
-        if (existingByUser) {
+        if (existingRegId) {
           // Link the Start.gg entrant to existing registration
-          await tx.registration.update({
-            where: { id: existingByUser.id },
+          updates.push({
+            where: {
+              id: existingRegId,
+            },
             data: {
               startggEntrantId: entrant.id,
               status: RegistrationStatus.CONFIRMED,
             },
           });
-          return { isNew: false, wasUpdated: true };
+        } else {
+          // Create new registration
+          creates.push({
+            eventId,
+            startggEntrantId: entrant.id,
+            userId: matchedUserId,
+            source: RegistrationSource.STARTGG,
+            status: RegistrationStatus.CONFIRMED,
+            tournamentId,
+          });
         }
-      }
-
-      // Create new registration - first get tournamentId from event
-      const event = await tx.event.findUnique({ where: { id: eventId } });
-      if (!event) {
-        throw new Error(`Event not found: ${eventId}`);
-      }
-
-      // Build data object - userId can be null for ghost registrations
-      // Note: Prisma types don't reflect nullable userId correctly, using type assertion
-      await tx.registration.create({
-        data: {
+      } else {
+        // Create new registration (ghost - no user matched)
+        creates.push({
           eventId,
           startggEntrantId: entrant.id,
-          userId: matchedUserId as string | null | undefined,
+          userId: null,
           source: RegistrationSource.STARTGG,
           status: RegistrationStatus.CONFIRMED,
-          tournamentId: event.tournamentId,
-        } as never,
-      });
+          tournamentId,
+        });
+      }
+    }
 
-      return { isNew: true, wasUpdated: false };
-    });
+    return { updates, creates };
   }
+}
+
+// Export singleton factory
+let serviceInstance: RegistrationSyncService | null = null;
+
+export function getRegistrationSyncService(): RegistrationSyncService {
+  if (!serviceInstance) {
+    const apiKey = process.env.STARTGG_API_KEY;
+    if (!apiKey) {
+      throw new Error('STARTGG_API_KEY environment variable is required');
+    }
+    serviceInstance = new RegistrationSyncService(apiKey);
+  }
+  return serviceInstance;
 }

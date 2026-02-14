@@ -7,7 +7,6 @@ export interface Command {
 export interface Event {
     name: string;
     once?: boolean;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     execute: (...args: any[]) => void | Promise<void>;
 }
 export interface ExtendedClient extends Client {

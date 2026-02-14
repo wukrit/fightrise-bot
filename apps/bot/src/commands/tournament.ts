@@ -6,6 +6,7 @@ import {
   EmbedBuilder,
   ChannelType,
   Colors,
+  Client,
 } from 'discord.js';
 import type { Command } from '../types.js';
 import { getTournamentService } from '../services/tournamentService.js';
@@ -302,6 +303,7 @@ async function handleSetup(interaction: ChatInputCommandInteraction): Promise<vo
       discordGuildId: guildId,
       matchChannelId: matchChannel.id,
       tournamentSlug: slug,
+      discordClient: interaction.client as Client,
     });
 
     if (!result.success) {
