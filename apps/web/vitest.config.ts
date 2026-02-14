@@ -8,6 +8,12 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
+    testMatch: [
+      'lib/**/*.test.ts',
+      'lib/**/*.spec.ts',
+      'app/**/*.test.ts',
+      'app/**/*.spec.ts',
+    ],
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
