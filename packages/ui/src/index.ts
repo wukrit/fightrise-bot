@@ -47,6 +47,9 @@ export type { HeaderProps, NavLinkProps, HeaderActionsProps } from './Header.js'
 export { Sidebar, SidebarSection, SidebarLink, SidebarToggle } from './Sidebar.js';
 export type { SidebarProps, SidebarSectionProps, SidebarLinkProps, SidebarToggleProps } from './Sidebar.js';
 
+export { BottomNav, defaultNavItems } from './BottomNav.js';
+export { type BottomNavItem } from './BottomNav.js';
+
 export { Footer, FooterLink } from './Footer.js';
 export type { FooterProps, FooterLinkProps } from './Footer.js';
 
