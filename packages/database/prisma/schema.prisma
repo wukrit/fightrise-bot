@@ -32,6 +32,8 @@ model User {
   registrations   Registration[]
   matchPlayers    MatchPlayer[]
   adminTournaments TournamentAdmin[]
+  initiatedDisputes Dispute[] @relation("DisputeInitiator")
+  resolvedDisputes Dispute[] @relation("DisputeResolver")
 
   @@index([discordId])
   @@index([startggId])
@@ -137,6 +139,7 @@ model Match {
   eventId         String
   event           Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
   players         MatchPlayer[]
+  disputes        Dispute[]
 
   @@index([eventId])
   @@index([state])
@@ -185,6 +188,41 @@ model MatchPlayer {
   @@unique([matchId, startggEntrantId])
   @@index([userId])
   @@index([matchId])
+}
+
+// Match disputes
+model Dispute {
+  id            String        @id @default(cuid())
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Match reference
+  matchId       String
+  match         Match         @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  // Who initiated the dispute
+  initiatorId   String
+  initiator     User          @relation("DisputeInitiator", fields: [initiatorId], references: [id])
+
+  // Dispute details
+  reason        String?
+
+  // Resolution
+  status        DisputeStatus @default(OPEN)
+  resolvedById  String?
+  resolvedBy    User?         @relation("DisputeResolver", fields: [resolvedById], references: [id])
+  resolution    String?
+  resolvedAt    DateTime?
+
+  @@index([matchId])
+  @@index([initiatorId])
+  @@index([status])
+}
+
+enum DisputeStatus {
+  OPEN
+  RESOLVED
+  CANCELLED
 }
 
 // Tournament registrations

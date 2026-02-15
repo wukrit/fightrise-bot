@@ -9,7 +9,7 @@ import {
   ButtonStyle,
   ChannelType,
 } from 'discord.js';
-import { prisma, MatchState, StartggSyncStatus, Prisma } from '@fightrise/database';
+import { prisma, MatchState, StartggSyncStatus, Prisma, DisputeStatus } from '@fightrise/database';
 import {
   createInteractionId,
   INTERACTION_PREFIX,
@@ -806,11 +806,26 @@ export async function confirmResult(
       }),
     };
   } else {
-    // Dispute: reset state to CHECKED_IN so players can re-report
+    // Dispute: create dispute record and transition to DISPUTED state
+    const userId = user.userId;
+    if (!userId) {
+      return { success: false, message: 'Cannot dispute: user not linked.' };
+    }
+
     const disputeResult = await prisma.$transaction(async (tx) => {
+      // Create dispute record
+      const dispute = await tx.dispute.create({
+        data: {
+          matchId,
+          initiatorId: userId,
+          status: DisputeStatus.OPEN,
+        },
+      });
+
+      // Transition match to DISPUTED state
       const updated = await tx.match.updateMany({
         where: { id: matchId, state: MatchState.PENDING_CONFIRMATION },
-        data: { state: MatchState.CHECKED_IN },
+        data: { state: MatchState.DISPUTED },
       });
 
       if (updated.count === 0) {
@@ -823,14 +838,14 @@ export async function confirmResult(
         data: { isWinner: null },
       });
 
-      return { success: true };
+      return { success: true, disputeId: dispute.id };
     });
 
     if (!disputeResult.success) {
       return { success: false, message: 'Match state changed. Please try again.' };
     }
 
-    console.log(`[ConfirmResult] Disputed: ${opponent.playerName} disputes ${winner.playerName}'s claim for ${match.identifier}`);
+    console.log(`[ConfirmResult] Disputed: ${opponent.playerName} disputes ${winner.playerName}'s claim for ${match.identifier} (dispute: ${disputeResult.disputeId})`);
 
     // Build playerWinnerMap with all players set to null
     const allNullWinners: Record<string, null> = {};
@@ -840,9 +855,9 @@ export async function confirmResult(
 
     return {
       success: true,
-      message: 'Result disputed. Please report the correct winner.',
+      message: 'Result disputed. Tournament admins have been notified.',
       matchStatus: toMatchStatus(match, {
-        state: MatchState.CHECKED_IN,
+        state: MatchState.DISPUTED,
         playerWinnerMap: allNullWinners,
       }),
     };
