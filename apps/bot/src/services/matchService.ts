@@ -560,15 +560,28 @@ export interface ConfirmResult {
  * @param matchId - The match ID
  * @param discordId - Discord ID of the player reporting
  * @param winnerSlot - 1 or 2, indicating which player won
+ * @param score - Optional detailed score (e.g., "2-1", "3-2")
  */
 export async function reportScore(
   matchId: string,
   discordId: string,
-  winnerSlot: number
+  winnerSlot: number,
+  score?: string
 ): Promise<ReportResult> {
   // Validate slot
   if (winnerSlot !== 1 && winnerSlot !== 2) {
     return { success: false, message: 'Invalid winner selection.', autoCompleted: false };
+  }
+
+  // Parse score if provided (e.g., "2-1" -> winnerGames=2, loserGames=1)
+  let winnerGames = 1; // Default for quick wins
+  let loserGames = 0;
+  if (score) {
+    const [w, l] = score.split('-').map(Number);
+    if (!isNaN(w) && !isNaN(l)) {
+      winnerGames = w;
+      loserGames = l;
+    }
   }
 
   // Fetch match with players and event info for Start.gg sync
@@ -633,11 +646,41 @@ export async function reportScore(
         return { success: false, reason: 'STATE_CHANGED' };
       }
 
-      // Mark claimed winner
+      // Mark claimed winner with score
       await tx.matchPlayer.update({
         where: { id: winner.id },
-        data: { isWinner: true },
+        data: { isWinner: true, reportedScore: winnerGames },
       });
+
+      // Mark loser with score
+      await tx.matchPlayer.update({
+        where: { id: loser.id },
+        data: { isWinner: false, reportedScore: loserGames },
+      });
+
+      // Store detailed game results if score was provided
+      if (score) {
+        for (let game = 1; game <= winnerGames; game++) {
+          await tx.gameResult.create({
+            data: {
+              matchId,
+              matchPlayerId: winner.id,
+              gameNumber: game,
+              winnerId: winner.id,
+            },
+          });
+        }
+        for (let game = 1; game <= loserGames; game++) {
+          await tx.gameResult.create({
+            data: {
+              matchId,
+              matchPlayerId: loser.id,
+              gameNumber: game,
+              winnerId: winner.id,
+            },
+          });
+        }
+      }
 
       return { success: true };
     });
@@ -673,14 +716,38 @@ export async function reportScore(
       // Mark winner
       await tx.matchPlayer.update({
         where: { id: winner.id },
-        data: { isWinner: true },
+        data: { isWinner: true, reportedScore: winnerGames },
       });
 
       // Mark loser
       await tx.matchPlayer.update({
         where: { id: loser.id },
-        data: { isWinner: false },
+        data: { isWinner: false, reportedScore: loserGames },
       });
+
+      // Store detailed game results if score was provided
+      if (score) {
+        for (let game = 1; game <= winnerGames; game++) {
+          await tx.gameResult.create({
+            data: {
+              matchId,
+              matchPlayerId: winner.id,
+              gameNumber: game,
+              winnerId: winner.id,
+            },
+          });
+        }
+        for (let game = 1; game <= loserGames; game++) {
+          await tx.gameResult.create({
+            data: {
+              matchId,
+              matchPlayerId: loser.id,
+              gameNumber: game,
+              winnerId: winner.id,
+            },
+          });
+        }
+      }
 
       return { success: true };
     });
@@ -689,7 +756,9 @@ export async function reportScore(
       return { success: false, message: 'Match state changed. Please try again.', autoCompleted: false };
     }
 
-    // Sync to Start.gg (fire and forget - don't block Discord response)
+    // Build score display string
+    const scoreDisplay = score ? ` ${score}` : ` ${winnerGames}-${loserGames}`;
+
     syncToStartGG(match.id, match.startggSetId, winner.startggEntrantId).catch((err) => {
       console.error(`[ReportScore] Start.gg sync failed for ${match.identifier}:`, err);
     });
@@ -698,7 +767,7 @@ export async function reportScore(
 
     return {
       success: true,
-      message: `Match complete! ${winner.playerName} wins.`,
+      message: `Match complete! ${winner.playerName} wins${scoreDisplay}.`,
       autoCompleted: true,
       matchStatus: toMatchStatus(match, {
         state: MatchState.COMPLETED,

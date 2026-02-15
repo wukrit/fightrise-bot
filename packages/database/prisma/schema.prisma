@@ -140,6 +140,7 @@ model Match {
   event           Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
   players         MatchPlayer[]
   disputes        Dispute[]
+  games           GameResult[]
 
   @@index([eventId])
   @@index([state])
@@ -187,6 +188,35 @@ model MatchPlayer {
 
   @@unique([matchId, startggEntrantId])
   @@index([userId])
+  @@index([matchId])
+
+  // Detailed game results
+  games GameResult[]
+}
+
+// Individual game results for detailed score reporting
+model GameResult {
+  id            String    @id @default(cuid())
+  createdAt     DateTime  @default(now())
+
+  matchId       String
+  matchPlayerId String
+  gameNumber    Int       // 1, 2, 3, etc.
+
+  // Game winner (one of the two players in the match)
+  winnerId      String?   // MatchPlayer ID who won this game
+
+  // Optional game details
+  characterId   String?
+  characterName String?
+  stageId       String?
+  stageName     String?
+
+  // Relations
+  match         Match       @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  matchPlayer   MatchPlayer @relation(fields: [matchPlayerId], references: [id])
+
+  @@unique([matchPlayerId, gameNumber])
   @@index([matchId])
 }
 

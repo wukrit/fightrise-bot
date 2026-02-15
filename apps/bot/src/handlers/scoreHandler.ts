@@ -3,6 +3,8 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
 } from 'discord.js';
 import type { ButtonInteraction } from 'discord.js';
 import {
@@ -27,13 +29,16 @@ export const scoreHandler: ButtonHandler = {
   prefix: INTERACTION_PREFIX.REPORT,
 
   async execute(interaction: ButtonInteraction, parts: string[]): Promise<void> {
-    // Parts come after the prefix, e.g., for "report:abc:1" parts = ["abc", "1"]
+    // Parts come after the prefix
+    // Quick win: report:abc:1:quick -> parts = ["abc", "1", "quick"]
+    // Detailed: report:abc:select -> parts = ["abc", "select"]
+    // Select menu value format: "1|2-1" means winnerSlot=1, score="2-1"
     if (parts.length < 1 || !parts[0]) {
       await interaction.reply({ content: 'Invalid button format.', ephemeral: true });
       return;
     }
 
-    const [matchId, winnerSlotStr] = parts;
+    const [matchId, winnerSlotOrScore, type] = parts;
 
     // Validate matchId format (CUID)
     if (!CUID_REGEX.test(matchId)) {
@@ -41,18 +46,39 @@ export const scoreHandler: ButtonHandler = {
       return;
     }
 
-    const winnerSlot = parseInt(winnerSlotStr, 10);
+    let winnerSlot: number;
+    let score: string | undefined;
 
-    if (isNaN(winnerSlot) || winnerSlot < 1 || winnerSlot > 2) {
-      await interaction.reply({ content: 'Invalid button.', ephemeral: true });
-      return;
+    if (type === 'quick') {
+      // Quick win button (2-0/3-0 sweep)
+      winnerSlot = parseInt(winnerSlotOrScore, 10);
+      if (isNaN(winnerSlot) || winnerSlot < 1 || winnerSlot > 2) {
+        await interaction.reply({ content: 'Invalid button.', ephemeral: true });
+        return;
+      }
+    } else if (winnerSlotOrScore.includes('|')) {
+      // Detailed score from select menu (e.g., "1|2-1")
+      const [slot, matchScore] = winnerSlotOrScore.split('|');
+      winnerSlot = parseInt(slot, 10);
+      score = matchScore;
+      if (isNaN(winnerSlot) || winnerSlot < 1 || winnerSlot > 2) {
+        await interaction.reply({ content: 'Invalid score selection.', ephemeral: true });
+        return;
+      }
+    } else {
+      // Fallback for legacy button format
+      winnerSlot = parseInt(winnerSlotOrScore, 10);
+      if (isNaN(winnerSlot) || winnerSlot < 1 || winnerSlot > 2) {
+        await interaction.reply({ content: 'Invalid button.', ephemeral: true });
+        return;
+      }
     }
 
     // Defer immediately to get 15 minutes instead of 3 seconds
     await interaction.deferReply({ ephemeral: true });
 
-    // Delegate to service
-    const result = await reportScore(matchId, interaction.user.id, winnerSlot);
+    // Delegate to service (pass score for detailed reporting)
+    const result = await reportScore(matchId, interaction.user.id, winnerSlot, score);
 
     // Use editReply for deferred interactions
     await interaction.editReply({ content: result.message });
@@ -175,7 +201,7 @@ export const disputeHandler: ButtonHandler = {
       const embed = buildDisputedEmbed(match, p1.playerName, p2.playerName);
       const reportButtons = buildReportButtons(matchId, p1.playerName, p2.playerName);
 
-      await interaction.message.edit({ embeds: [embed], components: [reportButtons] });
+      await interaction.message.edit({ embeds: [embed], components: reportButtons });
 
       if (interaction.channel?.isThread()) {
         await interaction.channel.send(
@@ -267,15 +293,42 @@ function buildReportButtons(
   matchId: string,
   player1Name: string,
   player2Name: string
-): ActionRowBuilder<ButtonBuilder> {
-  return new ActionRowBuilder<ButtonBuilder>().addComponents(
+): ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] {
+  // Quick win buttons for simple 2-0/3-0 sweeps
+  const winButtons = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setCustomId(createInteractionId(INTERACTION_PREFIX.REPORT, matchId, '1'))
-      .setLabel(`${player1Name} Won`)
+      .setCustomId(createInteractionId(INTERACTION_PREFIX.REPORT, matchId, '1', 'quick'))
+      .setLabel(`${player1Name} Wins (2-0/3-0)`)
       .setStyle(ButtonStyle.Success),
     new ButtonBuilder()
-      .setCustomId(createInteractionId(INTERACTION_PREFIX.REPORT, matchId, '2'))
-      .setLabel(`${player2Name} Won`)
+      .setCustomId(createInteractionId(INTERACTION_PREFIX.REPORT, matchId, '2', 'quick'))
+      .setLabel(`${player2Name} Wins (2-0/3-0)`)
       .setStyle(ButtonStyle.Success)
   );
+
+  // Select menu for detailed scores
+  const scoreSelect = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+    new StringSelectMenuBuilder()
+      .setCustomId(createInteractionId(INTERACTION_PREFIX.REPORT, matchId, 'select'))
+      .setPlaceholder('Report detailed score...')
+      .addOptions(
+        new StringSelectMenuOptionBuilder()
+          .setLabel(`${player1Name} wins 2-1`)
+          .setValue('1|2-1'),
+        new StringSelectMenuOptionBuilder()
+          .setLabel(`${player1Name} wins 3-2`)
+          .setValue('1|3-2'),
+        new StringSelectMenuOptionBuilder()
+          .setLabel(`${player2Name} wins 2-1`)
+          .setValue('2|2-1'),
+        new StringSelectMenuOptionBuilder()
+          .setLabel(`${player2Name} wins 3-2`)
+          .setValue('2|3-2'),
+        new StringSelectMenuOptionBuilder()
+          .setLabel('Custom score...')
+          .setValue('custom')
+      )
+  );
+
+  return [winButtons, scoreSelect];
 }
