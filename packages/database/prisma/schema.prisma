@@ -34,6 +34,7 @@ model User {
   adminTournaments TournamentAdmin[]
   initiatedDisputes Dispute[] @relation("DisputeInitiator")
   resolvedDisputes Dispute[] @relation("DisputeResolver")
+  auditLogs      AuditLog[]
 
   @@index([discordId])
   @@index([startggId])
