@@ -1,10 +1,11 @@
-import { prisma, TournamentState, AdminRole, Prisma } from '@fightrise/database';
+import { prisma, TournamentState, AdminRole, Prisma, AuditAction, AuditSource } from '@fightrise/database';
 import { StartGGClient, Tournament as StartGGTournament } from '@fightrise/startgg-client';
 import { Client } from 'discord.js';
 import { schedulePoll, calculatePollInterval } from './pollingService.js';
 import { RegistrationSyncService } from './registrationSyncService.js';
 import { validateTournamentSlug } from '@fightrise/shared';
 import { ValidationError } from '@fightrise/shared';
+import { createAuditLog } from './auditService.js';
 
 // Type for tournament with events included
 type TournamentWithEvents = Prisma.TournamentGetPayload<{
@@ -347,6 +348,24 @@ export class TournamentService {
           }
         }
       }
+
+      // Create audit log entry for tournament creation/update
+      await createAuditLog({
+        action: result.isUpdate ? AuditAction.TOURNAMENT_UPDATED : AuditAction.TOURNAMENT_CREATED,
+        entityType: 'Tournament',
+        entityId: completeTournament?.id ?? result.tournamentId,
+        userId: userId,
+        after: completeTournament
+          ? {
+              name: completeTournament.name,
+              startggSlug: completeTournament.startggSlug,
+              state: completeTournament.state,
+              discordGuildId: completeTournament.discordGuildId,
+            }
+          : undefined,
+        reason: `Tournament ${result.isUpdate ? 'updated' : 'created'} via /tournament command`,
+        source: AuditSource.DISCORD,
+      });
 
       return {
         success: true,
