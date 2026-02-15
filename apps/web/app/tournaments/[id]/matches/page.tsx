@@ -159,6 +159,28 @@ export default function MatchesPage() {
             <span className="text-zinc-600">/</span>
             <span className="text-zinc-300">Matches</span>
           </nav>
+
+          {/* Sub-nav */}
+          <div className="flex items-center gap-1 pb-4 -mt-2">
+            <Link
+              href={`/tournaments/${tournamentId}/bracket`}
+              className="px-3 py-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors rounded-md hover:bg-zinc-800/50"
+            >
+              Bracket
+            </Link>
+            <Link
+              href="#"
+              className="px-3 py-2 text-sm text-zinc-300 bg-zinc-800/50 transition-colors rounded-md"
+            >
+              Matches
+            </Link>
+            <Link
+              href={`/tournaments/${tournamentId}/registrations`}
+              className="px-3 py-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors rounded-md hover:bg-zinc-800/50"
+            >
+              Registrations
+            </Link>
+          </div>
         </div>
       </div>
 
