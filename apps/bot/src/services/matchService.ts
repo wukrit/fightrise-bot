@@ -807,7 +807,7 @@ export async function confirmResult(
     };
   } else {
     // Dispute: create dispute record and transition to DISPUTED state
-    const userId = user.userId;
+    const userId = user.id;
     if (!userId) {
       return { success: false, message: 'Cannot dispute: user not linked.' };
     }
