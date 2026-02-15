@@ -39,6 +39,11 @@ vi.mock('@fightrise/database', () => ({
     COMPLETED: 'COMPLETED',
     DISPUTED: 'DISPUTED',
   },
+  DisputeStatus: {
+    OPEN: 'OPEN',
+    RESOLVED: 'RESOLVED',
+    CANCELLED: 'CANCELLED',
+  },
   Prisma: {},
 }));
 
