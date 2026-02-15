@@ -1,4 +1,4 @@
-import { prisma, AuditAction, AuditSource } from '@fightrise/database';
+import { prisma, AuditAction, AuditSource, Prisma } from '@fightrise/database';
 
 export type { AuditAction, AuditSource } from '@fightrise/database';
 
@@ -10,8 +10,8 @@ export interface CreateAuditLogParams {
   entityType: string;
   entityId: string;
   userId: string;
-  before?: Record<string, unknown>;
-  after?: Record<string, unknown>;
+  before?: Prisma.InputJsonValue;
+  after?: Prisma.InputJsonValue;
   reason?: string;
   source?: AuditSource;
 }
@@ -29,9 +29,9 @@ export async function createAuditLog(params: CreateAuditLogParams): Promise<void
         entityType,
         entityId,
         userId,
-        before: before ?? undefined,
-        after: after ?? undefined,
-        reason: reason ?? undefined,
+        before,
+        after,
+        reason,
         source,
       },
     });

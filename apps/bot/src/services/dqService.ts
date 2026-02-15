@@ -1,4 +1,4 @@
-import { prisma, MatchState, AuditAction, AuditSource } from '@fightrise/database';
+import { prisma, MatchState, AuditAction, AuditSource, Prisma } from '@fightrise/database';
 import { createAuditLog } from './auditService.js';
 
 /**
