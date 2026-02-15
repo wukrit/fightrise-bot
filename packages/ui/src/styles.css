@@ -1,0 +1,118 @@
+/* FightRise UI - Theme Variables */
+
+:root {
+  /* Light theme (default) */
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f9fafb;
+  --color-text: #1a1a1a;
+  --color-text-secondary: #6b7280;
+  --color-border: #e5e5e5;
+  --color-border-light: #f3f4f6;
+
+  /* Skeleton */
+  --color-skeleton-base: #e5e5e5;
+  --color-skeleton-highlight: #f0f0f0;
+
+  /* Discord-inspired accent colors */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-discord: #5865F2;
+  --color-discord-hover: #4752c4;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+}
+
+[data-theme="dark"] {
+  --color-bg: #1a1a1a;
+  --color-bg-secondary: #2d2d2d;
+  --color-text: #f9fafb;
+  --color-text-secondary: #9ca3af;
+  --color-border: #404040;
+  --color-border-light: #333333;
+
+  /* Skeleton */
+  --color-skeleton-base: #333333;
+  --color-skeleton-highlight: #444444;
+}
+
+/* Base animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Global styles */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+/* Responsive utilities */
+@media (max-width: 640px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .hide-tablet {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .hide-desktop {
+    display: none !important;
+  }
+}
