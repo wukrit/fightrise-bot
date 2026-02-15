@@ -1,4 +1,5 @@
-import { prisma, MatchState } from '@fightrise/database';
+import { prisma, MatchState, AuditAction, AuditSource } from '@fightrise/database';
+import { createAuditLog } from './auditService.js';
 
 /**
  * DQ (Disqualify) a player from a match.
@@ -50,6 +51,26 @@ export async function dqPlayer(
     return { success: false, message: 'No opponent found.' };
   }
 
+  // Find admin user if adminId provided
+  let adminUserId: string | undefined;
+  if (adminId) {
+    const adminUser = await prisma.user.findUnique({
+      where: { discordId: adminId },
+    });
+    if (adminUser) {
+      adminUserId = adminUser.id;
+    }
+  }
+
+  // Store before state for audit
+  const beforeState = {
+    matchState: match.state,
+    players: match.players.map((p) => ({
+      id: p.id,
+      isWinner: p.isWinner,
+    })),
+  };
+
   // Update match to DQ state and mark winner
   await prisma.$transaction(async (tx) => {
     // Update match state
@@ -69,6 +90,29 @@ export async function dqPlayer(
       where: { id: opponent.id },
       data: { isWinner: true },
     });
+
+    // Store after state for audit
+    const afterState = {
+      matchState: MatchState.DQ,
+      players: [
+        { id: dqPlayerId, isWinner: false, dq: true },
+        { id: opponent.id, isWinner: true, dq: false },
+      ],
+    };
+
+    // Create audit log entry
+    if (adminUserId) {
+      await createAuditLog({
+        action: AuditAction.PLAYER_DQ,
+        entityType: 'Match',
+        entityId: matchId,
+        userId: adminUserId,
+        before: beforeState,
+        after: afterState,
+        reason: reason,
+        source: AuditSource.DISCORD,
+      });
+    }
 
     // Log admin action if provided
     if (adminId) {

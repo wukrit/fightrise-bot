@@ -223,6 +223,9 @@ describe('TournamentService', () => {
       // Mock final tournament fetch (outside transaction)
       vi.mocked(prisma.tournament.findUnique).mockResolvedValue(dbTournament as unknown);
 
+      // Mock audit log creation (happens after transaction)
+      vi.mocked(prisma.auditLog.create).mockResolvedValue({} as unknown);
+
       return { txClient, dbTournament };
     }
 
