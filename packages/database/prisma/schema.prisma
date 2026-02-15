@@ -32,6 +32,8 @@ model User {
   registrations   Registration[]
   matchPlayers    MatchPlayer[]
   adminTournaments TournamentAdmin[]
+  initiatedDisputes Dispute[] @relation("DisputeInitiator")
+  resolvedDisputes Dispute[] @relation("DisputeResolver")
 
   @@index([discordId])
   @@index([startggId])
@@ -137,6 +139,7 @@ model Match {
   eventId         String
   event           Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
   players         MatchPlayer[]
+  disputes        Dispute[]
 
   @@index([eventId])
   @@index([state])
