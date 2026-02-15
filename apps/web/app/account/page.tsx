@@ -185,12 +185,226 @@ function TournamentRow({ tournament }: { tournament: TournamentHistory }) {
   );
 }
 
+// Notification preferences type
+interface NotificationPreferences {
+  matchReadyDm: boolean;
+  matchReadyMention: boolean;
+  checkInReminder: boolean;
+  checkInReminderMinutes: number;
+  tournamentAnnouncements: boolean;
+  tournamentResults: boolean;
+  quietHoursEnabled: boolean;
+  quietHoursStart: string;
+  quietHoursEnd: string;
+  timezone: string;
+}
+
+// Toggle component
+function Toggle({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+}) {
+  return (
+    <label className="flex items-center justify-between cursor-pointer group">
+      <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">{label}</span>
+      <button
+        type="button"
+        onClick={() => onChange(!checked)}
+        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+          checked ? 'bg-emerald-500' : 'bg-zinc-700 group-hover:bg-zinc-600'
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+            checked ? 'translate-x-5' : 'translate-x-0'
+          }`}
+        />
+      </button>
+    </label>
+  );
+}
+
+// Time select component
+function TimeSelect({
+  value,
+  onChange,
+  label,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  label: string;
+}) {
+  const times = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 30) {
+      const hour = h.toString().padStart(2, '0');
+      const minute = m.toString().padStart(2, '0');
+      times.push(`${hour}:${minute}`);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <label className="text-sm text-zinc-400">{label}</label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="bg-zinc-800/50 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-600"
+      >
+        {times.map((time) => (
+          <option key={time} value={time}>
+            {time}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+// Reminder minutes select
+function ReminderSelect({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(parseInt(e.target.value))}
+      className="bg-zinc-800/50 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-600 ml-auto"
+    >
+      <option value={5}>5 minutes</option>
+      <option value={10}>10 minutes</option>
+      <option value={15}>15 minutes</option>
+      <option value={30}>30 minutes</option>
+    </select>
+  );
+}
+
+// Notification section component
+function NotificationSection({
+  preferences,
+  onChange,
+}: {
+  preferences: NotificationPreferences;
+  onChange: (prefs: NotificationPreferences) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      {/* Match Notifications */}
+      <div>
+        <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Match Notifications</h4>
+        <div className="space-y-3">
+          <Toggle
+            checked={preferences.matchReadyDm}
+            onChange={(v) => onChange({ ...preferences, matchReadyDm: v })}
+            label="Match ready alerts (Discord DM)"
+          />
+          <Toggle
+            checked={preferences.matchReadyMention}
+            onChange={(v) => onChange({ ...preferences, matchReadyMention: v })}
+            label="Match ready alerts (Thread mention)"
+          />
+          <div className="flex items-center justify-between py-2">
+            <Toggle
+              checked={preferences.checkInReminder}
+              onChange={(v) => onChange({ ...preferences, checkInReminder: v })}
+              label="Check-in reminders"
+            />
+            {preferences.checkInReminder && (
+              <ReminderSelect
+                value={preferences.checkInReminderMinutes}
+                onChange={(v) => onChange({ ...preferences, checkInReminderMinutes: v })}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Tournament Notifications */}
+      <div className="pt-4 border-t border-zinc-800/50">
+        <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Tournament Notifications</h4>
+        <div className="space-y-3">
+          <Toggle
+            checked={preferences.tournamentAnnouncements}
+            onChange={(v) => onChange({ ...preferences, tournamentAnnouncements: v })}
+            label="Tournament announcements"
+          />
+          <Toggle
+            checked={preferences.tournamentResults}
+            onChange={(v) => onChange({ ...preferences, tournamentResults: v })}
+            label="Results from tournaments I'm watching"
+          />
+        </div>
+      </div>
+
+      {/* Quiet Hours */}
+      <div className="pt-4 border-t border-zinc-800/50">
+        <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Quiet Hours</h4>
+        <div className="space-y-3">
+          <Toggle
+            checked={preferences.quietHoursEnabled}
+            onChange={(v) => onChange({ ...preferences, quietHoursEnabled: v })}
+            label="Enable quiet hours"
+          />
+          {preferences.quietHoursEnabled && (
+            <div className="pl-4 space-y-3 border-l-2 border-zinc-800">
+              <div className="flex items-center gap-4">
+                <TimeSelect
+                  value={preferences.quietHoursStart}
+                  onChange={(v) => onChange({ ...preferences, quietHoursStart: v })}
+                  label="From"
+                />
+                <TimeSelect
+                  value={preferences.quietHoursEnd}
+                  onChange={(v) => onChange({ ...preferences, quietHoursEnd: v })}
+                  label="To"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-zinc-400">Timezone:</label>
+                <select
+                  value={preferences.timezone}
+                  onChange={(e) => onChange({ ...preferences, timezone: e.target.value })}
+                  className="bg-zinc-800/50 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-600"
+                >
+                  <option value="America/New_York">Eastern Time</option>
+                  <option value="America/Chicago">Central Time</option>
+                  <option value="America/Denver">Mountain Time</option>
+                  <option value="America/Los_Angeles">Pacific Time</option>
+                  <option value="Europe/London">London</option>
+                  <option value="Europe/Paris">Paris</option>
+                  <option value="Asia/Tokyo">Tokyo</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Main component
 export default function AccountPage() {
-  const [notifications, setNotifications] = useState({
-    matchReady: true,
-    tournamentUpdates: true,
-    results: false,
+  const [notifications, setNotifications] = useState<NotificationPreferences>({
+    matchReadyDm: true,
+    matchReadyMention: false,
+    checkInReminder: true,
+    checkInReminderMinutes: 5,
+    tournamentAnnouncements: true,
+    tournamentResults: false,
+    quietHoursEnabled: false,
+    quietHoursStart: '22:00',
+    quietHoursEnd: '08:00',
+    timezone: 'America/New_York',
   });
 
   // Calculate stats
@@ -275,60 +489,14 @@ export default function AccountPage() {
 
             {/* Notification Settings */}
             <SectionCard title="Notifications">
-              <div className="space-y-4">
-                <label className="flex items-center justify-between cursor-pointer group">
-                  <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">
-                    Match ready alerts
-                  </span>
-                  <button
-                    onClick={() => setNotifications({ ...notifications, matchReady: !notifications.matchReady })}
-                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-                      notifications.matchReady ? 'bg-emerald-500' : 'bg-zinc-700 group-hover:bg-zinc-600'
-                    }`}
-                  >
-                    <span
-                      className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
-                        notifications.matchReady ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </label>
-
-                <label className="flex items-center justify-between cursor-pointer group">
-                  <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">
-                    Tournament updates
-                  </span>
-                  <button
-                    onClick={() => setNotifications({ ...notifications, tournamentUpdates: !notifications.tournamentUpdates })}
-                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-                      notifications.tournamentUpdates ? 'bg-emerald-500' : 'bg-zinc-700 group-hover:bg-zinc-600'
-                    }`}
-                  >
-                    <span
-                      className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
-                        notifications.tournamentUpdates ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </label>
-
-                <label className="flex items-center justify-between cursor-pointer group">
-                  <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">
-                    Match results
-                  </span>
-                  <button
-                    onClick={() => setNotifications({ ...notifications, results: !notifications.results })}
-                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-                      notifications.results ? 'bg-emerald-500' : 'bg-zinc-700 group-hover:bg-zinc-600'
-                    }`}
-                  >
-                    <span
-                      className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
-                        notifications.results ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </label>
+              <NotificationSection
+                preferences={notifications}
+                onChange={setNotifications}
+              />
+              <div className="mt-6 pt-4 border-t border-zinc-800/50">
+                <button className="px-4 py-2 text-sm font-medium text-zinc-900 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors">
+                  Save Preferences
+                </button>
               </div>
             </SectionCard>
 
