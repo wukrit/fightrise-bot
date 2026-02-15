@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@fightrise/database';
+import { encrypt, isEncryptionConfigured } from '@fightrise/shared';
 
 // Start.gg OAuth endpoints
 const STARTGG_TOKEN_URL = 'https://start.gg/oauth/token';
@@ -115,10 +116,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/auth/error?error=user_not_found', request.url));
     }
 
-    // Encrypt tokens before storing (simple base64 for now, should use proper encryption in production)
-    const encryptedAccessToken = Buffer.from(accessToken).toString('base64');
-    const encryptedRefreshToken = refreshToken ? Buffer.from(refreshToken).toString('base64') : null;
-    const tokenExpiry = new Date(Date.now() + expiresIn * 1000);
+    // Encrypt tokens before storing
+    let encryptedToken: string;
+    if (isEncryptionConfigured()) {
+      const tokenData = JSON.stringify({
+        accessToken,
+        refreshToken,
+        expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
+      });
+      encryptedToken = encrypt(tokenData);
+    } else {
+      // Fallback to base64 if encryption not configured (development)
+      console.warn('Encryption not configured - using base64 encoding (NOT SAFE FOR PRODUCTION)');
+      const encodedAccessToken = Buffer.from(accessToken).toString('base64');
+      const encodedRefreshToken = refreshToken ? Buffer.from(refreshToken).toString('base64') : null;
+      encryptedToken = JSON.stringify({
+        accessToken: encodedAccessToken,
+        refreshToken: encodedRefreshToken,
+        expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
+      });
+    }
 
     // Update user with Start.gg info and tokens
     await prisma.user.update({
@@ -127,11 +144,7 @@ export async function GET(request: NextRequest) {
         startggId: startggUser.id,
         startggSlug: startggUser.slug,
         startggGamerTag: startggUser.gamerTag || startggUser.name,
-        startggToken: JSON.stringify({
-          accessToken: encryptedAccessToken,
-          refreshToken: encryptedRefreshToken,
-          expiresAt: tokenExpiry.toISOString(),
-        }),
+        startggToken: encryptedToken,
       },
     });
 

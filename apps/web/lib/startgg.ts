@@ -1,4 +1,5 @@
 import { prisma } from '@fightrise/database';
+import { encrypt, decrypt, isEncryptionConfigured } from '@fightrise/shared';
 
 interface StartggTokenData {
   accessToken: string;
@@ -9,6 +10,65 @@ interface StartggTokenData {
 interface TokenResult {
   accessToken: string;
   isExpired: boolean;
+}
+
+/**
+ * Attempt to decrypt or decode a token string
+ * Handles both encrypted tokens and legacy base64-encoded tokens
+ */
+function decodeToken(tokenString: string): StartggTokenData | null {
+  try {
+    // First, try to parse as JSON (both encrypted and unencrypted tokens are JSON)
+    const tokenData = JSON.parse(tokenString);
+
+    // Check if the accessToken looks encrypted (base64 but not plain JWT)
+    // Encrypted tokens will decrypt to a JSON string
+    if (isEncryptionConfigured()) {
+      try {
+        const decrypted = decrypt(tokenData.accessToken);
+        return JSON.parse(decrypted);
+      } catch {
+        // Not encrypted, use as-is
+      }
+    }
+
+    // Legacy base64 encoding
+    return {
+      accessToken: Buffer.from(tokenData.accessToken, 'base64').toString('utf-8'),
+      refreshToken: tokenData.refreshToken
+        ? Buffer.from(tokenData.refreshToken, 'base64').toString('utf-8')
+        : null,
+      expiresAt: tokenData.expiresAt,
+    };
+  } catch {
+    console.error('Failed to decode token');
+    return null;
+  }
+}
+
+/**
+ * Encode token for storage
+ * Uses encryption if configured, otherwise falls back to base64
+ */
+function encodeToken(tokenData: StartggTokenData): string {
+  if (isEncryptionConfigured()) {
+    return JSON.stringify({
+      accessToken: encrypt(JSON.stringify({
+        accessToken: tokenData.accessToken,
+        refreshToken: tokenData.refreshToken,
+      })),
+      expiresAt: tokenData.expiresAt,
+    });
+  }
+
+  // Legacy base64 encoding
+  return JSON.stringify({
+    accessToken: Buffer.from(tokenData.accessToken).toString('base64'),
+    refreshToken: tokenData.refreshToken
+      ? Buffer.from(tokenData.refreshToken).toString('base64')
+      : null,
+    expiresAt: tokenData.expiresAt,
+  });
 }
 
 /**
@@ -26,8 +86,12 @@ export async function getStartggToken(userId: string): Promise<TokenResult | nul
   }
 
   try {
-    const tokenData: StartggTokenData = JSON.parse(user.startggToken);
-    const accessToken = Buffer.from(tokenData.accessToken, 'base64').toString('utf-8');
+    const tokenData = decodeToken(user.startggToken);
+    if (!tokenData) {
+      return null;
+    }
+
+    const accessToken = tokenData.accessToken;
     const expiresAt = new Date(tokenData.expiresAt);
     const isExpired = expiresAt <= new Date();
 
@@ -82,19 +146,17 @@ async function refreshStartggToken(
     const newRefreshToken = tokens.refresh_token || refreshToken;
     const expiresIn = tokens.expires_in;
 
-    // Encrypt and store new tokens
-    const encryptedAccessToken = Buffer.from(newAccessToken).toString('base64');
-    const encryptedRefreshToken = Buffer.from(newRefreshToken).toString('base64');
-    const tokenExpiry = new Date(Date.now() + expiresIn * 1000);
+    // Store new tokens with proper encoding
+    const tokenData: StartggTokenData = {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
+    };
 
     await prisma.user.update({
       where: { id: userId },
       data: {
-        startggToken: JSON.stringify({
-          accessToken: encryptedAccessToken,
-          refreshToken: encryptedRefreshToken,
-          expiresAt: tokenExpiry.toISOString(),
-        }),
+        startggToken: encodeToken(tokenData),
       },
     });
 
