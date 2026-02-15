@@ -199,7 +199,7 @@ model Dispute {
 
   // Who initiated the dispute
   initiatorId   String
-  initiator     User          @relation(fields: [initiatorId], references: [id])
+  initiator     User          @relation("DisputeInitiator", fields: [initiatorId], references: [id])
 
   // Dispute details
   reason        String?
@@ -207,7 +207,7 @@ model Dispute {
   // Resolution
   status        DisputeStatus @default(OPEN)
   resolvedById  String?
-  resolvedBy    User?         @relation(fields: [resolvedById], references: [id])
+  resolvedBy    User?         @relation("DisputeResolver", fields: [resolvedById], references: [id])
   resolution    String?
   resolvedAt    DateTime?
 
