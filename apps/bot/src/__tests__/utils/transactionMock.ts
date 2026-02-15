@@ -56,6 +56,10 @@ export interface MockRegistration {
   create: Mock;
 }
 
+export interface MockDispute {
+  create: Mock;
+}
+
 export interface MockTransactionClient {
   match: MockMatch;
   matchPlayer: MockMatchPlayer;
@@ -65,6 +69,7 @@ export interface MockTransactionClient {
   guildConfig: MockGuildConfig;
   user: MockUser;
   registration: MockRegistration;
+  dispute: MockDispute;
 }
 
 export interface TransactionOverrides {
@@ -76,6 +81,7 @@ export interface TransactionOverrides {
   guildConfig?: Partial<MockGuildConfig>;
   user?: Partial<MockUser>;
   registration?: Partial<MockRegistration>;
+  dispute?: Partial<MockDispute>;
 }
 
 /**
@@ -142,6 +148,10 @@ export function createMockTransaction(
       delete: vi.fn(),
       create: vi.fn(),
       ...overrides?.registration,
+    },
+    dispute: {
+      create: vi.fn(),
+      ...overrides?.dispute,
     },
   };
 }

@@ -39,6 +39,11 @@ vi.mock('@fightrise/database', () => ({
     COMPLETED: 'COMPLETED',
     DISPUTED: 'DISPUTED',
   },
+  DisputeStatus: {
+    OPEN: 'OPEN',
+    RESOLVED: 'RESOLVED',
+    CANCELLED: 'CANCELLED',
+  },
   Prisma: {},
 }));
 
@@ -858,6 +863,9 @@ describe('MatchService', () => {
     it('should reset state and return dispute message when opponent disputes', async () => {
       vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as unknown);
       setupTransactionMock(prisma, {
+        dispute: {
+          create: vi.fn().mockResolvedValue({ id: 'dispute-123' }),
+        },
         match: {
           updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         },
@@ -870,8 +878,8 @@ describe('MatchService', () => {
       const result = await confirmResult('match-123', 'discord-222', false);
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe('Result disputed. Please report the correct winner.');
-      expect(result.matchStatus?.state).toBe('CHECKED_IN');
+      expect(result.message).toBe('Result disputed. Tournament admins have been notified.');
+      expect(result.matchStatus?.state).toBe('DISPUTED');
     });
 
     it('should return error when reporter tries to confirm their own report', async () => {
@@ -939,9 +947,12 @@ describe('MatchService', () => {
       expect(result.message).toBe('Match state changed. Please try again.');
     });
 
-    it('should reset state to CHECKED_IN when disputed', async () => {
+    it('should reset state to DISPUTED when disputed', async () => {
       vi.mocked(prisma.match.findUnique).mockResolvedValue(mockMatchPending as unknown);
       setupTransactionMock(prisma, {
+        dispute: {
+          create: vi.fn().mockResolvedValue({ id: 'dispute-123' }),
+        },
         match: {
           updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         },
@@ -954,8 +965,8 @@ describe('MatchService', () => {
       const result = await confirmResult('match-123', 'discord-222', false);
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe('Result disputed. Please report the correct winner.');
-      expect(result.matchStatus?.state).toBe('CHECKED_IN');
+      expect(result.message).toBe('Result disputed. Tournament admins have been notified.');
+      expect(result.matchStatus?.state).toBe('DISPUTED');
       // Winner flags should be cleared
       result.matchStatus?.players.forEach((p) => {
         expect(p.isWinner).toBeNull();
