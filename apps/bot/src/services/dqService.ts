@@ -1,4 +1,4 @@
-import { prisma, MatchState, AuditAction, AuditSource, Prisma } from '@fightrise/database';
+import { prisma, MatchState, AuditAction, AuditSource } from '@fightrise/database';
 import { createAuditLog } from './auditService.js';
 
 /**
@@ -74,7 +74,7 @@ export async function dqPlayer(
   // Update match to DQ state and mark winner
   await prisma.$transaction(async (tx) => {
     // Update match state
-    const updatedMatch = await tx.match.update({
+    await tx.match.update({
       where: { id: matchId },
       data: { state: MatchState.DQ },
     });
