@@ -345,3 +345,77 @@ model GuildConfig {
 
   @@index([discordGuildId])
 }
+
+// Audit logging for administrative actions
+model AuditLog {
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+
+  // Action type
+  action      AuditAction
+
+  // Entity being acted upon
+  entityType  String    // e.g., "Match", "Registration", "Tournament"
+  entityId    String
+
+  // Who performed the action
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+
+  // Before/after state
+  before      Json?     // Previous state
+  after       Json?     // New state
+
+  // Optional reason provided by admin
+  reason      String?
+
+  // Source of the action (Discord command, web admin, API)
+  source      AuditSource @default(DISCORD)
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([action])
+}
+
+enum AuditAction {
+  // Tournament actions
+  TOURNAMENT_CREATED
+  TOURNAMENT_UPDATED
+  TOURNAMENT_DELETED
+
+  // Match actions
+  MATCH_SCORE_OVERRIDE
+  MATCH_RESET
+  MATCH_REOPEN
+
+  // Player actions
+  PLAYER_DQ
+  PLAYER_UNDQ
+  PLAYER_CHECK_IN
+  PLAYER_CHECK_OUT
+
+  // Registration actions
+  REGISTRATION_APPROVED
+  REGISTRATION_REJECTED
+  REGISTRATION_MANUAL_ADD
+  REGISTRATION_MANUAL_REMOVE
+
+  // Dispute actions
+  DISPUTE_OPENED
+  DISPUTE_RESOLVED
+  DISPUTE_CANCELLED
+
+  // Configuration actions
+  CONFIG_UPDATED
+
+  // Admin actions
+  ADMIN_ADDED
+  ADMIN_REMOVED
+}
+
+enum AuditSource {
+  DISCORD
+  WEB
+  API
+}
