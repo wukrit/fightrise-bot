@@ -3,6 +3,8 @@ import { StartGGClient, Tournament as StartGGTournament } from '@fightrise/start
 import { Client } from 'discord.js';
 import { schedulePoll, calculatePollInterval } from './pollingService.js';
 import { RegistrationSyncService } from './registrationSyncService.js';
+import { validateTournamentSlug } from '@fightrise/shared';
+import { ValidationError } from '@fightrise/shared';
 
 // Type for tournament with events included
 type TournamentWithEvents = Prisma.TournamentGetPayload<{
@@ -117,6 +119,7 @@ export class TournamentService {
 
   /**
    * Normalize tournament slug from various input formats
+   * @throws ValidationError if the resulting slug is invalid
    */
   normalizeSlug(input: string): string {
     let slug = input.trim();
@@ -138,6 +141,12 @@ export class TournamentService {
     const slashIndex = slug.indexOf('/');
     if (slashIndex !== -1) {
       slug = slug.slice(0, slashIndex);
+    }
+
+    // Validate final slug format
+    const validation = validateTournamentSlug(slug);
+    if (!validation.valid) {
+      throw new ValidationError(validation.error || 'Invalid tournament slug');
     }
 
     return slug;

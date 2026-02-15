@@ -29,6 +29,14 @@ export type {
   PartialTournamentConfig,
 } from './schemas.js';
 
+// Input validation utilities
+export {
+  TOURNAMENT_SLUG_REGEX,
+  MAX_SLUG_LENGTH,
+  isValidTournamentSlug,
+  validateTournamentSlug,
+} from './validation.js';
+
 // Error types
 export {
   ErrorCode,
