@@ -64,3 +64,6 @@ export {
   fromUnixSeconds,
 } from './datetime.js';
 export type { WindowStatus } from './datetime.js';
+
+// Encryption utilities
+export { encrypt, decrypt, isEncryptionConfigured } from './crypto.js';
