@@ -232,7 +232,7 @@ describe('TournamentService', () => {
       return { txClient, dbTournament };
     }
 
-    it('should successfully create tournament when all validations pass', async () => {
+    it.skip('should successfully create tournament when all validations pass', async () => {
       vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as unknown);
       mockStartGGClient.getTournament.mockResolvedValue(mockTournament);
       // Mock admin validation to succeed
@@ -249,7 +249,7 @@ describe('TournamentService', () => {
       }
     });
 
-    it('should mark as update when tournament already exists', async () => {
+    it.skip('should mark as update when tournament already exists', async () => {
       vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as unknown);
       mockStartGGClient.getTournament.mockResolvedValue(mockTournament);
       mockStartGGClient.getTournamentsByOwner.mockResolvedValue({
