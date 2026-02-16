@@ -68,15 +68,62 @@ This is a Turborepo monorepo with two apps and four shared packages:
 
 ```
 apps/
-├── bot/          # Discord bot (discord.js v14, BullMQ for polling)
-└── web/          # Next.js 14 web portal (App Router, NextAuth)
+├── bot/                           # Discord bot (discord.js v14, BullMQ)
+│   └── src/
+│       ├── commands/              # Slash commands (9 commands)
+│       ├── events/               # Discord event handlers
+│       ├── handlers/             # Button/modal interactions
+│       ├── services/             # Business logic (6 services)
+│       ├── workers/              # BullMQ job workers
+│       └── __tests__/            # Test harness and tests
+│
+└── web/                          # Next.js 14 web portal (App Router)
+    └── app/
+        ├── (auth)/               # Auth pages (signin, etc.)
+        ├── api/                  # API routes
+        ├── dashboard/            # User dashboard
+        ├── tournaments/          # Tournament pages
+        └── account/              # User account settings
 
 packages/
-├── database/     # Prisma schema, client, and migrations
-├── startgg-client/  # Start.gg GraphQL API wrapper
-├── shared/       # Shared types and utilities
-└── ui/           # Shared React components
+├── database/                     # Prisma schema, client
+│   └── prisma/schema.prisma     # 11 models, all relations
+│
+├── startgg-client/              # Start.gg GraphQL API wrapper
+│   └── src/
+│       ├── client.ts             # GraphQL client with retry
+│       ├── queries/              # GraphQL queries
+│       ├── mutations/            # GraphQL mutations
+│       └── __mocks__/           # MSW handlers for testing
+│
+├── shared/                      # Shared types and utilities
+│   └── src/
+│       ├── types/                # TypeScript types
+│       ├── constants.ts          # Enums, config values
+│       ├── validation.ts         # Zod schemas
+│       └── errors.ts             # Custom error classes
+│
+└── ui/                          # Shared React components
+    └── src/
+        ├── Button.tsx            # Button component
+        ├── DiscordIcon.tsx       # Discord icon
+        └── UserAvatar.tsx        # User avatar component
 ```
+
+### What's Built vs Planned
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Discord bot core | ✅ Complete | Commands, events, handlers |
+| Match thread creation | ✅ Complete | Auto-threads for matches |
+| Check-in flow | ✅ Complete | Button interactions |
+| Score reporting | ✅ Complete | With confirmation |
+| Start.gg polling | ✅ Complete | BullMQ workers |
+| Registration sync | ✅ Complete | Start.gg sync |
+| OAuth encryption | ✅ Complete | AES-256 for tokens |
+| Admin audit logging | ✅ Complete | Full action tracking |
+| Web portal pages | ⚠️ Partial | Auth done, some pages |
+| Start.gg OAuth | ⚠️ Partial | Provider configured |
 
 ### Data Flow
 
@@ -86,14 +133,141 @@ packages/
 4. **Score Reporting**: Players report scores via Discord buttons; loser confirmation auto-submits to Start.gg
 5. **Sync Back**: Results are reported to Start.gg via GraphQL mutation
 
+### Code Patterns
+
+#### Discord Command Structure
+```typescript
+// apps/bot/src/commands/example.ts
+import { SlashCommandBuilder } from 'discord.js';
+
+export const exampleCommand = {
+  data: new SlashCommandBuilder()
+    .setName('example')
+    .setDescription('Example command')
+    .addStringOption(option =>
+      option.setName('input').setDescription('Input').setRequired(true)
+    ),
+
+  async autocomplete(interaction: AutocompleteInteraction) {
+    // Handle autocomplete
+  },
+
+  async execute(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply({ ephemeral: true });
+    // Command logic
+  },
+};
+```
+
+#### Button Handler Pattern
+```typescript
+// apps/bot/src/handlers/buttonHandlers.ts
+export const buttonHandlers: Record<string, ButtonHandler> = {
+  [INTERACTION_PREFIX.CHECKIN]: checkinHandler,
+  [INTERACTION_PREFIX.REPORT]: scoreHandler,
+  // ...
+};
+
+export interface ButtonHandler {
+  prefix: string;
+  execute(interaction: ButtonInteraction, parts: string[]): Promise<void>;
+}
+```
+
+#### Service Pattern (with Prisma transactions)
+```typescript
+// Idempotent database operations
+const updateResult = await prisma.match.updateMany({
+  where: { id: matchId, state: MatchState.NOT_STARTED },
+  data: { discordThreadId: thread.id, state: MatchState.CALLED },
+});
+
+if (updateResult.count === 0) {
+  // Already processed - handle idempotency
+  return;
+}
+```
+
+#### Database Transaction Pattern
+```typescript
+// Atomic operations with Prisma
+await prisma.$transaction(async (tx) => {
+  await tx.match.update({ where: { id }, data: { state: 'IN_PROGRESS' } });
+  await tx.matchPlayer.updateMany({ where: { matchId: id }, data: { isCheckedIn: true } });
+});
+```
+
+### Key File Locations
+
+| Category | File | Purpose |
+|----------|------|---------|
+| **Bot Entry** | `apps/bot/src/index.ts` | Bot initialization |
+| **Command Router** | `apps/bot/src/events/interactionCreate.ts` | Routes slash commands |
+| **Button Router** | `apps/bot/src/handlers/buttonHandlers.ts` | Routes button interactions |
+| **Prisma Schema** | `packages/database/prisma/schema.prisma` | All database models |
+| **Start.gg Client** | `packages/startgg-client/src/client.ts` | GraphQL API wrapper |
+| **Web Auth** | `apps/web/lib/auth.ts` | NextAuth configuration |
+| **UI Components** | `packages/ui/src/index.ts` | Shared React components |
+
 ### Key Models (Prisma)
 
-- `Tournament` - Cached Start.gg tournament with Discord guild/channel config
-- `Event` - Tournament events (game brackets)
-- `Match` - Individual matches with Discord thread ID and check-in state
-- `MatchPlayer` - Match participants with check-in and score status
-- `User` - Links Discord accounts to Start.gg accounts
-- `Registration` - Tournament registrations (from Discord, Start.gg, or manual)
+All 11 models in the database schema:
+
+| Model | Purpose | Key Fields |
+|-------|---------|------------|
+| `User` | Links Discord accounts to Start.gg accounts | discordId, startggId, startggToken (encrypted) |
+| `Tournament` | Cached Start.gg tournament with Discord config | startggId, discordGuildId, settings, state |
+| `Event` | Tournament events (game brackets) | startggId, tournamentId, numEntrants, state |
+| `Match` | Individual matches with Discord thread ID | startggSetId, state, discordThreadId, checkInDeadline |
+| `MatchPlayer` | Match participants with check-in status | matchId, userId, isCheckedIn, reportedScore, isWinner |
+| `GameResult` | Detailed game scores for best-of sets | matchPlayerId, gameNumber, winnerId, playerScore |
+| `Dispute` | Match disputes | matchId, initiatorId, status, reason |
+| `Registration` | Tournament registrations | userId, tournamentId, source, status |
+| `TournamentAdmin` | Admin roles per tournament | userId, tournamentId, role |
+| `GuildConfig` | Discord guild settings | discordGuildId, channels, prefix, locale |
+| `AuditLog` | Admin action tracking | action, entityType, userId, before, after |
+
+**Enums:**
+- `TournamentState`: CREATED, REGISTRATION_OPEN, REGISTRATION_CLOSED, IN_PROGRESS, COMPLETED, CANCELLED
+- `MatchState`: NOT_STARTED, CALLED, CHECKED_IN, IN_PROGRESS, PENDING_CONFIRMATION, COMPLETED, DISPUTED, DQ
+- `RegistrationSource`: STARTGG, DISCORD, MANUAL
+- `RegistrationStatus`: PENDING, CONFIRMED, CANCELLED, DQ
+- `AdminRole`: OWNER, ADMIN, MODERATOR
+- `AuditAction`: Comprehensive admin action types
+
+### Bot Services (`apps/bot/src/services/`)
+
+| Service | Purpose | Key Methods |
+|---------|---------|-------------|
+| `pollingService.ts` | BullMQ-based tournament polling | `startPolling()`, `stopPolling()`, `pollTournament()` |
+| `matchService.ts` | Match and thread management | `handleMatchReady()`, `createMatchThread()`, `handleCheckIn()` |
+| `tournamentService.ts` | Tournament setup and management | `setupTournament()`, `getTournament()`, `linkDiscord()` |
+| `registrationSyncService.ts` | Start.gg registration sync | `syncRegistrations()`, `createRegistration()` |
+| `auditService.ts` | Admin audit logging | `log()`, `getAuditLogs()` |
+| `dqService.ts` | Disqualification handling | `dqPlayer()`, `handleDq()` |
+
+### Discord Commands (`apps/bot/src/commands/`)
+
+| Command | Status | Description |
+|---------|--------|-------------|
+| `/tournament setup` | ✅ Complete | Configure tournament Discord settings |
+| `/tournament status` | ✅ Complete | View tournament status |
+| `/register` | ✅ Complete | Register for a tournament |
+| `/checkin` | ✅ Complete | Check in for current match |
+| `/report` | ✅ Complete | Report match score |
+| `/my-matches` | ✅ Complete | View upcoming matches |
+| `/link-startgg` | ✅ Complete | Link Start.gg account |
+| `/unlink-startgg` | ✅ Complete | Unlink Start.gg account |
+| `/admin` | ✅ Complete | Tournament admin operations |
+
+### Button Handlers (`apps/bot/src/handlers/`)
+
+| Handler | Purpose |
+|---------|---------|
+| `checkin.ts` | Check-in button interactions |
+| `scoreHandler.ts` | Score reporting and confirmation |
+| `registration.ts` | Registration button flows |
+| `buttonHandlers.ts` | Main router for button interactions |
 
 ## Environment Setup
 

@@ -210,15 +210,58 @@ The project uses a multi-layered testing strategy:
 
 ```
 apps/
-├── bot/              # Discord bot (discord.js v14, BullMQ)
-└── web/              # Next.js 14 web portal
+├── bot/                           # Discord bot (discord.js v14, BullMQ)
+│   └── src/
+│       ├── commands/              # Slash commands (9 total)
+│       ├── events/               # Discord event handlers
+│       ├── handlers/             # Button/modal interactions
+│       ├── services/             # Business logic (6 services)
+│       ├── workers/              # BullMQ job workers
+│       └── __tests__/           # Test harness
+│
+└── web/                          # Next.js 14 web portal
+    └── app/
+        ├── (auth)/               # Auth pages
+        ├── api/                  # API routes
+        ├── dashboard/            # User dashboard
+        ├── tournaments/          # Tournament pages
+        └── account/              # User account
 
 packages/
-├── database/         # Prisma schema and client
-├── startgg-client/   # Start.gg GraphQL API wrapper
-├── shared/           # Shared types and utilities
-└── ui/               # Shared React components
+├── database/                     # Prisma ORM
+│   └── prisma/schema.prisma    # 11 database models
+│
+├── startgg-client/              # Start.gg GraphQL API
+│   └── src/
+│       ├── client.ts             # GraphQL client
+│       └── __mocks__/           # MSW test handlers
+│
+├── shared/                      # Shared code
+│   └── src/
+│       ├── types/               # TypeScript types
+│       ├── constants.ts         # Enums
+│       └── validation.ts        # Zod schemas
+│
+└── ui/                         # React components
+    └── src/
+        ├── Button.tsx
+        ├── DiscordIcon.tsx
+        └── UserAvatar.tsx
 ```
+
+### Available Discord Commands
+
+| Command | Description |
+|---------|-------------|
+| `/tournament setup` | Configure tournament Discord settings |
+| `/tournament status` | View tournament status |
+| `/register` | Register for a tournament |
+| `/checkin` | Check in for current match |
+| `/report` | Report match score |
+| `/my-matches` | View your upcoming matches |
+| `/link-startgg` | Link your Start.gg account |
+| `/unlink-startgg` | Unlink your Start.gg account |
+| `/admin` | Tournament admin operations |
 
 ### Docker Services
 
@@ -336,6 +379,7 @@ See [CLAUDE.md](./CLAUDE.md) for detailed development workflow and testing guide
 | [Tunnel Setup Guide](./docs/TUNNEL_SETUP.md) | Cloudflare Tunnel for local OAuth development |
 | [Implementation Status](./docs/IMPLEMENTATION_STATUS.md) | Current progress, what's built, what's remaining |
 | [Architecture Plan](./ARCHITECTURE_PLAN.md) | Full system design, data flow, database schema |
+| [Codebase Reference](./docs/CODEBASE_REFERENCE.md) | Comprehensive code reference, patterns, key files |
 | [Development Guide](./CLAUDE.md) | Workflow, testing, contribution guidelines |
 
 ## License
