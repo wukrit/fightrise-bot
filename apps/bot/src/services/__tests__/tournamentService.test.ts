@@ -22,6 +22,9 @@ vi.mock('@fightrise/database', () => ({
     guildConfig: {
       upsert: vi.fn(),
     },
+    auditLog: {
+      create: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
   TournamentState: {
