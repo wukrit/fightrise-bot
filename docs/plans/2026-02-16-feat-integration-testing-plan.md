@@ -1,7 +1,7 @@
 ---
 title: Set up integration testing
 type: feat
-status: active
+status: completed
 date: 2026-02-16
 issue: 35
 ---

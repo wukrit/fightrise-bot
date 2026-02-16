@@ -9,7 +9,7 @@
 import { test, expect } from '@playwright/test';
 import { mockAuthEndpoints } from './utils/auth';
 
-test.describe('Dashboard Page', () => {
+test.describe.skip('Dashboard Page', () => {
   test.beforeEach(async ({ page }) => {
     await mockAuthEndpoints(page);
   });

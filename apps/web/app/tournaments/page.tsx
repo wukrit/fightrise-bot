@@ -97,7 +97,9 @@ export default function TournamentsPage() {
           throw new Error('Failed to fetch tournaments');
         }
         const data = await response.json();
-        setTournaments(data);
+        // Handle both { tournaments: [...] } and [...] response formats
+        const tournamentsArray = Array.isArray(data) ? data : (data.tournaments || []);
+        setTournaments(tournamentsArray);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {

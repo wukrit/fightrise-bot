@@ -86,6 +86,14 @@ The dashboard page exists at `/dashboard` but uses mock data. Need to connect it
 
 **Status**: Dashboard page exists with mock data. E2E tests require full auth setup to run.
 
+### Phase 3: Create Tournament Index and connect APIs (MOVED TO NEW PLAN)
+
+See: `docs/plans/2026-02-16-feat-implement-web-portal-pages-plan.md`
+
+### Phase 4: Create Matches pages (MOVED TO NEW PLAN)
+
+See: `docs/plans/2026-02-16-feat-implement-web-portal-pages-plan.md`
+
 ### Phase 3: Implement Tournament Index and Connect API
 
 - [ ] Create `/tournaments` index page (list view)

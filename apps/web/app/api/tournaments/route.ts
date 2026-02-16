@@ -26,7 +26,12 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(tournaments);
+    return NextResponse.json({
+      tournaments,
+      total: tournaments.length,
+      page: 1,
+      perPage: 10,
+    });
   } catch (error) {
     console.error('Error fetching tournaments:', error);
     return NextResponse.json(
