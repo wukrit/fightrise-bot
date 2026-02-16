@@ -114,7 +114,7 @@ async function mockMatchApi(page: Page) {
  * NOTE: These tests are skipped because the /matches page does not exist yet.
  */
 
-test.describe.skip('Match Reporting', () => {
+test.describe('Match Reporting', () => {
   test.beforeEach(async ({ page }) => {
     await mockAuthEndpoints(page);
     await mockMatchApi(page);

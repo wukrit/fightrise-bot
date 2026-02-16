@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 // Types matching the database schema
@@ -179,58 +179,38 @@ function FilterBar({
 function DashboardContent() {
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
   const [sortOption, setSortOption] = useState<SortOption>('date-desc');
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data - in production this would come from the database via server component
-  const mockTournaments: Tournament[] = [
-    {
-      id: '1',
-      name: 'FightRise Weekly #42',
-      startggSlug: 'fightrise-weekly-42',
-      startAt: '2026-02-20T18:00:00Z',
-      endAt: '2026-02-20T23:00:00Z',
-      state: 'REGISTRATION_OPEN',
-      _count: { registrations: 32 },
-    },
-    {
-      id: '2',
-      name: 'FightRise Championship 2026',
-      startggSlug: 'fightrise-championship-2026',
-      startAt: '2026-03-01T14:00:00Z',
-      endAt: '2026-03-02T20:00:00Z',
-      state: 'IN_PROGRESS',
-      _count: { registrations: 64 },
-    },
-    {
-      id: '3',
-      name: 'Friday Night Fights',
-      startggSlug: 'friday-night-fights',
-      startAt: '2026-02-28T20:00:00Z',
-      endAt: '2026-02-28T23:00:00Z',
-      state: 'REGISTRATION_OPEN',
-      _count: { registrations: 16 },
-    },
-    {
-      id: '4',
-      name: 'FightRise Weekly #41',
-      startggSlug: 'fightrise-weekly-41',
-      startAt: '2026-02-13T18:00:00Z',
-      endAt: '2026-02-13T23:00:00Z',
-      state: 'COMPLETED',
-      _count: { registrations: 28 },
-    },
-    {
-      id: '5',
-      name: 'Casual Tuesday',
-      startggSlug: 'casual-tuesday',
-      startAt: '2026-02-25T19:00:00Z',
-      endAt: '2026-02-25T22:00:00Z',
-      state: 'REGISTRATION_CLOSED',
-      _count: { registrations: 12 },
-    },
-  ];
+  useEffect(() => {
+    async function fetchTournaments() {
+      try {
+        const response = await fetch('/api/tournaments');
+        if (!response.ok) {
+          if (response.status === 401) {
+            // Not authenticated - show empty state
+            setTournaments([]);
+            return;
+          }
+          throw new Error('Failed to fetch tournaments');
+        }
+        const data = await response.json();
+        // Handle both { tournaments: [...] } and [...] response formats
+        const tournamentsArray = Array.isArray(data) ? data : (data.tournaments || []);
+        setTournaments(tournamentsArray);
+      } catch (err) {
+        console.error('Error fetching tournaments:', err);
+        setTournaments([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchTournaments();
+  }, []);
 
   // Filter tournaments
-  const filteredTournaments = mockTournaments.filter((tournament) => {
+  const filteredTournaments = tournaments.filter((tournament) => {
     if (activeFilter === 'all') return true;
     if (activeFilter === 'live') return tournament.state === 'IN_PROGRESS';
     if (activeFilter === 'upcoming') return ['REGISTRATION_OPEN', 'REGISTRATION_CLOSED'].includes(tournament.state);
@@ -253,11 +233,15 @@ function DashboardContent() {
   });
 
   // Calculate stats
-  const totalTournaments = mockTournaments.length;
-  const activeTournaments = mockTournaments.filter((t) => t.state === 'IN_PROGRESS').length;
-  const upcomingTournaments = mockTournaments.filter((t) =>
+  const totalTournaments = tournaments.length;
+  const activeTournaments = tournaments.filter((t) => t.state === 'IN_PROGRESS').length;
+  const upcomingTournaments = tournaments.filter((t) =>
     ['REGISTRATION_OPEN', 'REGISTRATION_CLOSED'].includes(t.state)
   ).length;
+
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950">

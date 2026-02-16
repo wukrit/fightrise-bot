@@ -124,7 +124,7 @@ async function mockTournamentApi(page: Page) {
   });
 }
 
-test.describe.skip('Tournament Flow', () => {
+test.describe('Tournament Flow', () => {
   test.beforeEach(async ({ page }) => {
     await mockAuthEndpoints(page);
     await mockTournamentApi(page);

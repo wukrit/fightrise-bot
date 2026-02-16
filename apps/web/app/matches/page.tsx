@@ -122,7 +122,9 @@ export default function MatchesPage() {
           throw new Error('Failed to fetch matches');
         }
         const data = await response.json();
-        setMatches(data);
+        // Handle both { matches: [...] } and [...] response formats
+        const matchesArray = Array.isArray(data) ? data : (data.matches || []);
+        setMatches(matchesArray);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
