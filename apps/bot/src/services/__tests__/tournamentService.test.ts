@@ -2,6 +2,11 @@ import { describe, it, expect, beforeEach, vi, afterEach, type MockInstance } fr
 import { TournamentService } from '../tournamentService.js';
 import { createMockTransaction } from '../../__tests__/utils/transactionMock.js';
 
+// Mock the audit service
+vi.mock('../auditService.js', () => ({
+  createAuditLog: vi.fn().mockResolvedValue({}),
+}));
+
 // Mock the database
 vi.mock('@fightrise/database', () => ({
   prisma: {
@@ -22,6 +27,9 @@ vi.mock('@fightrise/database', () => ({
     guildConfig: {
       upsert: vi.fn(),
     },
+    auditLog: {
+      create: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
   TournamentState: {
@@ -37,6 +45,14 @@ vi.mock('@fightrise/database', () => ({
     ADMIN: 'ADMIN',
     MODERATOR: 'MODERATOR',
   },
+  AuditAction: {
+    TOURNAMENT_CREATED: 'TOURNAMENT_CREATED',
+    TOURNAMENT_UPDATED: 'TOURNAMENT_UPDATED',
+  },
+  AuditSource: {
+    DISCORD: 'DISCORD',
+    API: 'API',
+  },
 }));
 
 // Mock the StartGGClient
@@ -44,6 +60,14 @@ vi.mock('@fightrise/startgg-client', () => ({
   StartGGClient: vi.fn().mockImplementation(() => ({
     getTournament: vi.fn(),
     getTournamentsByOwner: vi.fn(),
+    getEventEntrants: vi.fn().mockResolvedValue({ nodes: [] }),
+  })),
+}));
+
+// Mock the RegistrationSyncService
+vi.mock('./registrationSyncService.js', () => ({
+  RegistrationSyncService: vi.fn().mockImplementation(() => ({
+    syncEventRegistrations: vi.fn().mockResolvedValue({ success: true, newRegistrations: 0, updatedRegistrations: 0 }),
   })),
 }));
 
@@ -55,6 +79,7 @@ describe('TournamentService', () => {
   let mockStartGGClient: {
     getTournament: MockInstance;
     getTournamentsByOwner: MockInstance;
+    getEventEntrants: MockInstance;
   };
 
   beforeEach(() => {
@@ -64,6 +89,7 @@ describe('TournamentService', () => {
     mockStartGGClient = {
       getTournament: vi.fn(),
       getTournamentsByOwner: vi.fn(),
+      getEventEntrants: vi.fn().mockResolvedValue({ nodes: [] }),
     };
 
     // Setup the mock implementation
