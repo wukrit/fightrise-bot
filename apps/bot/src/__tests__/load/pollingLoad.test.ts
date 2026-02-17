@@ -83,9 +83,10 @@ describe('Load Test Suite: Polling System', () => {
     it('should track memory usage', async () => {
       const result = await runLoadTest(SCENARIO_CONFIGS.smallScale);
 
-      // Verify memory metrics
+      // Verify memory metrics - memoryUsedMB should be positive, memoryGrowthMB can be negative (GC working)
       expect(result.memoryUsedMB).toBeGreaterThan(0);
-      expect(result.memoryGrowthMB).toBeGreaterThanOrEqual(0);
+      // Memory growth can be negative due to garbage collection during long-running tests
+      expect(result.memoryGrowthMB).toBeLessThan(10); // Should not grow unbounded
 
       console.log('Memory Usage:', {
         usedMB: result.memoryUsedMB,
