@@ -1,7 +1,7 @@
 ---
 title: Load test polling system
 type: feat
-status: active
+status: completed
 date: 2026-02-17
 ---
 
