@@ -25,7 +25,7 @@ export class RegistrationSyncService {
   constructor(startggApiKey: string) {
     this.startggClient = new StartGGClient({
       apiKey: startggApiKey,
-      cache: { enabled: false },
+      cache: { enabled: true, ttlMs: 30000, maxEntries: 500 },
       retry: { maxRetries: 3 },
     });
   }
