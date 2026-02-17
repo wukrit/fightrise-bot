@@ -54,6 +54,7 @@
     "@playwright/test": "^1.58.0",
     "dotenv-cli": "^11.0.0",
     "msw": "^2.0.0",
+    "playwright-msw": "^3.0.1",
     "turbo": "^2.0.0",
     "typescript": "^5.3.0"
   },
