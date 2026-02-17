@@ -4,12 +4,20 @@
  */
 
 import { prisma, TournamentState, MatchState } from '@fightrise/database';
+import { randomUUID } from 'crypto';
 
 export interface TournamentFactoryConfig {
   tournamentCount: number;
   eventCount: number;
   matchCount: number;
   state?: TournamentState;
+}
+
+// Counter for unique IDs
+let idCounter = 0;
+
+function generateId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${idCounter++}-${randomUUID().slice(0, 8)}`;
 }
 
 /**
@@ -21,12 +29,12 @@ export async function createTestTournaments(config: TournamentFactoryConfig) {
   const tournaments = [];
 
   for (let t = 0; t < tournamentCount; t++) {
-    const tournamentId = `load-test-${Date.now()}-${t}`;
+    const tournamentId = generateId('load-test');
 
     const tournament = await prisma.tournament.create({
       data: {
         id: tournamentId,
-        startggId: `startgg-tournament-${Date.now()}-${t}`,
+        startggId: generateId('startgg-tournament'),
         startggSlug: `tournament/load-test-${t}`,
         name: `Load Test Tournament ${t + 1}`,
         startAt: new Date(),
@@ -38,13 +46,13 @@ export async function createTestTournaments(config: TournamentFactoryConfig) {
     // Create events for this tournament
     const events = [];
     for (let e = 0; e < eventCount; e++) {
-      const eventId = `load-test-event-${t}-${e}`;
+      const eventId = generateId('load-test-event');
       const matchesPerEvent = Math.ceil(matchCount / eventCount);
 
       const event = await prisma.event.create({
         data: {
           id: eventId,
-          startggId: `startgg-event-${Date.now()}-${t}-${e}`,
+          startggId: generateId('startgg-event'),
           name: `Event ${e + 1} - ${tournament.name}`,
           numEntrants: 8,
           state: 3, // COMPLETE
@@ -57,8 +65,8 @@ export async function createTestTournaments(config: TournamentFactoryConfig) {
         const roundNum = Math.ceil((m + 1) / 4);
         await prisma.match.create({
           data: {
-            id: `load-test-match-${t}-${e}-${m}`,
-            startggSetId: `startgg-set-${Date.now()}-${t}-${e}-${m}`,
+            id: generateId('load-test-match'),
+            startggSetId: generateId('startgg-set'),
             identifier: `A${m + 1}`,
             roundText: `Round ${roundNum}`,
             eventId: event.id,
