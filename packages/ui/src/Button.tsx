@@ -3,6 +3,7 @@ import React from 'react';
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'discord';
   size?: 'sm' | 'md' | 'lg';
+  loading?: boolean;
 }
 
 const variantStyles: Record<string, React.CSSProperties> = {
@@ -62,6 +63,7 @@ export function Button({
   size = 'md',
   style,
   disabled,
+  loading,
   onFocus,
   onBlur,
   ...props
@@ -78,11 +80,13 @@ export function Button({
     onBlur?.(e);
   };
 
+  const isDisabled = disabled || loading;
+
   const combinedStyles: React.CSSProperties = {
     ...baseStyles,
     ...variantStyles[variant],
     ...sizeStyles[size],
-    ...(disabled ? { opacity: 0.6, cursor: 'not-allowed' } : {}),
+    ...(isDisabled ? { opacity: 0.6, cursor: 'not-allowed' } : {}),
     ...(isFocused ? focusStyles : {}),
     ...style,
   };
@@ -90,11 +94,16 @@ export function Button({
   return (
     <button
       style={combinedStyles}
-      disabled={disabled}
+      disabled={isDisabled}
       onFocus={handleFocus}
       onBlur={handleBlur}
       {...props}
     >
+      {loading && (
+        <span style={{ display: 'inline-block', width: '16px', height: '16px', border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </span>
+      )}
       {children}
     </button>
   );

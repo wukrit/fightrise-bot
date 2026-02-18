@@ -26,6 +26,7 @@ export class StartGGClient {
   private client: GraphQLClient;
   private cache: ResponseCache;
   private retryConfig: StartGGClientConfig['retry'];
+  private pendingRequests: Map<string, Promise<unknown>> = new Map();
 
   constructor(config: StartGGClientConfig) {
     this.client = new GraphQLClient(STARTGG_API_URL, {
@@ -37,6 +38,10 @@ export class StartGGClient {
 
     this.cache = new ResponseCache(config.cache ?? { enabled: false });
     this.retryConfig = config.retry;
+  }
+
+  private getRequestKey(query: string, variables: Record<string, unknown>): string {
+    return `${query}:${JSON.stringify(variables)}`;
   }
 
   private async request<T>(
@@ -52,8 +57,15 @@ export class StartGGClient {
       }
     }
 
+    // Deduplicate concurrent requests for the same query/variables
+    const requestKey = this.getRequestKey(query, variables);
+    const existingRequest = this.pendingRequests.get(requestKey);
+    if (existingRequest) {
+      return existingRequest as Promise<T>;
+    }
+
     // Make request with retry logic
-    const result = await withRetry(
+    const requestPromise = withRetry(
       async () => {
         try {
           return await this.client.request<T>(query, variables);
@@ -62,7 +74,14 @@ export class StartGGClient {
         }
       },
       this.retryConfig
-    );
+    ).finally(() => {
+      // Remove from pending requests when complete
+      this.pendingRequests.delete(requestKey);
+    });
+
+    this.pendingRequests.set(requestKey, requestPromise);
+
+    const result = await requestPromise;
 
     // Cache the result
     if (options.cacheKey) {

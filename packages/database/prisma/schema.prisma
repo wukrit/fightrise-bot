@@ -13,6 +13,10 @@ datasource db {
 // field (discordId, startggId, or email) is not null. Prisma does not support
 // CHECK constraints natively, so this must be implemented via a raw SQL migration.
 //
+// TODO: Consider adding soft delete (deletedAt DateTime?) to preserve historical data.
+// This would require: adding deletedAt to key models, updating queries to filter
+// deletedAt IS NULL, and implementing a cleanup job for old records.
+//
 // Required migration (run manually or via prisma migrate):
 //   ALTER TABLE "User" ADD CONSTRAINT "User_has_identity"
 //   CHECK ("discordId" IS NOT NULL OR "startggId" IS NOT NULL OR "email" IS NOT NULL);
@@ -100,6 +104,8 @@ enum TournamentState {
 // Tournament events (e.g., different games/brackets)
 model Event {
   id              String    @id @default(cuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // Start.gg reference
   startggId       String    @unique
@@ -179,6 +185,8 @@ enum StartggSyncStatus {
 // Match participants
 model MatchPlayer {
   id              String    @id @default(cuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // Player info
   startggEntrantId String?
@@ -208,6 +216,7 @@ model MatchPlayer {
 model GameResult {
   id            String    @id @default(cuid())
   createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   matchId       String
   matchPlayerId String
@@ -269,6 +278,7 @@ enum DisputeStatus {
 model Registration {
   id              String    @id @default(cuid())
   createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // Start.gg reference
   startggEntrantId String?  @map("startgg_entrant_id")
@@ -329,6 +339,8 @@ enum RegistrationStatus {
 // Tournament administrators
 model TournamentAdmin {
   id              String    @id @default(cuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   role            AdminRole @default(MODERATOR)
 
@@ -349,6 +361,8 @@ enum AdminRole {
 // Discord guild configuration
 model GuildConfig {
   id              String    @id @default(cuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   discordGuildId  String    @unique
 
