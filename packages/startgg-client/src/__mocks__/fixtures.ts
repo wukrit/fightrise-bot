@@ -3,15 +3,20 @@
  * These match the exact structure returned by the Start.gg GraphQL API.
  */
 
-import type {
-  Tournament,
-  Event,
-  Set,
-  Entrant,
-  Connection,
-  PageInfo,
-  SetSlot,
+import {
+  TournamentState,
+  SetState,
+  type Tournament,
+  type Event,
+  type Set,
+  type Entrant,
+  type Connection,
+  type PageInfo,
+  type SetSlot,
 } from '../types.js';
+
+// Re-export enums for convenience in tests
+export { TournamentState, SetState };
 
 // ============================================
 // Page Info Fixtures
@@ -109,19 +114,10 @@ export function createSetSlot(
 // Set (Match) Fixtures
 // ============================================
 
-// Set states from Start.gg API
-export const SET_STATE = {
-  CREATED: 1,
-  ACTIVE: 2,
-  COMPLETED: 3,
-  READY: 6,
-  STARTED: 7,
-} as const;
-
 export const mockSets: Record<string, Set> = {
   pendingSet: {
     id: 'set-1',
-    state: SET_STATE.READY,
+    state: SetState.READY,
     fullRoundText: 'Winners Round 1',
     identifier: 'A1',
     round: 1,
@@ -132,7 +128,7 @@ export const mockSets: Record<string, Set> = {
   },
   activeSet: {
     id: 'set-2',
-    state: SET_STATE.STARTED,
+    state: SetState.STARTED,
     fullRoundText: 'Winners Round 1',
     identifier: 'A2',
     round: 1,
@@ -143,7 +139,7 @@ export const mockSets: Record<string, Set> = {
   },
   completedSet: {
     id: 'set-3',
-    state: SET_STATE.COMPLETED,
+    state: SetState.COMPLETED,
     fullRoundText: 'Winners Round 1',
     identifier: 'A3',
     round: 1,
@@ -154,7 +150,7 @@ export const mockSets: Record<string, Set> = {
   },
   grandFinals: {
     id: 'set-4',
-    state: SET_STATE.READY,
+    state: SetState.READY,
     fullRoundText: 'Grand Finals',
     identifier: 'GF',
     round: 5,
@@ -169,7 +165,7 @@ export function createSet(overrides: Partial<Set> = {}): Set {
   const id = overrides.id ?? `set-${Date.now()}`;
   return {
     id,
-    state: SET_STATE.READY,
+    state: SetState.READY,
     fullRoundText: 'Winners Round 1',
     identifier: 'A1',
     round: 1,
@@ -228,13 +224,6 @@ export function createEvent(overrides: Partial<Event> = {}): Event {
 // Tournament Fixtures
 // ============================================
 
-// Tournament states from Start.gg API
-export const TOURNAMENT_STATE = {
-  CREATED: 1,
-  ACTIVE: 2,
-  COMPLETED: 3,
-} as const;
-
 export const mockTournaments: Record<string, Tournament> = {
   weeklyLocal: {
     id: 'tournament-1',
@@ -242,7 +231,7 @@ export const mockTournaments: Record<string, Tournament> = {
     slug: 'tournament/fgc-weekly-42',
     startAt: Date.now() / 1000 + 86400, // Tomorrow
     endAt: Date.now() / 1000 + 90000,
-    state: TOURNAMENT_STATE.CREATED,
+    state: TournamentState.CREATED,
     events: [mockEvents.streetFighter, mockEvents.tekken],
   },
   majorTournament: {
@@ -251,7 +240,7 @@ export const mockTournaments: Record<string, Tournament> = {
     slug: 'tournament/fighting-game-major-2024',
     startAt: Date.now() / 1000 - 3600, // Started 1 hour ago
     endAt: Date.now() / 1000 + 86400,
-    state: TOURNAMENT_STATE.ACTIVE,
+    state: TournamentState.ACTIVE,
     events: [mockEvents.streetFighter, mockEvents.tekken, mockEvents.guiltyGear],
   },
   completedTournament: {
@@ -260,7 +249,7 @@ export const mockTournaments: Record<string, Tournament> = {
     slug: 'tournament/last-month-tournament',
     startAt: Date.now() / 1000 - 604800, // A week ago
     endAt: Date.now() / 1000 - 518400,
-    state: TOURNAMENT_STATE.COMPLETED,
+    state: TournamentState.COMPLETED,
     events: [mockEvents.streetFighter],
   },
 };
@@ -273,7 +262,7 @@ export function createTournament(overrides: Partial<Tournament> = {}): Tournamen
     slug: `tournament/test-${id}`,
     startAt: Date.now() / 1000 + 86400,
     endAt: Date.now() / 1000 + 90000,
-    state: TOURNAMENT_STATE.CREATED,
+    state: TournamentState.CREATED,
     events: [createEvent()],
     ...overrides,
   };
@@ -332,7 +321,7 @@ export function createGetTournamentsByOwnerResponse(
   };
 }
 
-export function createReportSetResponse(setId: string, state = SET_STATE.COMPLETED) {
+export function createReportSetResponse(setId: string, state = SetState.COMPLETED) {
   return {
     reportBracketSet: {
       id: setId,

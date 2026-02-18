@@ -155,6 +155,7 @@ model Match {
   @@index([state])
   @@index([discordThreadId])
   @@index([startggSyncStatus])
+  @@index([eventId, state])
 }
 
 enum MatchState {

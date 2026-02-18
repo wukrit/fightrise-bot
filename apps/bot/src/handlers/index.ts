@@ -1,6 +1,7 @@
 // Button handler exports and registration
 export { buttonHandlers, registerButtonHandler } from './buttonHandlers.js';
 export type { ButtonHandler } from './buttonHandlers.js';
+export { CUID_REGEX, isValidCuid } from './validation.js';
 
 // Import and register all button handlers
 import { registerButtonHandler } from './buttonHandlers.js';

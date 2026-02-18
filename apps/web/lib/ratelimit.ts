@@ -1,7 +1,34 @@
+import { Redis } from 'ioredis';
+
+let redis: Redis | null = null;
+
 /**
- * Simple in-memory rate limiter
- * Suitable for single-instance deployments; use Upstash Redis for serverless/multi-instance
+ * Get Redis connection for rate limiting
  */
+function getRedisConnection(): Redis {
+  if (!redis) {
+    const redisUrl = process.env.REDIS_URL;
+    if (!redisUrl) {
+      throw new Error('REDIS_URL environment variable is required for rate limiting');
+    }
+
+    redis = new Redis(redisUrl, {
+      maxRetriesPerRequest: 3,
+      retryStrategy: (times: number) => {
+        if (times > 3) {
+          console.error('[RateLimit] Redis connection failed after 3 retries');
+          return null; // Stop retrying
+        }
+        return Math.min(times * 100, 1000);
+      },
+    });
+
+    redis.on('error', (err: Error) => {
+      console.error('[RateLimit] Redis error:', err.message);
+    });
+  }
+  return redis;
+}
 
 /**
  * Rate limit configuration
@@ -33,60 +60,75 @@ export interface RateLimitResult {
   resetTime: number;
 }
 
-// Simple Map-based rate limiter (no external dependencies)
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
-
-// Clean up old entries periodically
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, value] of rateLimitStore.entries()) {
-    if (now > value.resetTime) {
-      rateLimitStore.delete(key);
-    }
-  }
-}, 60000);
-
 /**
- * Check rate limit for a given key
+ * Check rate limit using Redis sliding window algorithm
  * @param key - Identifier (usually IP address)
  * @param config - Rate limit configuration
  */
-export function checkRateLimit(key: string, config: RateLimitConfig): RateLimitResult {
+export async function checkRateLimit(key: string, config: RateLimitConfig): Promise<RateLimitResult> {
+  const r = getRedisConnection();
   const now = Date.now();
-  const entry = rateLimitStore.get(key);
+  const windowStart = now - config.windowMs;
+  const windowKey = `ratelimit:${key}`;
 
-  if (!entry || now > entry.resetTime) {
-    // New window
+  try {
+    // Use Redis transaction for atomicity
+    const pipeline = r.pipeline();
+
+    // Remove expired entries outside the window
+    pipeline.zremrangebyscore(windowKey, 0, windowStart);
+
+    // Count current requests in window
+    pipeline.zcard(windowKey);
+
+    // Add current request
+    pipeline.zadd(windowKey, now.toString(), `${now}-${Math.random()}`);
+
+    // Set expiry on the key
+    pipeline.pexpire(windowKey, config.windowMs);
+
+    const results = await pipeline.exec();
+
+    if (!results) {
+      // Fallback: allow request if Redis fails
+      return {
+        allowed: true,
+        limit: config.limit,
+        remaining: config.limit - 1,
+        resetTime: now + config.windowMs,
+      };
+    }
+
+    const currentCount = results[1]?.[1] as number;
+
     const resetTime = now + config.windowMs;
-    rateLimitStore.set(key, { count: 1, resetTime });
+
+    if (currentCount >= config.limit) {
+      // Rate limit exceeded
+      return {
+        allowed: false,
+        limit: config.limit,
+        remaining: 0,
+        resetTime,
+      };
+    }
+
+    return {
+      allowed: true,
+      limit: config.limit,
+      remaining: config.limit - currentCount - 1,
+      resetTime,
+    };
+  } catch (error) {
+    console.error('[RateLimit] Error checking rate limit:', error);
+    // Fail open - allow request if Redis fails
     return {
       allowed: true,
       limit: config.limit,
       remaining: config.limit - 1,
-      resetTime,
+      resetTime: now + config.windowMs,
     };
   }
-
-  if (entry.count >= config.limit) {
-    // Rate limit exceeded
-    return {
-      allowed: false,
-      limit: config.limit,
-      remaining: 0,
-      resetTime: entry.resetTime,
-    };
-  }
-
-  // Increment counter
-  entry.count++;
-  rateLimitStore.set(key, entry);
-
-  return {
-    allowed: true,
-    limit: config.limit,
-    remaining: config.limit - entry.count,
-    resetTime: entry.resetTime,
-  };
 }
 
 /**
@@ -126,7 +168,7 @@ export async function withRateLimit(
   handler: () => Promise<Response>
 ): Promise<Response> {
   const ip = getClientIp(request);
-  const result = checkRateLimit(ip, config);
+  const result = await checkRateLimit(ip, config);
   const headers = createRateLimitHeaders(result);
 
   if (!result.allowed) {
@@ -144,4 +186,14 @@ export async function withRateLimit(
   }
 
   return response;
+}
+
+/**
+ * Close Redis connection (for graceful shutdown)
+ */
+export async function closeRateLimitRedis(): Promise<void> {
+  if (redis) {
+    await redis.quit();
+    redis = null;
+  }
 }

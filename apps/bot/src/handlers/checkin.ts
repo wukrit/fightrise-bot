@@ -12,6 +12,7 @@ import {
 } from '@fightrise/shared';
 import type { ButtonHandler } from './buttonHandlers.js';
 import { checkInPlayer } from '../services/matchService.js';
+import { isValidCuid } from './validation.js';
 
 /**
  * Handler for check-in button interactions.
@@ -37,6 +38,12 @@ export const checkinHandler: ButtonHandler = {
     const slot = parseInt(playerSlot, 10);
 
     if (isNaN(slot) || slot < 1 || slot > 2) {
+      await interaction.reply({ content: 'Invalid button.', ephemeral: true });
+      return;
+    }
+
+    // Validate matchId format (CUID) before database query
+    if (!isValidCuid(matchId)) {
       await interaction.reply({ content: 'Invalid button.', ephemeral: true });
       return;
     }

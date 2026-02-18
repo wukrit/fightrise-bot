@@ -3,7 +3,7 @@ import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS
 
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request);
-  const result = checkRateLimit(ip, RATE_LIMIT_CONFIGS.health);
+  const result = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.health);
   const headers = createRateLimitHeaders(result);
 
   if (!result.allowed) {
