@@ -319,6 +319,6 @@ Create a dispute for a match.
 
 ## Related Documentation
 
-- [Architecture](Architecture) - System design
-- [Commands](Commands) - Discord commands
-- [Getting Started](Getting-Started) - Quick start guide
+- [Architecture](/wiki/Architecture) - System design
+- [Commands](/wiki/Commands) - Discord commands
+- [Getting Started](/wiki/Getting-Started) - Quick start guide

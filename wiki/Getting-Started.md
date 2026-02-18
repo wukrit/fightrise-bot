@@ -42,7 +42,7 @@ cp .env.example .env
 | `NEXTAUTH_SECRET` | NextAuth encryption key | Generate with `openssl rand -base64 32` |
 | `NEXTAUTH_URL` | Web app URL | `http://localhost:3000` for development |
 
-See the [Discord Setup](Discord-Setup) and [Start.gg Setup](Start.gg-Setup) guides for detailed instructions on obtaining credentials.
+See the [Discord Setup](/wiki/Discord-Setup) and [Start.gg Setup](/wiki/Start.gg-Setup) guides for detailed instructions on obtaining credentials.
 
 ## Step 3: Start Development Environment
 
@@ -68,7 +68,7 @@ For OAuth flows that require public URLs:
 npm run docker:dev:tunnel
 ```
 
-This adds a Cloudflare Tunnel. See [Tunnel Setup](Tunnel-Setup) for initial configuration.
+This adds a Cloudflare Tunnel. See [Tunnel Setup](/wiki/Tunnel-Setup) for initial configuration.
 
 ### Option C: Infrastructure Only + Local Dev
 
@@ -107,8 +107,8 @@ npm run docker:down
 
 ## Next Steps
 
-- Configure your [Discord Application](Discord-Setup)
-- Configure your [Start.gg API Access](Start.gg-Setup)
-- Set up [Cloudflare Tunnel](Tunnel-Setup) for OAuth development
-- Review the [Commands](Commands) available
-- Explore the [Architecture](Architecture) documentation
+- Configure your [Discord Application](/wiki/Discord-Setup)
+- Configure your [Start.gg API Access](/wiki/Start.gg-Setup)
+- Set up [Cloudflare Tunnel](/wiki/Tunnel-Setup) for OAuth development
+- Review the [Commands](/wiki/Commands) available
+- Explore the [Architecture](/wiki/Architecture) documentation

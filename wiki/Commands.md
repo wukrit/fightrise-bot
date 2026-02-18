@@ -202,6 +202,6 @@ sequenceDiagram
 
 ## Related Documentation
 
-- [Getting Started](Getting-Started) - Quick start guide
-- [Architecture](Architecture) - System design
-- [API Reference](API-Reference) - Web API endpoints
+- [Getting Started](/wiki/Getting-Started) - Quick start guide
+- [Architecture](/wiki/Architecture) - System design
+- [API Reference](/wiki/API-Reference) - Web API endpoints

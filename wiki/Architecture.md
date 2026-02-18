@@ -219,5 +219,5 @@ await prisma.$transaction(async (tx) => {
 ## Related Documentation
 
 - [Codebase Reference](Codebase-Reference) - Detailed code documentation
-- [API Reference](API-Reference) - Web API endpoints
+- [API Reference](/wiki/API-Reference) - Web API endpoints
 - [Database Schema](https://github.com/wukrit/fightrise-bot/blob/main/packages/database/prisma/schema.prisma)
