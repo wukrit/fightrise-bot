@@ -314,7 +314,7 @@ catch (error) {
 ## Related Documentation
 
 - **Implementation Plan:** [docs/plans/2026-01-28-feat-startgg-polling-bullmq-plan.md](../../plans/2026-01-28-feat-startgg-polling-bullmq-plan.md)
-- **Architecture Plan:** [ARCHITECTURE_PLAN.md](../../../ARCHITECTURE_PLAN.md) (Polling Service section)
+- **Architecture:** [Architecture](../../ARCHITECTURE.md) (System architecture overview)
 - **Start.gg Setup:** [docs/STARTGG_SETUP.md](../../STARTGG_SETUP.md)
 
 ## Related Issues

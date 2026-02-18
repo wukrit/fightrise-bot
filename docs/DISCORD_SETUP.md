@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Discord Bot Setup Guide"
+---
+
 # Discord Bot Setup Guide
 
 This guide walks you through setting up a Discord application and bot for FightRise.
@@ -17,12 +22,11 @@ Before you begin, make sure you have:
 
 | Document | Description |
 |----------|-------------|
-| [README.md](../README.md) | Quick start guide |
 | **Discord Setup** (this doc) | Discord bot configuration |
 | [Start.gg Setup](./STARTGG_SETUP.md) | Start.gg API setup |
 | [Tunnel Setup](./TUNNEL_SETUP.md) | Cloudflare Tunnel for OAuth |
 | [Implementation Status](./IMPLEMENTATION_STATUS.md) | Current progress |
-| [Architecture Plan](../ARCHITECTURE_PLAN.md) | Full system design |
+| [Architecture](./ARCHITECTURE.md) | System architecture overview |
 
 ---
 
@@ -179,7 +183,7 @@ sequenceDiagram
 3. Note your **Client Secret** (click "Reset Secret" if needed)
    - This is your `DISCORD_CLIENT_SECRET`
 
-> **Note:** OAuth callbacks require publicly accessible URLs. For local development with OAuth, use [Cloudflare Tunnel](../README.md#cloudflare-tunnel-for-oauth) to expose your local server.
+> **Note:** OAuth callbacks require publicly accessible URLs. For local development with OAuth, use [Cloudflare Tunnel](./TUNNEL_SETUP.md) to expose your local server.
 
 ---
 

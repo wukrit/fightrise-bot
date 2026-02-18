@@ -26,8 +26,43 @@
   </script>
 </head>
 <body>
-  <div class="container">
-    {{ content }}
+  <header class="site-header">
+    <div class="header-content">
+      <a href="{{ site.baseurl }}/" class="site-title">FightRise Wiki</a>
+      <button class="mobile-menu-toggle" aria-label="Toggle navigation" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <nav class="nav">
+        <h2 class="nav-title">Documentation</h2>
+        <ul class="nav-list">
+          <li><a href="{{ site.baseurl }}/API">API</a></li>
+          <li><a href="{{ site.baseurl }}/ARCHITECTURE">Architecture</a></li>
+          <li><a href="{{ site.baseurl }}/DISCORD_SETUP">Discord Setup</a></li>
+          <li><a href="{{ site.baseurl }}/IMPLEMENTATION_STATUS">Implementation Status</a></li>
+          <li><a href="{{ site.baseurl }}/STARTGG_SETUP">Start.gg Setup</a></li>
+          <li><a href="{{ site.baseurl }}/TUNNEL_SETUP">Tunnel Setup</a></li>
+          <li><a href="{{ site.baseurl }}/CODEBASE_REFERENCE">Codebase Reference</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <article class="content">
+        <h1>{{ page.title }}</h1>
+        {{ content }}
+      </article>
+    </main>
   </div>
+
+  <footer class="site-footer">
+    <p>&copy; {{ site.time | date: '%Y' }} FightRise Team. All rights reserved.</p>
+  </footer>
 </body>
 </html>
