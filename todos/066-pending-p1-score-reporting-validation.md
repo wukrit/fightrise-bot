@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p1
 issue_id: "066"
 tags: [code-review, security, api, validation]
@@ -60,6 +60,7 @@ No Zod validation schema is applied to the request body.
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-18 | Created | Found during PR #97 review |
+| 2026-02-18 | Completed | Added Zod validation schema to score reporting API |
 
 ## Resources
 

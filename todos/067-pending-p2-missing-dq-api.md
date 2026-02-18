@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "067"
 tags: [code-review, agent-native, api]
@@ -50,6 +50,7 @@ No REST API endpoint exists for the DQ functionality.
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-18 | Created | Found during PR #97 review |
+| 2026-02-18 | Completed | Created POST /api/matches/[id]/dq endpoint |
 
 ## Resources
 

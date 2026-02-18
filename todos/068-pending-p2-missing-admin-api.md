@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "068"
 tags: [code-review, agent-native, api]
@@ -53,6 +53,7 @@ REST API equivalents don't exist for:
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-18 | Created | Found during PR #97 review |
+| 2026-02-18 | Completed | Created admin register and registrations endpoints |
 
 ## Resources
 

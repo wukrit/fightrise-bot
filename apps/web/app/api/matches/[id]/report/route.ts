@@ -3,6 +3,22 @@ import { prisma } from '@fightrise/database';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { MatchState } from '@prisma/client';
+import { z } from 'zod';
+
+// Validation schema for score reporting
+const scoreReportSchema = z.object({
+  winnerId: z.string().min(1, 'Winner ID is required'),
+  player1Score: z
+    .number()
+    .int('Score must be an integer')
+    .min(0, 'Score cannot be negative')
+    .max(99, 'Score is too high'),
+  player2Score: z
+    .number()
+    .int('Score must be an integer')
+    .min(0, 'Score cannot be negative')
+    .max(99, 'Score is too high'),
+});
 
 /**
  * POST /api/matches/[id]/report
@@ -24,7 +40,17 @@ export async function POST(
 
     const { id } = await params;
     const body = await request.json();
-    const { winnerId, player1Score, player2Score } = body;
+
+    // Validate input
+    const validationResult = scoreReportSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: validationResult.error.errors },
+        { status: 400 }
+      );
+    }
+
+    const { winnerId, player1Score, player2Score } = validationResult.data;
 
     // Find the user
     const user = await prisma.user.findUnique({
