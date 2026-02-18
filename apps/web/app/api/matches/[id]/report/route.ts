@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@fightrise/database';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { MatchState } from '@prisma/client';
 
 /**
  * POST /api/matches/[id]/report
@@ -62,19 +63,39 @@ export async function POST(
       );
     }
 
-    // Check if match is in a state that allows reporting
-    if (!['CALLED', 'CHECKED_IN', 'IN_PROGRESS', 'PENDING_CONFIRMATION'].includes(match.state)) {
-      return NextResponse.json(
-        { error: 'Match is not in a state that allows reporting' },
-        { status: 400 }
-      );
-    }
-
     // Determine if user won
     const userWon = winnerId === user.id;
 
     // Update the match player's reported score and determine match state in a transaction
+    // Use atomic updateMany with state guards to prevent race conditions
     const result = await prisma.$transaction(async (tx) => {
+      // Get valid states that allow reporting
+      const validStates = [
+        MatchState.CALLED,
+        MatchState.CHECKED_IN,
+        MatchState.IN_PROGRESS,
+        MatchState.PENDING_CONFIRMATION,
+      ];
+
+      // Use updateMany with state guard for optimistic locking
+      const matchUpdate = await tx.match.updateMany({
+        where: { id, state: { in: validStates } },
+        data: {
+          // Transition to appropriate state based on opponent reporting
+          state: MatchState.PENDING_CONFIRMATION,
+        },
+      });
+
+      // If no rows updated, match is not in a state that allows reporting (race condition - another request already processed)
+      if (matchUpdate.count === 0) {
+        // Check if already completed
+        const currentMatch = await tx.match.findUnique({ where: { id } });
+        if (currentMatch?.state === MatchState.COMPLETED) {
+          throw new Error('MATCH_COMPLETED');
+        }
+        throw new Error('INVALID_STATE');
+      }
+
       // Update the current player's reported score
       await tx.matchPlayer.update({
         where: { id: userPlayer.id },
@@ -104,39 +125,46 @@ export async function POST(
         const opponentWon = opponentPlayer.isWinner;
 
         if (userWon === opponentWon) {
-          // Both agree - mark as completed
-          await tx.match.update({
-            where: { id },
-            data: {
-              state: 'COMPLETED',
-            },
+          // Both agree - use atomic updateMany with state guard
+          await tx.match.updateMany({
+            where: { id, state: MatchState.PENDING_CONFIRMATION },
+            data: { state: MatchState.COMPLETED },
           });
-          return { state: 'COMPLETED' };
+          return { state: MatchState.COMPLETED };
         } else {
-          // Discrepancy - needs dispute resolution
-          await tx.match.update({
-            where: { id },
-            data: {
-              state: 'DISPUTED',
-            },
+          // Discrepancy - use atomic updateMany with state guard
+          await tx.match.updateMany({
+            where: { id, state: MatchState.PENDING_CONFIRMATION },
+            data: { state: MatchState.DISPUTED },
           });
-          return { state: 'DISPUTED' };
+          return { state: MatchState.DISPUTED };
         }
-      } else {
-        // Just this player reported - mark as pending confirmation
-        await tx.match.update({
-          where: { id },
-          data: {
-            state: 'PENDING_CONFIRMATION',
-          },
-        });
-        return { state: 'PENDING_CONFIRMATION' };
       }
+
+      // Just this player reported - already set to PENDING_CONFIRMATION above
+      return { state: MatchState.PENDING_CONFIRMATION };
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error reporting score:', error);
+
+    // Handle specific race condition errors
+    if (error instanceof Error) {
+      if (error.message === 'MATCH_COMPLETED') {
+        return NextResponse.json(
+          { error: 'Match has already been completed' },
+          { status: 400 }
+        );
+      }
+      if (error.message === 'INVALID_STATE') {
+        return NextResponse.json(
+          { error: 'Match is not in a state that allows reporting' },
+          { status: 400 }
+        );
+      }
+    }
+
     return NextResponse.json(
       { error: 'Failed to report score' },
       { status: 500 }
