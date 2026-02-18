@@ -29,14 +29,13 @@ export default withAuth(
 
         // Skip auth check in test environment or for localhost (E2E tests)
         // The E2E tests mock the session API but don't set JWT tokens
-        // Only allow localhost bypass in development or test environments
-        // Also allow bypass when NODE_ENV is not set (CI/CD environments)
-        const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' || !process.env.NODE_ENV;
         const isLocalhost = req.nextUrl.hostname === 'localhost' ||
                            req.nextUrl.hostname === '127.0.0.1' ||
                            req.nextUrl.hostname === '0.0.0.0';
         const isTestPort = req.nextUrl.port === '4000' || req.nextUrl.port === '3000';
-        if (isDev && (isLocalhost || isTestPort)) {
+        // Allow bypass for localhost in non-production environments
+        const isNonProduction = process.env.NODE_ENV !== 'production';
+        if ((isLocalhost || isTestPort || process.env.NODE_ENV === 'test') && isNonProduction) {
           return true;
         }
 
