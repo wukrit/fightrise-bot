@@ -1,7 +1,7 @@
 ---
 title: Add handler for Discord bot authorization callback
 type: feat
-status: active
+status: completed
 date: 2026-02-18
 ---
 
