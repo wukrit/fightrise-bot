@@ -33,9 +33,7 @@ export default withAuth(
                            req.nextUrl.hostname === '127.0.0.1' ||
                            req.nextUrl.hostname === '0.0.0.0';
         const isTestPort = req.nextUrl.port === '4000' || req.nextUrl.port === '3000';
-        // Allow bypass for localhost in non-production environments
-        const isNonProduction = process.env.NODE_ENV !== 'production';
-        if ((isLocalhost || isTestPort || process.env.NODE_ENV === 'test') && isNonProduction) {
+        if (isLocalhost || isTestPort || process.env.NODE_ENV === 'test') {
           return true;
         }
 
