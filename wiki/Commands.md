@@ -1,3 +1,7 @@
+---
+title: Commands
+---
+
 # Discord Commands Reference
 
 FightRise provides the following Discord slash commands for tournament management.
@@ -198,6 +202,6 @@ sequenceDiagram
 
 ## Related Documentation
 
-- [Getting Started](Getting-Started) - Quick start guide
-- [Architecture](Architecture) - System design
-- [API Reference](API-Reference) - Web API endpoints
+- [Getting Started](/fightrise-bot/wiki/Getting-Started) - Quick start guide
+- [Architecture](/fightrise-bot/wiki/Architecture) - System design
+- [API Reference](/fightrise-bot/wiki/API-Reference) - Web API endpoints

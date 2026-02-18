@@ -1,3 +1,7 @@
+---
+title: Start.gg Setup
+---
+
 # Start.gg API Setup Guide
 
 This guide walks you through setting up Start.gg API access for FightRise.
@@ -133,7 +137,7 @@ https://fightrise-dev.yourdomain.com/api/auth/callback/startgg
 https://your-domain.com/api/auth/callback/startgg
 ```
 
-> **Note:** OAuth callbacks require publicly accessible URLs. For local development, use [Cloudflare Tunnel](Tunnel-Setup).
+> **Note:** OAuth callbacks require publicly accessible URLs. For local development, use [Cloudflare Tunnel](/fightrise-bot/wiki/Tunnel-Setup).
 
 ### Step 3: Note OAuth Credentials
 
@@ -273,6 +277,6 @@ mutation ReportSet($setId: ID!, $winnerId: ID!) {
 
 ## Related Documentation
 
-- [Getting Started](Getting-Started) - Quick start guide
-- [Discord Setup](Discord-Setup) - Discord bot configuration
-- [Tunnel Setup](Tunnel-Setup) - Cloudflare Tunnel for OAuth
+- [Getting Started](/fightrise-bot/wiki/Getting-Started) - Quick start guide
+- [Discord Setup](/fightrise-bot/wiki/Discord-Setup) - Discord bot configuration
+- [Tunnel Setup](/fightrise-bot/wiki/Tunnel-Setup) - Cloudflare Tunnel for OAuth

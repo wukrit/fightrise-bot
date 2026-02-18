@@ -1,3 +1,7 @@
+---
+title: API Reference
+---
+
 # API Reference
 
 This document describes all API endpoints in the FightRise web application.
@@ -315,6 +319,6 @@ Create a dispute for a match.
 
 ## Related Documentation
 
-- [Architecture](Architecture) - System design
-- [Commands](Commands) - Discord commands
-- [Getting Started](Getting-Started) - Quick start guide
+- [Architecture](/fightrise-bot/wiki/Architecture) - System design
+- [Commands](/fightrise-bot/wiki/Commands) - Discord commands
+- [Getting Started](/fightrise-bot/wiki/Getting-Started) - Quick start guide

@@ -1,3 +1,7 @@
+---
+title: Getting Started
+---
+
 # Getting Started
 
 This guide will help you set up FightRise for local development.
@@ -38,7 +42,7 @@ cp .env.example .env
 | `NEXTAUTH_SECRET` | NextAuth encryption key | Generate with `openssl rand -base64 32` |
 | `NEXTAUTH_URL` | Web app URL | `http://localhost:3000` for development |
 
-See the [Discord Setup](Discord-Setup) and [Start.gg Setup](Start.gg-Setup) guides for detailed instructions on obtaining credentials.
+See the [Discord Setup](/fightrise-bot/wiki/Discord-Setup) and [Start.gg Setup](/fightrise-bot/wiki/Start.gg-Setup) guides for detailed instructions on obtaining credentials.
 
 ## Step 3: Start Development Environment
 
@@ -64,7 +68,7 @@ For OAuth flows that require public URLs:
 npm run docker:dev:tunnel
 ```
 
-This adds a Cloudflare Tunnel. See [Tunnel Setup](Tunnel-Setup) for initial configuration.
+This adds a Cloudflare Tunnel. See [Tunnel Setup](/fightrise-bot/wiki/Tunnel-Setup) for initial configuration.
 
 ### Option C: Infrastructure Only + Local Dev
 
@@ -103,8 +107,8 @@ npm run docker:down
 
 ## Next Steps
 
-- Configure your [Discord Application](Discord-Setup)
-- Configure your [Start.gg API Access](Start.gg-Setup)
-- Set up [Cloudflare Tunnel](Tunnel-Setup) for OAuth development
-- Review the [Commands](Commands) available
-- Explore the [Architecture](Architecture) documentation
+- Configure your [Discord Application](/fightrise-bot/wiki/Discord-Setup)
+- Configure your [Start.gg API Access](/fightrise-bot/wiki/Start.gg-Setup)
+- Set up [Cloudflare Tunnel](/fightrise-bot/wiki/Tunnel-Setup) for OAuth development
+- Review the [Commands](/fightrise-bot/wiki/Commands) available
+- Explore the [Architecture](/fightrise-bot/wiki/Architecture) documentation

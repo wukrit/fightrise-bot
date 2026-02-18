@@ -1,3 +1,7 @@
+---
+title: Development
+---
+
 # Development
 
 This guide covers the development workflow, testing, and contribution guidelines for FightRise.
@@ -199,4 +203,4 @@ All 11 Prisma models:
 
 - [CLAUDE.md](https://github.com/wukrit/fightrise-bot/blob/main/CLAUDE.md) - AI assistant instructions
 - [Codebase Reference](https://github.com/wukrit/fightrise-bot/blob/main/docs/CODEBASE_REFERENCE.md) - Detailed code documentation
-- [Architecture](Architecture) - System design
+- [Architecture](/fightrise-bot/wiki/Architecture) - System design

@@ -1,3 +1,7 @@
+---
+title: Tunnel Setup
+---
+
 # Cloudflare Tunnel Setup Guide
 
 This guide walks you through setting up Cloudflare Tunnel for local OAuth development.
@@ -219,6 +223,6 @@ cloudflared tunnel delete fightrise-dev
 
 ## Related Documentation
 
-- [Getting Started](Getting-Started) - Quick start guide
-- [Discord Setup](Discord-Setup) - Discord bot configuration
-- [Start.gg Setup](Start.gg-Setup) - Start.gg API setup
+- [Getting Started](/fightrise-bot/wiki/Getting-Started) - Quick start guide
+- [Discord Setup](/fightrise-bot/wiki/Discord-Setup) - Discord bot configuration
+- [Start.gg Setup](/fightrise-bot/wiki/Start.gg-Setup) - Start.gg API setup
