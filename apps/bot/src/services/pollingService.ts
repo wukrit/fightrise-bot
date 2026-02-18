@@ -44,6 +44,11 @@ export async function startPollingService(discord?: Client): Promise<void> {
 
   const connection = getRedisConnection();
 
+  // BullMQ requires Redis connection - fail fast if not available
+  if (!connection) {
+    throw new Error('Redis connection unavailable - polling service requires Redis');
+  }
+
   // Create Start.gg client once, reuse for all polls
   startggClient = new StartGGClient({
     apiKey,

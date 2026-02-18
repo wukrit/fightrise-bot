@@ -1,4 +1,4 @@
-import { BaseInteraction, ChatInputCommandInteraction, AutocompleteInteraction } from 'discord.js';
+import { ChatInputCommandInteraction, AutocompleteInteraction } from 'discord.js';
 
 /**
  * Validates that the interaction is from a Discord guild (server).
