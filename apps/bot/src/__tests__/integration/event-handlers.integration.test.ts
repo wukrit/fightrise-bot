@@ -16,12 +16,16 @@ import {
 } from '../harness/MockInteraction.js';
 
 // Mock pino logger to track calls for test verification
-const mockPinoLogger = {
-  info: vi.fn(),
-  warn: vi.fn(),
-  error: vi.fn(),
-  debug: vi.fn(),
-};
+// Use vi.hoisted to ensure mock is available at module scope
+const { mockPinoLogger } = vi.hoisted(() => ({
+  mockPinoLogger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
 vi.mock('../../lib/logger.js', () => ({
   createServiceLogger: vi.fn(() => mockPinoLogger),
 }));
