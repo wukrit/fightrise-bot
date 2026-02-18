@@ -59,9 +59,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/error?error=invalid_state', request.url));
   }
 
-  // Note: For bot authorization with scope=bot, we don't need to exchange the code
-  // for a token. The bot token is configured separately in Discord Developer Portal.
-  // The code simply confirms the user completed the OAuth flow successfully.
+  // Note: For bot authorization with scope=bot, no token exchange is needed.
+  // The bot token is configured separately in Discord Developer Portal.
 
   // Log successful authorization (optional - could be used for analytics)
   console.log(`Bot added to guild: ${guildId}, permissions: ${permissions || 'not specified'}`);
