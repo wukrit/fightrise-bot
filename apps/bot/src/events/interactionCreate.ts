@@ -17,6 +17,12 @@ const RATE_LIMIT_MAX_ACTIONS = 10;
 async function isRateLimited(userId: string): Promise<boolean> {
   try {
     const redis = getRedisConnection();
+
+    // Fail open if Redis isn't available
+    if (!redis) {
+      return false;
+    }
+
     const key = `ratelimit:user:${userId}`;
 
     const now = Date.now();

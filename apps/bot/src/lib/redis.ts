@@ -2,7 +2,7 @@ import { Redis } from 'ioredis';
 
 let redis: Redis | null = null;
 
-export function getRedisConnection(): Redis {
+export function getRedisConnection(): Redis | null {
   if (redis && redis.status === 'ready') {
     return redis;
   }
@@ -13,7 +13,8 @@ export function getRedisConnection(): Redis {
 
   const redisUrl = process.env.REDIS_URL;
   if (!redisUrl) {
-    throw new Error('REDIS_URL environment variable is required');
+    console.warn('[Redis] REDIS_URL not set, rate limiting disabled');
+    return null;
   }
 
   // Warn if not using TLS in production (security best practice)
