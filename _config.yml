@@ -1,0 +1,47 @@
+title: "FightRise Wiki"
+description: "Documentation for the FightRise Discord bot"
+url: "https://wukrit.github.io"
+baseurl: "/fightrise-bot"
+author: "FightRise Team"
+
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  hard_wrap: false
+
+# GitHub Pages will add the theme automatically
+# theme: jekyll-theme-minimal
+
+# Permalink settings
+permalink: /wiki/:basename
+
+# Default layout for all pages
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+
+exclude:
+  - node_modules/
+  - package*.json
+  - .env*
+  - docker/
+  - apps/
+  - packages/
+  - docs/plans/
+  - docs/brainstorms/
+  - docs/solutions/
+  - openspec/
+  - scripts/
+  - turbo.json
+  - tsconfig.json
+  - vitest.workspace.ts
+  - AGENTS.md
+  - ARCHITECTURE_PLAN.md
+  - CHANGELOG.md
+  - CLAUDE.md
+  - CONTRIBUTING.md
+  - LICENSE.md
+  - README.md
