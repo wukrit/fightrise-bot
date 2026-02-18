@@ -1,3 +1,8 @@
+---
+layout: default
+title: "FightRise Web API Documentation"
+---
+
 # FightRise Web API Documentation
 
 This document describes all API endpoints in the FightRise web application.

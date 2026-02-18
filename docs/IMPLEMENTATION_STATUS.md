@@ -1,3 +1,8 @@
+---
+layout: default
+title: "FightRise Implementation Status"
+---
+
 # FightRise Implementation Status
 
 Last updated: January 2026
@@ -8,12 +13,11 @@ This document tracks the current implementation progress against the architectur
 
 | Document | Description |
 |----------|-------------|
-| [README.md](../README.md) | Quick start guide |
 | [Discord Setup](./DISCORD_SETUP.md) | Discord bot configuration |
 | [Start.gg Setup](./STARTGG_SETUP.md) | Start.gg API setup |
 | [Tunnel Setup](./TUNNEL_SETUP.md) | Cloudflare Tunnel for OAuth |
 | **Implementation Status** (this doc) | Current progress |
-| [Architecture Plan](../ARCHITECTURE_PLAN.md) | Full system design |
+| [Architecture](./ARCHITECTURE.md) | System architecture overview |
 
 ---
 
@@ -344,6 +348,5 @@ The implemented code follows the architecture plan with these notes:
 ## Contributing
 
 To contribute to FightRise, see:
-- [CLAUDE.md](../CLAUDE.md) - Development workflow
-- [ARCHITECTURE_PLAN.md](../ARCHITECTURE_PLAN.md) - Full system design
-- [README.md](../README.md) - Quick start guide
+- [Architecture](./ARCHITECTURE.md) - System architecture overview
+- [Codebase Reference](./CODEBASE_REFERENCE.md) - Development reference

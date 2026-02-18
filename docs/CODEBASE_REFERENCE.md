@@ -1,3 +1,8 @@
+---
+layout: default
+title: "FightRise Codebase Reference"
+---
+
 # FightRise Codebase Reference
 
 A comprehensive reference guide for understanding and working with the FightRise codebase.

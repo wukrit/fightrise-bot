@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Cloudflare Tunnel Setup Guide"
+---
+
 # Cloudflare Tunnel Setup Guide
 
 This guide walks you through setting up Cloudflare Tunnel for local OAuth development.
@@ -16,7 +21,6 @@ Before you begin, make sure you have:
 
 | Document | Description |
 |----------|-------------|
-| [README.md](../README.md) | Quick start guide |
 | [Discord Setup](./DISCORD_SETUP.md) | Discord bot configuration |
 | [Start.gg Setup](./STARTGG_SETUP.md) | Start.gg API setup |
 | **Tunnel Setup** (this doc) | Cloudflare Tunnel for OAuth |
