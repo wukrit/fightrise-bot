@@ -13,11 +13,11 @@ This document tracks the current implementation progress against the architectur
 
 | Document | Description |
 |----------|-------------|
-| [Discord Setup](./DISCORD_SETUP.md) | Discord bot configuration |
-| [Start.gg Setup](./STARTGG_SETUP.md) | Start.gg API setup |
-| [Tunnel Setup](./TUNNEL_SETUP.md) | Cloudflare Tunnel for OAuth |
+| [Discord Setup](./Discord-Setup) | Discord bot configuration |
+| [Start.gg Setup](./StartGG-Setup) | Start.gg API setup |
+| [Tunnel Setup](./Tunnel-Setup) | Cloudflare Tunnel for OAuth |
 | **Implementation Status** (this doc) | Current progress |
-| [Architecture](./ARCHITECTURE.md) | System architecture overview |
+| [Architecture](./Architecture) | System architecture overview |
 
 ---
 
@@ -348,5 +348,5 @@ The implemented code follows the architecture plan with these notes:
 ## Contributing
 
 To contribute to FightRise, see:
-- [Architecture](./ARCHITECTURE.md) - System architecture overview
-- [Codebase Reference](./CODEBASE_REFERENCE.md) - Development reference
+- [Architecture](./Architecture) - System architecture overview
+- [Codebase Reference](./CODEBASE_REFERENCE) - Development reference

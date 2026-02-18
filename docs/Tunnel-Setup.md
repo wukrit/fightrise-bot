@@ -21,8 +21,8 @@ Before you begin, make sure you have:
 
 | Document | Description |
 |----------|-------------|
-| [Discord Setup](./DISCORD_SETUP.md) | Discord bot configuration |
-| [Start.gg Setup](./STARTGG_SETUP.md) | Start.gg API setup |
+| [Discord Setup](./Discord-Setup) | Discord bot configuration |
+| [Start.gg Setup](./StartGG-Setup) | Start.gg API setup |
 | **Tunnel Setup** (this doc) | Cloudflare Tunnel for OAuth |
 
 ---

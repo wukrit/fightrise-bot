@@ -23,10 +23,10 @@ Before you begin, make sure you have:
 | Document | Description |
 |----------|-------------|
 | **Discord Setup** (this doc) | Discord bot configuration |
-| [Start.gg Setup](./STARTGG_SETUP.md) | Start.gg API setup |
-| [Tunnel Setup](./TUNNEL_SETUP.md) | Cloudflare Tunnel for OAuth |
-| [Implementation Status](./IMPLEMENTATION_STATUS.md) | Current progress |
-| [Architecture](./ARCHITECTURE.md) | System architecture overview |
+| [Start.gg Setup](./StartGG-Setup) | Start.gg API setup |
+| [Tunnel Setup](./Tunnel-Setup) | Cloudflare Tunnel for OAuth |
+| [Implementation Status](./Implementation-Status) | Current progress |
+| [Architecture](./Architecture) | System architecture overview |
 
 ---
 
@@ -183,7 +183,7 @@ sequenceDiagram
 3. Note your **Client Secret** (click "Reset Secret" if needed)
    - This is your `DISCORD_CLIENT_SECRET`
 
-> **Note:** OAuth callbacks require publicly accessible URLs. For local development with OAuth, use [Cloudflare Tunnel](./TUNNEL_SETUP.md) to expose your local server.
+> **Note:** OAuth callbacks require publicly accessible URLs. For local development with OAuth, use [Cloudflare Tunnel](./Tunnel-Setup) to expose your local server.
 
 ---
 
@@ -381,11 +381,11 @@ For production deployments, use a dedicated secrets manager instead of `.env` fi
 
 Now that Discord is configured:
 
-- [ ] Complete [Start.gg Setup](./STARTGG_SETUP.md) if you haven't already
+- [ ] Complete [Start.gg Setup](./StartGG-Setup) if you haven't already
 - [ ] Run `npm install` at the repository root
 - [ ] Copy `.env.example` to `.env` and add your credentials
 - [ ] Run `npm run dev -- --filter=@fightrise/bot` to start the bot
 - [ ] Invite the bot to your test server using the generated URL
 - [ ] Test with `/tournament setup` command
 
-See [Implementation Status](./IMPLEMENTATION_STATUS.md) to track progress or find ways to contribute.
+See [Implementation Status](./Implementation-Status) to track progress or find ways to contribute.

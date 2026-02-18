@@ -13,11 +13,11 @@ Use the sidebar to navigate through the documentation:
 
 | Guide | Description |
 |-------|-------------|
-| [Discord Setup](./DISCORD_SETUP) | Configure the Discord bot |
-| [Start.gg Setup](./STARTGG_SETUP) | Set up Start.gg API access |
-| [Tunnel Setup](./TUNNEL_SETUP) | Configure Cloudflare Tunnel for OAuth |
-| [Architecture](./ARCHITECTURE) | System architecture overview |
-| [API](./API) | Web API documentation |
+| [Discord Setup](./Discord-Setup) | Configure the Discord bot |
+| [Start.gg Setup](./StartGG-Setup) | Set up Start.gg API access |
+| [Tunnel Setup](./Tunnel-Setup) | Configure Cloudflare Tunnel for OAuth |
+| [Architecture](./Architecture) | System architecture overview |
+| [API Reference](./API_Reference) | Web API documentation |
 
 ## Quick Links
 
