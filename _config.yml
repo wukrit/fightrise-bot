@@ -15,6 +15,14 @@ kramdown:
 
 # Permalink settings
 permalink: /wiki/:basename
+
+# Default layout for all pages
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+
 exclude:
   - node_modules/
   - package*.json
