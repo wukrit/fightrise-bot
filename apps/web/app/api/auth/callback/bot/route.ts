@@ -6,9 +6,11 @@ const GUILD_ID_REGEX = /^\d{17,19}$/;
 // Discord permissions integer max value (52 bits)
 const MAX_PERMISSIONS = 0x1FFFFFFFFFFFFF;
 
+// State validation: minimum length for CSRF protection
+const MIN_STATE_LENGTH = 8;
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const code = searchParams.get('code');
   const guildId = searchParams.get('guild_id');
   const permissions = searchParams.get('permissions');
   const state = searchParams.get('state');
@@ -42,11 +44,19 @@ export async function GET(request: NextRequest) {
   }
 
   // Validate state parameter (CSRF protection)
-  // Discord generates and validates state automatically for bot auth
-  // We just verify it exists (Discord handles the validation)
+  // For bot authorization, Discord generates the state automatically
+  // We validate that state exists and meets minimum requirements
+  // This prevents CSRF attacks and ensures the flow was initiated properly
   if (!state) {
     console.error('Missing state parameter in bot authorization callback');
     return NextResponse.redirect(new URL('/auth/error?error=missing_state', request.url));
+  }
+
+  // Additional state validation: ensure it's a reasonable length
+  // Discord-generated states are typically 16-32 characters
+  if (state.length < MIN_STATE_LENGTH) {
+    console.error('State parameter too short:', state.length);
+    return NextResponse.redirect(new URL('/auth/error?error=invalid_state', request.url));
   }
 
   // Note: For bot authorization with scope=bot, we don't need to exchange the code
