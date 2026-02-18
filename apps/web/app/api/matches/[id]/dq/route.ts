@@ -120,10 +120,10 @@ export async function POST(
       await tx.auditLog.create({
         data: {
           userId: user.id,
-          action: AuditAction.MATCH_DQ,
+          action: AuditAction.PLAYER_DQ,
           entityType: 'Match',
           entityId: matchId,
-          source: AuditSource.DISCORD,
+          source: AuditSource.API,
           reason: reason,
           before: JSON.stringify({ state: match.state }),
           after: JSON.stringify({ state: MatchState.DQ }),
