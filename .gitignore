@@ -46,9 +46,15 @@ test-results/
 # Prisma
 packages/database/prisma/*.db
 
-# Misc
+# TypeScript compiled outputs (in case of misconfigured outDir)
+**/*.js
+**/*.d.ts
+**/*.js.map
+**/*.d.ts.map
+!**/node_modules/**
+
+# TypeScript build info
 *.tsbuildinfo
-.eslintcache
 
 # Docker (user-specific configs)
 docker/cloudflared-config.yml
