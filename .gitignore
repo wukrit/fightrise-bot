@@ -59,3 +59,8 @@ docker/cloudflared-config.yml
 # MCP server configs (may contain tokens)
 .mcp.json
 tmp/
+
+# Jekyll (GitHub Pages)
+_site/
+.jekyll-cache/
+.jekyll-metadata
