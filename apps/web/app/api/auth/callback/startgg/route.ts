@@ -117,25 +117,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Encrypt tokens before storing
-    let encryptedToken: string;
-    if (isEncryptionConfigured()) {
-      const tokenData = JSON.stringify({
-        accessToken,
-        refreshToken,
-        expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
-      });
-      encryptedToken = encrypt(tokenData);
-    } else {
-      // Fallback to base64 if encryption not configured (development)
-      console.warn('Encryption not configured - using base64 encoding (NOT SAFE FOR PRODUCTION)');
-      const encodedAccessToken = Buffer.from(accessToken).toString('base64');
-      const encodedRefreshToken = refreshToken ? Buffer.from(refreshToken).toString('base64') : null;
-      encryptedToken = JSON.stringify({
-        accessToken: encodedAccessToken,
-        refreshToken: encodedRefreshToken,
-        expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
-      });
+    if (!isEncryptionConfigured()) {
+      console.error('Encryption not configured - cannot store tokens securely');
+      return NextResponse.redirect(new URL('/auth/error?error=encryption_not_configured', request.url));
     }
+
+    const tokenData = JSON.stringify({
+      accessToken,
+      refreshToken,
+      expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
+    });
+    const encryptedToken = encrypt(tokenData);
 
     // Update user with Start.gg info and tokens
     await prisma.user.update({

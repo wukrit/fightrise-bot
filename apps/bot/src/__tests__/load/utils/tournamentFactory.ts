@@ -55,7 +55,7 @@ export async function createTestTournaments(config: TournamentFactoryConfig) {
           startggId: generateId('startgg-event'),
           name: `Event ${e + 1} - ${tournament.name}`,
           numEntrants: 8,
-          state: 3, // COMPLETE
+          state: 3 as any, // COMPLETE
           tournamentId: tournament.id,
         },
       });

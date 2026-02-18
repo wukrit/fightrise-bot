@@ -27,8 +27,10 @@ export interface ThemeProviderProps {
 
 export function ThemeProvider({ children, defaultTheme = 'light' }: ThemeProviderProps) {
   const [theme, setThemeState] = React.useState<Theme>(defaultTheme);
+  const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
+    setMounted(true);
     const stored = localStorage.getItem('theme') as Theme | null;
     if (stored) {
       setThemeState(stored);
@@ -38,9 +40,10 @@ export function ThemeProvider({ children, defaultTheme = 'light' }: ThemeProvide
   }, []);
 
   React.useEffect(() => {
+    if (!mounted) return;
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
-  }, [theme]);
+  }, [theme, mounted]);
 
   const toggleTheme = React.useCallback(() => {
     setThemeState((prev) => (prev === 'light' ? 'dark' : 'light'));

@@ -263,13 +263,13 @@ export class TournamentService {
               startggId: event.id,
               name: event.name,
               numEntrants: event.numEntrants ?? 0,
-              state: this.parseEventState(event.state),
+              state: this.parseEventState(event.state) as any,
               tournamentId: tournament.id,
             },
             update: {
               name: event.name,
               numEntrants: event.numEntrants ?? 0,
-              state: this.parseEventState(event.state),
+              state: this.parseEventState(event.state) as any,
             },
           });
         }

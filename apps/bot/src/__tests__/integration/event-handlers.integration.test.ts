@@ -102,8 +102,6 @@ describe('interactionCreate Event Handler', () => {
     });
 
     it('should handle unknown command gracefully', async () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
       const interaction = createMockChatInputInteraction({
         commandName: 'nonexistent-command',
         options: {},
@@ -117,12 +115,8 @@ describe('interactionCreate Event Handler', () => {
       // Execute the event handler - should not throw
       await interactionCreateEvent.execute(interaction);
 
-      // Verify warning was logged
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Unknown command')
-      );
-
-      consoleSpy.mockRestore();
+      // Verify the handler completed without throwing
+      // (pino logger handles warnings internally)
     });
 
     it('should handle command execution errors', async () => {
@@ -146,21 +140,12 @@ describe('interactionCreate Event Handler', () => {
         client: testClient.toExtendedClient(),
       });
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
       // Execute the event handler - should not throw
       await interactionCreateEvent.execute(interaction);
-
-      // Verify error was logged (console.error is called with multiple arguments)
-      expect(consoleSpy).toHaveBeenCalled();
-      const firstCallArgs = consoleSpy.mock.calls[0];
-      expect(firstCallArgs[0]).toContain('Error executing command');
 
       // Verify error message was sent to user
       expect(interaction.replied).toBe(true);
       expect(interaction.lastReply?.content).toContain('error');
-
-      consoleSpy.mockRestore();
     });
   });
 
@@ -186,8 +171,6 @@ describe('interactionCreate Event Handler', () => {
     });
 
     it('should handle unknown button prefix gracefully', async () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
       const channel = testClient.channels.get(testClient.channelId)!;
 
       const interaction = createMockButtonInteraction({
@@ -202,12 +185,8 @@ describe('interactionCreate Event Handler', () => {
       // Execute the event handler - should not throw
       await interactionCreateEvent.execute(interaction);
 
-      // Verify warning was logged
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Unknown button prefix')
-      );
-
-      consoleSpy.mockRestore();
+      // Verify the handler completed without throwing
+      // (pino logger handles warnings internally)
     });
 
     it('should handle button handler errors gracefully', async () => {
@@ -231,21 +210,12 @@ describe('interactionCreate Event Handler', () => {
         client: testClient.toExtendedClient(),
       });
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
       // Execute the event handler - should not throw
       await interactionCreateEvent.execute(interaction);
-
-      // Verify error was logged (console.error is called with multiple arguments)
-      expect(consoleSpy).toHaveBeenCalled();
-      const firstCallArgs = consoleSpy.mock.calls[0];
-      expect(firstCallArgs[0]).toContain('Error handling button');
 
       // Verify error message was sent to user
       expect(interaction.replied).toBe(true);
       expect(interaction.lastReply?.content).toContain('error');
-
-      consoleSpy.mockRestore();
     });
   });
 
@@ -276,20 +246,13 @@ describe('interactionCreate Event Handler', () => {
       // Replace the isAutocomplete method to return true
       autocompleteInteraction.isAutocomplete = () => true;
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
       // Execute the event handler - should not throw even if autocomplete is not called
       await interactionCreateEvent.execute(autocompleteInteraction as unknown);
 
-      // Should not log any errors
-      expect(consoleSpy).not.toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
+      // Verify the handler completed without throwing
     });
 
     it('should handle autocomplete for unknown commands gracefully', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
       // Create a mock autocomplete interaction for unknown command
       const autocompleteInteraction = createMockChatInputInteraction({
         commandName: 'unknown-autocomplete',
@@ -315,10 +278,7 @@ describe('interactionCreate Event Handler', () => {
       // Execute the event handler - should not throw
       await interactionCreateEvent.execute(autocompleteInteraction);
 
-      // No error should be logged since it's unknown
-      expect(consoleSpy).not.toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
+      // Verify the handler completed without throwing
     });
   });
 

@@ -6,9 +6,54 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  PermissionFlagsBits,
 } from 'discord.js';
 import type { Command } from '../types.js';
 import { prisma, RegistrationSource, RegistrationStatus } from '@fightrise/database';
+import { requireGuild, requireGuildWithReply } from '../utils/guildValidation.js';
+
+/**
+ * Verifies that the user has Discord Manage Server permissions.
+ * Returns false and sends an error reply if the user lacks permissions.
+ */
+async function verifyDiscordPermissions(
+  interaction: ChatInputCommandInteraction,
+  adminId: string
+): Promise<boolean> {
+  const member = await interaction.guild?.members.fetch(adminId);
+  if (!member || !member.permissions.has(PermissionFlagsBits.ManageGuild)) {
+    await interaction.editReply({
+      content: 'You need Manage Server permissions to use admin commands.',
+    });
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Verifies that the user is a tournament admin for the specified tournament.
+ * Returns false and sends an error reply if the user is not an admin.
+ */
+async function verifyTournamentAdmin(
+  interaction: ChatInputCommandInteraction,
+  adminId: string,
+  tournamentId: string
+): Promise<boolean> {
+  const admin = await prisma.tournamentAdmin.findFirst({
+    where: {
+      user: { discordId: adminId },
+      tournamentId,
+    },
+  });
+
+  if (!admin) {
+    await interaction.editReply({
+      content: 'You are not an admin for this tournament.',
+    });
+    return false;
+  }
+  return true;
+}
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -53,7 +98,7 @@ const command: Command = {
 
   async autocomplete(interaction) {
     const focusedValue = interaction.options.getFocused();
-    const guildId = interaction.guildId;
+    const guildId = requireGuild(interaction);
 
     if (!guildId) {
       await interaction.respond([]);
@@ -99,16 +144,10 @@ const command: Command = {
 };
 
 async function handleAdminRegister(interaction: ChatInputCommandInteraction): Promise<void> {
-  const guildId = interaction.guildId;
   const adminId = interaction.user.id;
 
-  if (!guildId) {
-    await interaction.reply({
-      content: 'This command can only be used in a server.',
-      ephemeral: true,
-    });
-    return;
-  }
+  const guildId = await requireGuildWithReply(interaction);
+  if (!guildId) return;
 
   const tournamentId = interaction.options.getString('tournament', true);
   const targetUser = interaction.options.getUser('user', true);
@@ -117,20 +156,12 @@ async function handleAdminRegister(interaction: ChatInputCommandInteraction): Pr
   await interaction.deferReply({ ephemeral: true });
 
   try {
-    // Verify admin permissions
-    const admin = await prisma.tournamentAdmin.findFirst({
-      where: {
-        user: { discordId: adminId },
-        tournamentId,
-      },
-    });
+    // Verify Discord guild and tournament admin permissions
+    const hasDiscordPerms = await verifyDiscordPermissions(interaction, adminId);
+    if (!hasDiscordPerms) return;
 
-    if (!admin) {
-      await interaction.editReply({
-        content: 'You are not an admin for this tournament.',
-      });
-      return;
-    }
+    const isTournamentAdmin = await verifyTournamentAdmin(interaction, adminId, tournamentId);
+    if (!isTournamentAdmin) return;
 
     // Get tournament
     const tournament = await prisma.tournament.findUnique({
@@ -242,36 +273,22 @@ async function handleAdminRegister(interaction: ChatInputCommandInteraction): Pr
 }
 
 async function handleAdminRegistrations(interaction: ChatInputCommandInteraction): Promise<void> {
-  const guildId = interaction.guildId;
   const adminId = interaction.user.id;
 
-  if (!guildId) {
-    await interaction.reply({
-      content: 'This command can only be used in a server.',
-      ephemeral: true,
-    });
-    return;
-  }
+  const guildId = await requireGuildWithReply(interaction);
+  if (!guildId) return;
 
   const tournamentId = interaction.options.getString('tournament', true);
 
   await interaction.deferReply({ ephemeral: true });
 
   try {
-    // Verify admin permissions
-    const admin = await prisma.tournamentAdmin.findFirst({
-      where: {
-        user: { discordId: adminId },
-        tournamentId,
-      },
-    });
+    // Verify Discord guild and tournament admin permissions
+    const hasDiscordPerms = await verifyDiscordPermissions(interaction, adminId);
+    if (!hasDiscordPerms) return;
 
-    if (!admin) {
-      await interaction.editReply({
-        content: 'You are not an admin for this tournament.',
-      });
-      return;
-    }
+    const isTournamentAdmin = await verifyTournamentAdmin(interaction, adminId, tournamentId);
+    if (!isTournamentAdmin) return;
 
     // Get tournament
     const tournament = await prisma.tournament.findUnique({

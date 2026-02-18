@@ -1,6 +1,7 @@
 import { ButtonInteraction, EmbedBuilder, Colors } from 'discord.js';
 import { prisma, RegistrationStatus } from '@fightrise/database';
 import type { ButtonHandler } from './buttonHandlers.js';
+import { isValidCuid } from './validation.js';
 
 export const registrationHandler: ButtonHandler = {
   prefix: 'reg',
@@ -20,6 +21,12 @@ export const registrationHandler: ButtonHandler = {
 
 async function handleApprove(interaction: ButtonInteraction, registrationId: string): Promise<void> {
   await interaction.deferReply({ ephemeral: true });
+
+  // Validate registrationId format (CUID) before database query
+  if (!isValidCuid(registrationId)) {
+    await interaction.editReply({ content: 'Invalid button.' });
+    return;
+  }
 
   try {
     // Verify admin permissions
@@ -96,6 +103,12 @@ async function handleApprove(interaction: ButtonInteraction, registrationId: str
 async function handleReject(interaction: ButtonInteraction, registrationId: string): Promise<void> {
   await interaction.deferReply({ ephemeral: true });
 
+  // Validate registrationId format (CUID) before database query
+  if (!isValidCuid(registrationId)) {
+    await interaction.editReply({ content: 'Invalid button.' });
+    return;
+  }
+
   try {
     // Verify admin permissions
     const adminId = interaction.user.id;
@@ -170,6 +183,12 @@ async function handleReject(interaction: ButtonInteraction, registrationId: stri
 
 async function handleInfo(interaction: ButtonInteraction, registrationId: string): Promise<void> {
   await interaction.deferReply({ ephemeral: true });
+
+  // Validate registrationId format (CUID) before database query
+  if (!isValidCuid(registrationId)) {
+    await interaction.editReply({ content: 'Invalid button.' });
+    return;
+  }
 
   try {
     const registration = await prisma.registration.findUnique({

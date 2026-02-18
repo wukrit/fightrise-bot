@@ -6,7 +6,7 @@ const handler = NextAuth(authOptions);
 
 export async function GET(request: Request) {
   const ip = getClientIp(request);
-  const result = checkRateLimit(ip, RATE_LIMIT_CONFIGS.auth);
+  const result = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.auth);
 
   if (!result.allowed) {
     const headers = createRateLimitHeaders(result);
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const ip = getClientIp(request);
-  const result = checkRateLimit(ip, RATE_LIMIT_CONFIGS.auth);
+  const result = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.auth);
 
   if (!result.allowed) {
     const headers = createRateLimitHeaders(result);

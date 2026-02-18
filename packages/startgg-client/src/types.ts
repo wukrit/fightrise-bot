@@ -1,5 +1,25 @@
 // Start.gg API Response Types
 
+// ============================================
+// Enums
+// ============================================
+
+// Tournament states from Start.gg API
+export enum TournamentState {
+  CREATED = 1,
+  ACTIVE = 2,
+  COMPLETED = 3,
+}
+
+// Set (Match) states from Start.gg API
+export enum SetState {
+  CREATED = 1,
+  ACTIVE = 2,
+  COMPLETED = 3,
+  READY = 6,
+  STARTED = 7,
+}
+
 // Common types
 export interface PageInfo {
   total: number;
@@ -55,7 +75,7 @@ export interface SetSlot {
 // Set (Match) types
 export interface Set {
   id: string;
-  state: number;
+  state: SetState;
   fullRoundText: string;
   identifier: string;
   round: number;
@@ -79,7 +99,7 @@ export interface Tournament {
   slug?: string;
   startAt: number | null;
   endAt: number | null;
-  state: number | null;
+  state: TournamentState | null;
   events: Event[];
 }
 
@@ -110,7 +130,7 @@ export interface GetTournamentsByOwnerResponse {
 export interface ReportSetResponse {
   reportBracketSet: {
     id: string;
-    state: number;
+    state: SetState;
   } | null;
 }
 
@@ -119,6 +139,7 @@ export interface StartGGClientConfig {
   apiKey: string;
   cache?: CacheConfig;
   retry?: RetryConfig;
+  timeout?: number; // Request timeout in milliseconds (default: 30000)
 }
 
 export interface CacheConfig {

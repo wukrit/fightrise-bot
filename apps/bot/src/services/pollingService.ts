@@ -6,6 +6,9 @@ import { StartGGClient, AuthError, Set } from '@fightrise/startgg-client';
 import { POLL_INTERVALS, STARTGG_SET_STATE } from '@fightrise/shared';
 import { createMatchThread } from './matchService.js';
 import { RegistrationSyncService } from './registrationSyncService.js';
+import { createServiceLogger } from '../lib/logger.js';
+
+const logger = createServiceLogger('PollingService');
 
 // Type for prefetched match data
 interface ExistingMatch {
@@ -36,10 +39,15 @@ export async function startPollingService(discord?: Client): Promise<void> {
   // Store Discord client for thread creation
   discordClient = discord ?? null;
   if (!discordClient) {
-    console.warn('[PollingService] No Discord client provided - thread creation disabled');
+    logger.warn('No Discord client provided - thread creation disabled');
   }
 
   const connection = getRedisConnection();
+
+  // BullMQ requires Redis connection - fail fast if not available
+  if (!connection) {
+    throw new Error('Redis connection unavailable - polling service requires Redis');
+  }
 
   // Create Start.gg client once, reuse for all polls
   startggClient = new StartGGClient({
@@ -73,20 +81,20 @@ export async function startPollingService(discord?: Client): Promise<void> {
   );
 
   worker.on('completed', (job) => {
-    console.log(`[Poll] Tournament ${job.data.tournamentId} completed`);
+    logger.info({ tournamentId: job.data.tournamentId }, 'Tournament poll completed');
   });
 
   worker.on('failed', (job, err) => {
     if (job) {
-      console.error(`[Poll] Tournament ${job.data.tournamentId} failed:`, err.message);
+      logger.error({ err, tournamentId: job.data.tournamentId }, 'Tournament poll failed');
     } else {
-      console.error('[Poll] Unknown job failed:', err.message);
+      logger.error({ err }, 'Unknown job failed');
     }
   });
 
   // Schedule polls for all active tournaments
   await scheduleActiveTournaments();
-  console.log('[PollingService] Started');
+  logger.info('PollingService started');
 }
 
 async function scheduleActiveTournaments(): Promise<void> {
@@ -104,7 +112,7 @@ async function scheduleActiveTournaments(): Promise<void> {
     }
   }
 
-  console.log(`[PollingService] Scheduled ${tournaments.length} tournaments`);
+  logger.info({ count: tournaments.length }, 'Scheduled tournaments for polling');
 }
 
 export async function schedulePoll(tournamentId: string, delayMs: number): Promise<void> {
@@ -151,7 +159,7 @@ async function pollTournament(tournamentId: string): Promise<void> {
   });
 
   if (!tournament) {
-    console.log(`[Poll] Tournament ${tournamentId} not found, skipping`);
+    logger.debug({ tournamentId }, 'Tournament not found, skipping');
     return;
   }
 
@@ -167,13 +175,13 @@ async function pollTournament(tournamentId: string): Promise<void> {
       try {
         const syncResult = await syncService.syncEventRegistrations(event.id, discordClient ?? undefined);
         if (syncResult.newRegistrations > 0 || syncResult.updatedRegistrations > 0) {
-          console.log(
-            `[Poll] Event ${event.id}: ${syncResult.newRegistrations} new, ` +
-            `${syncResult.updatedRegistrations} updated registrations`
+          logger.info(
+            { eventId: event.id, newRegistrations: syncResult.newRegistrations, updatedRegistrations: syncResult.updatedRegistrations },
+            'Event registrations synced'
           );
         }
       } catch (syncError) {
-        console.error(`[Poll] Registration sync failed for event ${event.id}:`, syncError);
+        logger.error({ err: syncError, eventId: event.id }, 'Registration sync failed');
         // Continue with match sync even if registration sync fails
       }
     }
@@ -196,11 +204,11 @@ async function pollTournament(tournamentId: string): Promise<void> {
     });
 
     if (matchesCreated > 0 || matchesUpdated > 0) {
-      console.log(`[Poll] Tournament ${tournamentId}: created=${matchesCreated}, updated=${matchesUpdated}`);
+      logger.info({ tournamentId, matchesCreated, matchesUpdated }, 'Tournament matches synced');
     }
   } catch (error) {
     if (error instanceof AuthError) {
-      console.error(`[Poll] CRITICAL: Auth error for tournament ${tournamentId}`);
+      logger.error({ err: error, tournamentId }, 'CRITICAL: Auth error for tournament');
       // Don't reschedule - admin needs to fix API key
       throw error;
     }
@@ -291,7 +299,7 @@ async function processSet(
         },
       });
       result.created = true;
-      console.log(`[Poll] Match ready: ${set.fullRoundText} - ${player1.name} vs ${player2.name}`);
+      logger.info({ matchRound: set.fullRoundText, player1: player1.name, player2: player2.name }, 'Match ready');
 
       // Create Discord thread for the match (fire and forget - don't block polling)
       if (discordClient) {
@@ -302,7 +310,7 @@ async function processSet(
         });
         if (createdMatch) {
           createMatchThread(discordClient, createdMatch.id).catch((err) => {
-            console.error(`[Poll] Thread creation failed for match ${createdMatch.id}:`, err);
+            logger.error({ err, matchId: createdMatch.id }, 'Thread creation failed');
           });
         }
       }
@@ -320,6 +328,8 @@ async function processSet(
   if (existingMatch && set.state === STARTGG_SET_STATE.COMPLETED && existingMatch.state !== MatchState.COMPLETED) {
     const score1 = set.slots?.[0]?.standing?.stats?.score?.value ?? null;
     const score2 = set.slots?.[1]?.standing?.stats?.score?.value ?? null;
+    const validScore1 = typeof score1 === 'number' ? score1 : 0;
+    const validScore2 = typeof score2 === 'number' ? score2 : 0;
     const hasValidScores =
       score1 !== null && score2 !== null && typeof score1 === 'number' && typeof score2 === 'number' && (score1 > 0 || score2 > 0);
 
@@ -332,11 +342,11 @@ async function processSet(
             updateMany: [
               {
                 where: { startggEntrantId: player1.id },
-                data: { reportedScore: score1 as number, isWinner: (score1 as number) > (score2 as number) },
+                data: { reportedScore: validScore1, isWinner: validScore1 > validScore2 },
               },
               {
                 where: { startggEntrantId: player2.id },
-                data: { reportedScore: score2 as number, isWinner: (score2 as number) > (score1 as number) },
+                data: { reportedScore: validScore2, isWinner: validScore2 > validScore1 },
               },
             ],
           },
@@ -344,7 +354,7 @@ async function processSet(
       },
     });
     result.updated = true;
-    console.log(`[Poll] Match completed: ${set.fullRoundText}`);
+    logger.info({ matchRound: set.fullRoundText }, 'Match completed');
     // TODO: Archive Discord thread (Issue #10)
   }
 
@@ -426,7 +436,7 @@ export async function stopPollingService(): Promise<void> {
     try {
       await Promise.race([closePromise, timeout]);
     } catch {
-      console.warn('[PollingService] Worker close timed out');
+      logger.warn('Worker close timed out');
     }
     worker = null;
   }
@@ -440,5 +450,5 @@ export async function stopPollingService(): Promise<void> {
   registrationSyncService = null;
   discordClient = null;
   await closeRedisConnection();
-  console.log('[PollingService] Stopped');
+  logger.info('PollingService stopped');
 }

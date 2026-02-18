@@ -1,7 +1,37 @@
+import { Redis } from 'ioredis';
+import { randomUUID } from 'crypto';
+
+let redis: Redis | null = null;
+
 /**
- * Simple in-memory rate limiter
- * Suitable for single-instance deployments; use Upstash Redis for serverless/multi-instance
+ * Get Redis connection for rate limiting
+ * Returns null if Redis isn't available (fail open for test environments)
  */
+function getRedisConnection(): Redis | null {
+  if (!redis) {
+    const redisUrl = process.env.REDIS_URL;
+    if (!redisUrl) {
+      console.warn('[RateLimit] REDIS_URL not set, rate limiting disabled');
+      return null;
+    }
+
+    redis = new Redis(redisUrl, {
+      maxRetriesPerRequest: 1,
+      retryStrategy: (times: number) => {
+        if (times > 1) {
+          console.error('[RateLimit] Redis connection failed, rate limiting disabled');
+          return null; // Stop retrying
+        }
+        return 100;
+      },
+    });
+
+    redis.on('error', (err: Error) => {
+      console.error('[RateLimit] Redis error:', err.message);
+    });
+  }
+  return redis;
+}
 
 /**
  * Rate limit configuration
@@ -33,71 +63,132 @@ export interface RateLimitResult {
   resetTime: number;
 }
 
-// Simple Map-based rate limiter (no external dependencies)
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
-
-// Clean up old entries periodically
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, value] of rateLimitStore.entries()) {
-    if (now > value.resetTime) {
-      rateLimitStore.delete(key);
-    }
-  }
-}, 60000);
-
 /**
- * Check rate limit for a given key
+ * Check rate limit using Redis sliding window algorithm
  * @param key - Identifier (usually IP address)
  * @param config - Rate limit configuration
  */
-export function checkRateLimit(key: string, config: RateLimitConfig): RateLimitResult {
-  const now = Date.now();
-  const entry = rateLimitStore.get(key);
+export async function checkRateLimit(key: string, config: RateLimitConfig): Promise<RateLimitResult> {
+  const r = getRedisConnection();
 
-  if (!entry || now > entry.resetTime) {
-    // New window
+  // Fail open if Redis isn't available
+  if (!r) {
+    return {
+      allowed: true,
+      limit: config.limit,
+      remaining: config.limit,
+      resetTime: Date.now() + config.windowMs,
+    };
+  }
+
+  const now = Date.now();
+  const windowStart = now - config.windowMs;
+  const windowKey = `ratelimit:${key}`;
+
+  try {
+    // Use Redis transaction for atomicity
+    const pipeline = r.pipeline();
+
+    // Remove expired entries outside the window
+    pipeline.zremrangebyscore(windowKey, 0, windowStart);
+
+    // Count current requests in window
+    pipeline.zcard(windowKey);
+
+    // Add current request
+    pipeline.zadd(windowKey, now.toString(), `${now}-${randomUUID()}`);
+
+    // Set expiry on the key
+    pipeline.pexpire(windowKey, config.windowMs);
+
+    const results = await pipeline.exec();
+
+    if (!results) {
+      // Fallback: allow request if Redis fails
+      return {
+        allowed: true,
+        limit: config.limit,
+        remaining: config.limit - 1,
+        resetTime: now + config.windowMs,
+      };
+    }
+
+    const currentCount = results[1]?.[1] as number;
+
     const resetTime = now + config.windowMs;
-    rateLimitStore.set(key, { count: 1, resetTime });
+
+    if (currentCount >= config.limit) {
+      // Rate limit exceeded
+      return {
+        allowed: false,
+        limit: config.limit,
+        remaining: 0,
+        resetTime,
+      };
+    }
+
+    return {
+      allowed: true,
+      limit: config.limit,
+      remaining: config.limit - currentCount - 1,
+      resetTime,
+    };
+  } catch (error) {
+    console.error('[RateLimit] Error checking rate limit:', error);
+    // Fail open - allow request if Redis fails
     return {
       allowed: true,
       limit: config.limit,
       remaining: config.limit - 1,
-      resetTime,
+      resetTime: now + config.windowMs,
     };
   }
-
-  if (entry.count >= config.limit) {
-    // Rate limit exceeded
-    return {
-      allowed: false,
-      limit: config.limit,
-      remaining: 0,
-      resetTime: entry.resetTime,
-    };
-  }
-
-  // Increment counter
-  entry.count++;
-  rateLimitStore.set(key, entry);
-
-  return {
-    allowed: true,
-    limit: config.limit,
-    remaining: config.limit - entry.count,
-    resetTime: entry.resetTime,
-  };
 }
 
 /**
- * Get client IP from request headers
+ * Trusted proxy configuration
+ * Only trust X-Forwarded-For header from these IPs
+ * In production, this should be set to your reverse proxy's IP(s)
  */
-export function getClientIp(request: Request): string {
+const TRUSTED_PROXIES = process.env.TRUSTED_PROXY_IPS?.split(',').map(ip => ip.trim()) ?? [];
+
+/**
+ * Get client IP from request headers
+ * Validates X-Forwarded-For to prevent IP spoofing attacks
+ * Only trusts X-Forwarded-For if request comes from a trusted proxy
+ */
+export function getClientIp(request: Request, connectionIp?: string): string {
+  // If we have a direct connection IP and it's from a trusted proxy, we can trust X-Forwarded-For
+  const isFromTrustedProxy = connectionIp && TRUSTED_PROXIES.includes(connectionIp);
+
   const forwardedFor = request.headers.get('x-forwarded-for');
-  if (forwardedFor) {
-    return forwardedFor.split(',')[0].trim();
+  if (forwardedFor && isFromTrustedProxy) {
+    // Only trust X-Forwarded-For from trusted proxies
+    // Take the first IP (original client) and validate it's a valid IP format
+    const clientIp = forwardedFor.split(',')[0].trim();
+    if (isValidIp(clientIp)) {
+      return clientIp;
+    }
   }
-  return request.headers.get('x-real-ip') ?? '127.0.0.1';
+
+  // Fall back to x-real-ip or direct connection IP, or localhost
+  return request.headers.get('x-real-ip') ?? connectionIp ?? '127.0.0.1';
+}
+
+/**
+ * Validate IP address format
+ */
+function isValidIp(ip: string): boolean {
+  // IPv4 validation
+  const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+  if (ipv4Regex.test(ip)) {
+    const parts = ip.split('.').map(Number);
+    return parts.every(part => part >= 0 && part <= 255);
+  }
+
+  // IPv6 validation (simplified)
+  const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
+  return ipv6Regex.test(ip);
 }
 
 /**
@@ -126,7 +217,7 @@ export async function withRateLimit(
   handler: () => Promise<Response>
 ): Promise<Response> {
   const ip = getClientIp(request);
-  const result = checkRateLimit(ip, config);
+  const result = await checkRateLimit(ip, config);
   const headers = createRateLimitHeaders(result);
 
   if (!result.allowed) {
@@ -144,4 +235,14 @@ export async function withRateLimit(
   }
 
   return response;
+}
+
+/**
+ * Close Redis connection (for graceful shutdown)
+ */
+export async function closeRateLimitRedis(): Promise<void> {
+  if (redis) {
+    await redis.quit();
+    redis = null;
+  }
 }
