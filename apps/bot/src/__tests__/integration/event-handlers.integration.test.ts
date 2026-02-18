@@ -153,8 +153,12 @@ describe('interactionCreate Event Handler', () => {
 
       // Verify error was logged (console.error is called with multiple arguments)
       expect(consoleSpy).toHaveBeenCalled();
-      const firstCallArgs = consoleSpy.mock.calls[0];
-      expect(firstCallArgs[0]).toContain('Error executing command');
+      // Check that the command error is logged somewhere (rate limit error may appear first)
+      const allCalls = consoleSpy.mock.calls.flat();
+      const hasCommandError = allCalls.some(call =>
+        typeof call === 'string' && call.includes('Error executing command')
+      );
+      expect(hasCommandError).toBe(true);
 
       // Verify error message was sent to user
       expect(interaction.replied).toBe(true);
@@ -238,8 +242,12 @@ describe('interactionCreate Event Handler', () => {
 
       // Verify error was logged (console.error is called with multiple arguments)
       expect(consoleSpy).toHaveBeenCalled();
-      const firstCallArgs = consoleSpy.mock.calls[0];
-      expect(firstCallArgs[0]).toContain('Error handling button');
+      // Check that the button error is logged somewhere (rate limit error may appear first)
+      const allCalls = consoleSpy.mock.calls.flat();
+      const hasButtonError = allCalls.some(call =>
+        typeof call === 'string' && call.includes('Error handling button')
+      );
+      expect(hasButtonError).toBe(true);
 
       // Verify error message was sent to user
       expect(interaction.replied).toBe(true);
