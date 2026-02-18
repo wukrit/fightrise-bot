@@ -11,6 +11,7 @@ import {
 import type { Command } from '../types.js';
 import { getTournamentService } from '../services/tournamentService.js';
 import { prisma, TournamentState, MatchState } from '@fightrise/database';
+import { requireGuild, requireGuildWithReply } from '../utils/guildValidation.js';
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -75,7 +76,7 @@ const command: Command = {
 };
 
 async function handleAutocomplete(interaction: AutocompleteInteraction): Promise<void> {
-  const guildId = interaction.guildId;
+  const guildId = requireGuild(interaction);
   if (!guildId) {
     await interaction.respond([]);
     return;
@@ -111,14 +112,8 @@ async function handleAutocomplete(interaction: AutocompleteInteraction): Promise
 }
 
 async function handleStatus(interaction: ChatInputCommandInteraction): Promise<void> {
-  const guildId = interaction.guildId;
-  if (!guildId) {
-    await interaction.reply({
-      content: 'This command can only be used in a server.',
-      ephemeral: true,
-    });
-    return;
-  }
+  const guildId = await requireGuildWithReply(interaction);
+  if (!guildId) return;
 
   const tournamentId = interaction.options.getString('tournament');
 
