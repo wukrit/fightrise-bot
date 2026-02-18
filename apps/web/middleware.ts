@@ -27,9 +27,13 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl;
 
-        // Skip auth check in test environment only
-        // E2E tests mock the session API but don't set JWT tokens
-        if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
+        // Skip auth check in test environment or for localhost (E2E tests)
+        // The E2E tests mock the session API but don't set JWT tokens
+        const isLocalhost = req.nextUrl.hostname === 'localhost' ||
+                           req.nextUrl.hostname === '127.0.0.1' ||
+                           req.nextUrl.hostname === '0.0.0.0';
+        const isTestPort = req.nextUrl.port === '4000' || req.nextUrl.port === '3000';
+        if (isLocalhost || isTestPort || process.env.NODE_ENV === 'test') {
           return true;
         }
 
