@@ -32,6 +32,7 @@ export class StartGGClient {
       headers: {
         Authorization: `Bearer ${config.apiKey}`,
       },
+      timeout: config.timeout ?? 30000,
     });
 
     this.cache = new ResponseCache(config.cache ?? { enabled: false });

@@ -6,6 +6,7 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  PermissionFlagsBits,
 } from 'discord.js';
 import type { Command } from '../types.js';
 import { prisma, RegistrationSource, RegistrationStatus } from '@fightrise/database';
@@ -117,7 +118,16 @@ async function handleAdminRegister(interaction: ChatInputCommandInteraction): Pr
   await interaction.deferReply({ ephemeral: true });
 
   try {
-    // Verify admin permissions
+    // Verify Discord guild permissions
+    const member = await interaction.guild?.members.fetch(adminId);
+    if (!member || !member.permissions.has(PermissionFlagsBits.ManageGuild)) {
+      await interaction.editReply({
+        content: 'You need Manage Server permissions to use admin commands.',
+      });
+      return;
+    }
+
+    // Verify database admin permissions
     const admin = await prisma.tournamentAdmin.findFirst({
       where: {
         user: { discordId: adminId },
@@ -258,7 +268,16 @@ async function handleAdminRegistrations(interaction: ChatInputCommandInteraction
   await interaction.deferReply({ ephemeral: true });
 
   try {
-    // Verify admin permissions
+    // Verify Discord guild permissions
+    const member = await interaction.guild?.members.fetch(adminId);
+    if (!member || !member.permissions.has(PermissionFlagsBits.ManageGuild)) {
+      await interaction.editReply({
+        content: 'You need Manage Server permissions to use admin commands.',
+      });
+      return;
+    }
+
+    // Verify database admin permissions
     const admin = await prisma.tournamentAdmin.findFirst({
       where: {
         user: { discordId: adminId },

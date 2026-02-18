@@ -72,55 +72,70 @@ export async function dqPlayer(
   };
 
   // Update match to DQ state and mark winner
-  await prisma.$transaction(async (tx) => {
-    // Update match state
-    await tx.match.update({
-      where: { id: matchId },
-      data: { state: MatchState.DQ },
-    });
-
-    // Mark the DQ'd player as loser
-    await tx.matchPlayer.update({
-      where: { id: dqPlayerId },
-      data: { isWinner: false },
-    });
-
-    // Mark opponent as winner
-    await tx.matchPlayer.update({
-      where: { id: opponent.id },
-      data: { isWinner: true },
-    });
-
-    // Store after state for audit
-    const afterState = {
-      matchState: MatchState.DQ,
-      players: [
-        { id: dqPlayerId, isWinner: false, dq: true },
-        { id: opponent.id, isWinner: true, dq: false },
-      ],
-    };
-
-    // Create audit log entry
-    if (adminUserId) {
-      await createAuditLog({
-        action: AuditAction.PLAYER_DQ,
-        entityType: 'Match',
-        entityId: matchId,
-        userId: adminUserId,
-        before: beforeState,
-        after: afterState,
-        reason: reason,
-        source: AuditSource.DISCORD,
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Update match state with state guard to prevent concurrent modifications
+      const updateMatchResult = await tx.match.updateMany({
+        where: {
+          id: matchId,
+          state: { notIn: [MatchState.COMPLETED, MatchState.DQ] },
+        },
+        data: { state: MatchState.DQ },
       });
-    }
 
-    // Log admin action if provided
-    if (adminId) {
-      console.log(`[DQ] Player ${dqPlayer.playerName} DQ'd by admin ${adminId} for match ${match.identifier}: ${reason}`);
-    } else {
-      console.log(`[DQ] Player ${dqPlayer.playerName} auto-DQ'd for match ${match.identifier}: ${reason}`);
+      // If no rows updated, match was already completed or DQ'd
+      if (updateMatchResult.count === 0) {
+        throw new Error('Match has already been completed or DQd');
+      }
+
+      // Mark the DQ'd player as loser
+      await tx.matchPlayer.update({
+        where: { id: dqPlayerId },
+        data: { isWinner: false },
+      });
+
+      // Mark opponent as winner
+      await tx.matchPlayer.update({
+        where: { id: opponent.id },
+        data: { isWinner: true },
+      });
+
+      // Store after state for audit
+      const afterState = {
+        matchState: MatchState.DQ,
+        players: [
+          { id: dqPlayerId, isWinner: false, dq: true },
+          { id: opponent.id, isWinner: true, dq: false },
+        ],
+      };
+
+      // Create audit log entry
+      if (adminUserId) {
+        await createAuditLog({
+          action: AuditAction.PLAYER_DQ,
+          entityType: 'Match',
+          entityId: matchId,
+          userId: adminUserId,
+          before: beforeState,
+          after: afterState,
+          reason: reason,
+          source: AuditSource.DISCORD,
+        });
+      }
+
+      // Log admin action if provided
+      if (adminId) {
+        console.log(`[DQ] Player ${dqPlayer.playerName} DQ'd by admin ${adminId} for match ${match.identifier}: ${reason}`);
+      } else {
+        console.log(`[DQ] Player ${dqPlayer.playerName} auto-DQ'd for match ${match.identifier}: ${reason}`);
+      }
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Match has already been completed or DQd') {
+      return { success: false, message: 'Match has already been completed or DQd.' };
     }
-  });
+    throw error;
+  }
 
   // TODO: Sync to Start.gg
   // TODO: Notify players

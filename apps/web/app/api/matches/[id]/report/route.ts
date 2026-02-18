@@ -73,48 +73,66 @@ export async function POST(
     // Determine if user won
     const userWon = winnerId === user.id;
 
-    // Update the match player's reported score
-    await prisma.matchPlayer.update({
-      where: { id: userPlayer.id },
-      data: {
-        isWinner: userWon,
-        reportedScore: userWon ? player1Score : player2Score,
-      },
-    });
-
-    // Check if opponent has reported
-    const opponentPlayer = match.players.find((p) => p.userId !== user.id);
-
-    if (opponentPlayer?.reportedScore !== null && opponentPlayer?.reportedScore !== undefined) {
-      // Both have reported - check if scores match
-      const opponentWon = opponentPlayer.isWinner;
-
-      if (userWon === opponentWon) {
-        // Both agree - mark as completed
-        await prisma.match.update({
-          where: { id },
-          data: {
-            state: 'COMPLETED',
-          },
-        });
-      } else {
-        // Discrepancy - needs dispute resolution
-        await prisma.match.update({
-          where: { id },
-          data: {
-            state: 'DISPUTED',
-          },
-        });
-      }
-    } else {
-      // Just this player reported - mark as pending confirmation
-      await prisma.match.update({
-        where: { id },
+    // Update the match player's reported score and determine match state in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Update the current player's reported score
+      await tx.matchPlayer.update({
+        where: { id: userPlayer.id },
         data: {
-          state: 'PENDING_CONFIRMATION',
+          isWinner: userWon,
+          reportedScore: userWon ? player1Score : player2Score,
         },
       });
-    }
+
+      // Re-fetch match with players to get current state
+      const updatedMatch = await tx.match.findUnique({
+        where: { id },
+        include: {
+          players: true,
+        },
+      });
+
+      if (!updatedMatch) {
+        throw new Error('Match not found');
+      }
+
+      // Check if opponent has reported
+      const opponentPlayer = updatedMatch.players.find((p) => p.userId !== user.id);
+
+      if (opponentPlayer?.reportedScore !== null && opponentPlayer?.reportedScore !== undefined) {
+        // Both have reported - check if scores match
+        const opponentWon = opponentPlayer.isWinner;
+
+        if (userWon === opponentWon) {
+          // Both agree - mark as completed
+          await tx.match.update({
+            where: { id },
+            data: {
+              state: 'COMPLETED',
+            },
+          });
+          return { state: 'COMPLETED' };
+        } else {
+          // Discrepancy - needs dispute resolution
+          await tx.match.update({
+            where: { id },
+            data: {
+              state: 'DISPUTED',
+            },
+          });
+          return { state: 'DISPUTED' };
+        }
+      } else {
+        // Just this player reported - mark as pending confirmation
+        await tx.match.update({
+          where: { id },
+          data: {
+            state: 'PENDING_CONFIRMATION',
+          },
+        });
+        return { state: 'PENDING_CONFIRMATION' };
+      }
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

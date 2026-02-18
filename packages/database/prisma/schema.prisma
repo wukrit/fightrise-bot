@@ -8,6 +8,14 @@ datasource db {
 }
 
 // User account with linked services
+//
+// NOTE: The User model requires a CHECK constraint to ensure at least one identity
+// field (discordId, startggId, or email) is not null. Prisma does not support
+// CHECK constraints natively, so this must be implemented via a raw SQL migration.
+//
+// Required migration (run manually or via prisma migrate):
+//   ALTER TABLE "User" ADD CONSTRAINT "User_has_identity"
+//   CHECK ("discordId" IS NOT NULL OR "startggId" IS NOT NULL OR "email" IS NOT NULL);
 model User {
   id              String    @id @default(cuid())
   createdAt       DateTime  @default(now())
@@ -285,12 +293,20 @@ model Registration {
   // because existing production data may contain duplicates from before this was enforced.
   // Adding a unique constraint would require a data migration to clean duplicates.
   //
+  // For ghost registrations (Start.gg entrants without linked Discord users), we need a partial
+  // unique index on (eventId, startggEntrantId) WHERE startggEntrantId IS NOT NULL.
+  // PostgreSQL treats NULLs as distinct, so a standard unique constraint would allow multiple
+  // NULL values. Since Prisma doesn't support partial indexes natively, this requires a raw SQL
+  // migration (see migrations/ folder).
+  //
   // Application-level enforcement is implemented as follows:
   // 1. RegistrationSyncService uses a transaction with atomic operations to prevent race conditions
   // 2. The /register and /admin register commands check for existing registrations before creating
   // 3. The unique constraint on (userId, eventId) provides some protection for Discord-based registrations
   //
-  // TODO: Consider adding unique constraint after cleaning duplicate data in production
+  // TODO: Add partial unique index via raw SQL migration after cleaning duplicate data in production:
+  // CREATE UNIQUE INDEX "registration_event_entrant_unique" ON "Registration"
+  // ("eventId", "startggEntrantId") WHERE "startggEntrantId" IS NOT NULL;
   @@unique([userId, eventId])
   @@index([tournamentId])
   @@index([eventId])

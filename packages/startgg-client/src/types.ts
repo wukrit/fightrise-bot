@@ -119,6 +119,7 @@ export interface StartGGClientConfig {
   apiKey: string;
   cache?: CacheConfig;
   retry?: RetryConfig;
+  timeout?: number; // Request timeout in milliseconds (default: 30000)
 }
 
 export interface CacheConfig {
