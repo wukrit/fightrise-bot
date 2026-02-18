@@ -74,8 +74,9 @@ export async function checkRateLimit(key: string, config: RateLimitConfig): Prom
   if (!r) {
     return {
       allowed: true,
+      limit: config.limit,
       remaining: config.limit,
-      reset: Date.now() + config.windowMs,
+      resetTime: Date.now() + config.windowMs,
     };
   }
 

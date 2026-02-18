@@ -144,7 +144,7 @@ export async function createEvent(
       startggId: options.startggId ?? `startgg-event-${id}`,
       name: options.name ?? `Test Event ${id}`,
       numEntrants: options.numEntrants ?? 0,
-      state: options.state ?? 1,
+      state: options.state ?? 1 as any,
     },
   });
 }
