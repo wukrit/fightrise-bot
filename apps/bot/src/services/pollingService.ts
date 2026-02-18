@@ -61,12 +61,15 @@ export async function startPollingService(discord?: Client): Promise<void> {
     },
   });
 
+  // Get configurable concurrency from env (default: 1 for stability)
+  const concurrency = parseInt(process.env.BULLMQ_CONCURRENCY || '1', 10);
+
   worker = new Worker<PollJobData>(
     QUEUE_NAME,
     async (job: Job<PollJobData>) => {
       await pollTournament(job.data.tournamentId);
     },
-    { connection } // Concurrency defaults to 1
+    { connection, concurrency }
   );
 
   worker.on('completed', (job) => {
