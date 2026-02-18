@@ -15,6 +15,22 @@ import {
   createMockButtonInteraction,
 } from '../harness/MockInteraction.js';
 
+// Mock pino logger to track calls for test verification
+const mockPinoLogger = {
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+};
+vi.mock('../../lib/logger.js', () => ({
+  createServiceLogger: vi.fn(() => mockPinoLogger),
+}));
+
+// Reset mock before each test
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
 // Import event handlers to test
 import interactionCreateEvent from '../../events/interactionCreate.js';
 import readyEvent from '../../events/ready.js';
@@ -102,8 +118,6 @@ describe('interactionCreate Event Handler', () => {
     });
 
     it('should handle unknown command gracefully', async () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
       const interaction = createMockChatInputInteraction({
         commandName: 'nonexistent-command',
         options: {},
@@ -117,12 +131,11 @@ describe('interactionCreate Event Handler', () => {
       // Execute the event handler - should not throw
       await interactionCreateEvent.execute(interaction);
 
-      // Verify warning was logged
-      expect(consoleSpy).toHaveBeenCalledWith(
+      // Verify warning was logged via pino
+      expect(mockPinoLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ commandName: 'nonexistent-command' }),
         expect.stringContaining('Unknown command')
       );
-
-      consoleSpy.mockRestore();
     });
 
     it('should handle command execution errors', async () => {
@@ -146,25 +159,22 @@ describe('interactionCreate Event Handler', () => {
         client: testClient.toExtendedClient(),
       });
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
       // Execute the event handler - should not throw
       await interactionCreateEvent.execute(interaction);
 
-      // Verify error was logged (console.error is called with multiple arguments)
-      expect(consoleSpy).toHaveBeenCalled();
-      // Check that the command error is logged somewhere (rate limit error may appear first)
-      const allCalls = consoleSpy.mock.calls.flat();
-      const hasCommandError = allCalls.some(call =>
-        typeof call === 'string' && call.includes('Error executing command')
+      // Verify error was logged via pino
+      expect(mockPinoLogger.error).toHaveBeenCalled();
+      // Check that the command error is logged (rate limit error may appear first)
+      const errorCalls = mockPinoLogger.error.mock.calls;
+      const hasCommandError = errorCalls.some(call =>
+        call[0] && call[0].commandName === 'error-command' &&
+        call[1] && call[1].includes('Error executing command')
       );
       expect(hasCommandError).toBe(true);
 
       // Verify error message was sent to user
       expect(interaction.replied).toBe(true);
       expect(interaction.lastReply?.content).toContain('error');
-
-      consoleSpy.mockRestore();
     });
   });
 
@@ -190,8 +200,6 @@ describe('interactionCreate Event Handler', () => {
     });
 
     it('should handle unknown button prefix gracefully', async () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
       const channel = testClient.channels.get(testClient.channelId)!;
 
       const interaction = createMockButtonInteraction({
@@ -206,12 +214,11 @@ describe('interactionCreate Event Handler', () => {
       // Execute the event handler - should not throw
       await interactionCreateEvent.execute(interaction);
 
-      // Verify warning was logged
-      expect(consoleSpy).toHaveBeenCalledWith(
+      // Verify warning was logged via pino
+      expect(mockPinoLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ prefix: 'unknown-prefix' }),
         expect.stringContaining('Unknown button prefix')
       );
-
-      consoleSpy.mockRestore();
     });
 
     it('should handle button handler errors gracefully', async () => {
@@ -235,25 +242,22 @@ describe('interactionCreate Event Handler', () => {
         client: testClient.toExtendedClient(),
       });
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
       // Execute the event handler - should not throw
       await interactionCreateEvent.execute(interaction);
 
-      // Verify error was logged (console.error is called with multiple arguments)
-      expect(consoleSpy).toHaveBeenCalled();
-      // Check that the button error is logged somewhere (rate limit error may appear first)
-      const allCalls = consoleSpy.mock.calls.flat();
-      const hasButtonError = allCalls.some(call =>
-        typeof call === 'string' && call.includes('Error handling button')
+      // Verify error was logged via pino
+      expect(mockPinoLogger.error).toHaveBeenCalled();
+      // Check that the button error is logged (rate limit error may appear first)
+      const errorCalls = mockPinoLogger.error.mock.calls;
+      const hasButtonError = errorCalls.some(call =>
+        call[0] && call[0].customId === 'failing:action' &&
+        call[1] && call[1].includes('Error handling button')
       );
       expect(hasButtonError).toBe(true);
 
       // Verify error message was sent to user
       expect(interaction.replied).toBe(true);
       expect(interaction.lastReply?.content).toContain('error');
-
-      consoleSpy.mockRestore();
     });
   });
 
@@ -284,20 +288,14 @@ describe('interactionCreate Event Handler', () => {
       // Replace the isAutocomplete method to return true
       autocompleteInteraction.isAutocomplete = () => true;
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
       // Execute the event handler - should not throw even if autocomplete is not called
       await interactionCreateEvent.execute(autocompleteInteraction as unknown);
 
-      // Should not log any errors
-      expect(consoleSpy).not.toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
+      // Should not log any errors via pino
+      expect(mockPinoLogger.error).not.toHaveBeenCalled();
     });
 
     it('should handle autocomplete for unknown commands gracefully', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
       // Create a mock autocomplete interaction for unknown command
       const autocompleteInteraction = createMockChatInputInteraction({
         commandName: 'unknown-autocomplete',
@@ -324,9 +322,7 @@ describe('interactionCreate Event Handler', () => {
       await interactionCreateEvent.execute(autocompleteInteraction);
 
       // No error should be logged since it's unknown
-      expect(consoleSpy).not.toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
+      expect(mockPinoLogger.error).not.toHaveBeenCalled();
     });
   });
 
