@@ -4,22 +4,24 @@ let redis: Redis | null = null;
 
 /**
  * Get Redis connection for rate limiting
+ * Returns null if Redis isn't available (fail open for test environments)
  */
-function getRedisConnection(): Redis {
+function getRedisConnection(): Redis | null {
   if (!redis) {
     const redisUrl = process.env.REDIS_URL;
     if (!redisUrl) {
-      throw new Error('REDIS_URL environment variable is required for rate limiting');
+      console.warn('[RateLimit] REDIS_URL not set, rate limiting disabled');
+      return null;
     }
 
     redis = new Redis(redisUrl, {
-      maxRetriesPerRequest: 3,
+      maxRetriesPerRequest: 1,
       retryStrategy: (times: number) => {
-        if (times > 3) {
-          console.error('[RateLimit] Redis connection failed after 3 retries');
+        if (times > 1) {
+          console.error('[RateLimit] Redis connection failed, rate limiting disabled');
           return null; // Stop retrying
         }
-        return Math.min(times * 100, 1000);
+        return 100;
       },
     });
 
@@ -67,6 +69,16 @@ export interface RateLimitResult {
  */
 export async function checkRateLimit(key: string, config: RateLimitConfig): Promise<RateLimitResult> {
   const r = getRedisConnection();
+
+  // Fail open if Redis isn't available
+  if (!r) {
+    return {
+      allowed: true,
+      remaining: config.limit,
+      reset: Date.now() + config.windowMs,
+    };
+  }
+
   const now = Date.now();
   const windowStart = now - config.windowMs;
   const windowKey = `ratelimit:${key}`;
