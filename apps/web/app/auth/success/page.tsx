@@ -10,6 +10,7 @@ function SuccessContent() {
 
   const successMessages: Record<string, string> = {
     startgg_linked: 'Your Start.gg account has been successfully linked!',
+    bot_installed: 'FightRise bot has been successfully added to your server!',
   };
 
   const successMessage = message ? successMessages[message] || 'Operation successful!' : 'Operation successful!';

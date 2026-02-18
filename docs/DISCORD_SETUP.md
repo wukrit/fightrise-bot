@@ -168,9 +168,14 @@ sequenceDiagram
 
 1. Go to **OAuth2** → **General** in Developer Portal
 2. Add your redirect URIs:
-   - Development (local only): `http://localhost:3000/api/auth/callback/discord`
-   - Development (with tunnel): `https://fightrise-dev.yourdomain.com/api/auth/callback/discord`
-   - Production: `https://your-domain.com/api/auth/callback/discord`
+   - User authentication (web portal):
+     - Development (local only): `http://localhost:3000/api/auth/callback/discord`
+     - Development (with tunnel): `https://fightrise-dev.yourdomain.com/api/auth/callback/discord`
+     - Production: `https://your-domain.com/api/auth/callback/discord`
+   - Bot installation callback:
+     - Development (local only): `http://localhost:3000/api/auth/callback/bot`
+     - Development (with tunnel): `https://fightrise-dev.yourdomain.com/api/auth/callback/bot`
+     - Production: `https://your-domain.com/api/auth/callback/bot`
 3. Note your **Client Secret** (click "Reset Secret" if needed)
    - This is your `DISCORD_CLIENT_SECRET`
 
@@ -240,8 +245,9 @@ DISCORD_TOKEN="your-bot-token-from-bot-tab"
 DISCORD_CLIENT_ID="your-application-id-from-general-info"
 DISCORD_CLIENT_SECRET="your-client-secret-from-oauth2"
 
-# OAuth Redirect (for web portal authentication)
+# OAuth Redirect URIs
 DISCORD_REDIRECT_URI="http://localhost:3000/api/auth/callback/discord"
+DISCORD_BOT_REDIRECT_URI="http://localhost:3000/api/auth/callback/bot"
 ```
 
 ### Where to Find Each Value
@@ -251,6 +257,7 @@ DISCORD_REDIRECT_URI="http://localhost:3000/api/auth/callback/discord"
 | `DISCORD_TOKEN` | Bot → Token → Reset Token |
 | `DISCORD_CLIENT_ID` | General Information → Application ID |
 | `DISCORD_CLIENT_SECRET` | OAuth2 → General → Client Secret |
+| `DISCORD_BOT_REDIRECT_URI` | OAuth2 → General → Redirect URIs (add new) |
 
 ---
 
