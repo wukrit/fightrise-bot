@@ -1,3 +1,7 @@
+---
+title: Commands
+---
+
 # Discord Commands Reference
 
 FightRise provides the following Discord slash commands for tournament management.

@@ -1,3 +1,7 @@
+---
+title: FightRise
+---
+
 # FightRise
 
 A Discord bot and web portal for running Start.gg fighting game tournaments entirely within Discord.

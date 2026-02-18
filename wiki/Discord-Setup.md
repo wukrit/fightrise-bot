@@ -1,3 +1,7 @@
+---
+title: Discord Setup
+---
+
 # Discord Setup Guide
 
 This guide walks you through setting up a Discord application and bot for FightRise.

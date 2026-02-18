@@ -1,3 +1,7 @@
+---
+title: Development
+---
+
 # Development
 
 This guide covers the development workflow, testing, and contribution guidelines for FightRise.

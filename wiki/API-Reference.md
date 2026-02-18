@@ -1,3 +1,7 @@
+---
+title: API Reference
+---
+
 # API Reference
 
 This document describes all API endpoints in the FightRise web application.

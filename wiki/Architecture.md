@@ -1,3 +1,7 @@
+---
+title: Architecture
+---
+
 # Architecture
 
 This document provides a high-level overview of the FightRise system architecture.

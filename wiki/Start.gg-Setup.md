@@ -1,3 +1,7 @@
+---
+title: Start.gg Setup
+---
+
 # Start.gg API Setup Guide
 
 This guide walks you through setting up Start.gg API access for FightRise.

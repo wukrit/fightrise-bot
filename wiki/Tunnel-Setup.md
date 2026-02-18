@@ -1,3 +1,7 @@
+---
+title: Tunnel Setup
+---
+
 # Cloudflare Tunnel Setup Guide
 
 This guide walks you through setting up Cloudflare Tunnel for local OAuth development.
