@@ -1,5 +1,6 @@
 ---
 title: FightRise
+permalink: /
 ---
 
 # FightRise
@@ -20,13 +21,13 @@ FightRise syncs tournament data from Start.gg's GraphQL API, creates match threa
 
 ## Quick Links
 
-- [Getting Started](Getting-Started) - Installation and setup
-- [Architecture](Architecture) - System design and data flow
-- [Discord Setup](Discord-Setup) - Discord bot configuration
-- [Start.gg Setup](Start.gg-Setup) - Start.gg API configuration
-- [Commands](Commands) - Discord slash commands reference
-- [API Reference](API-Reference) - Web API documentation
-- [Development](Development) - Development workflow
+- [Getting Started](/wiki/Getting-Started) - Installation and setup
+- [Architecture](/wiki/Architecture) - System design and data flow
+- [Discord Setup](/wiki/Discord-Setup) - Discord bot configuration
+- [Start.gg Setup](/wiki/Start.gg-Setup) - Start.gg API configuration
+- [Commands](/wiki/Commands) - Discord slash commands reference
+- [API Reference](/wiki/API-Reference) - Web API documentation
+- [Development](/wiki/Development) - Development workflow
 
 ## Tech Stack
 

@@ -3,13 +3,18 @@ description: "Documentation for the FightRise Discord bot"
 url: ""
 baseurl: ""
 author: "FightRise Team"
+
 markdown: kramdown
 kramdown:
   input: GFM
   syntax_highlighter: rouge
   hard_wrap: false
+
 # GitHub Pages will add the theme automatically
 # theme: jekyll-theme-minimal
+
+# Permalink settings
+permalink: /wiki/:basename
 exclude:
   - node_modules/
   - package*.json
