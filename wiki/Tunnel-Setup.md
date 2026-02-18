@@ -223,6 +223,6 @@ cloudflared tunnel delete fightrise-dev
 
 ## Related Documentation
 
-- [Getting Started](/wiki/Getting-Started) - Quick start guide
-- [Discord Setup](/wiki/Discord-Setup) - Discord bot configuration
-- [Start.gg Setup](/wiki/Start.gg-Setup) - Start.gg API setup
+- [Getting Started](/fightrise-bot/wiki/Getting-Started) - Quick start guide
+- [Discord Setup](/fightrise-bot/wiki/Discord-Setup) - Discord bot configuration
+- [Start.gg Setup](/fightrise-bot/wiki/Start.gg-Setup) - Start.gg API setup

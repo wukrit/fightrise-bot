@@ -172,6 +172,6 @@ DISCORD_BOT_REDIRECT_URI="http://localhost:3000/api/auth/callback/bot"
 
 ## Related Documentation
 
-- [Getting Started](/wiki/Getting-Started) - Quick start guide
-- [Start.gg Setup](/wiki/Start.gg-Setup) - Start.gg API setup
-- [Tunnel Setup](/wiki/Tunnel-Setup) - Cloudflare Tunnel for OAuth
+- [Getting Started](/fightrise-bot/wiki/Getting-Started) - Quick start guide
+- [Start.gg Setup](/fightrise-bot/wiki/Start.gg-Setup) - Start.gg API setup
+- [Tunnel Setup](/fightrise-bot/wiki/Tunnel-Setup) - Cloudflare Tunnel for OAuth

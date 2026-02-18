@@ -202,6 +202,6 @@ sequenceDiagram
 
 ## Related Documentation
 
-- [Getting Started](/wiki/Getting-Started) - Quick start guide
-- [Architecture](/wiki/Architecture) - System design
-- [API Reference](/wiki/API-Reference) - Web API endpoints
+- [Getting Started](/fightrise-bot/wiki/Getting-Started) - Quick start guide
+- [Architecture](/fightrise-bot/wiki/Architecture) - System design
+- [API Reference](/fightrise-bot/wiki/API-Reference) - Web API endpoints

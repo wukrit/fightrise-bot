@@ -137,7 +137,7 @@ https://fightrise-dev.yourdomain.com/api/auth/callback/startgg
 https://your-domain.com/api/auth/callback/startgg
 ```
 
-> **Note:** OAuth callbacks require publicly accessible URLs. For local development, use [Cloudflare Tunnel](/wiki/Tunnel-Setup).
+> **Note:** OAuth callbacks require publicly accessible URLs. For local development, use [Cloudflare Tunnel](/fightrise-bot/wiki/Tunnel-Setup).
 
 ### Step 3: Note OAuth Credentials
 
@@ -277,6 +277,6 @@ mutation ReportSet($setId: ID!, $winnerId: ID!) {
 
 ## Related Documentation
 
-- [Getting Started](/wiki/Getting-Started) - Quick start guide
-- [Discord Setup](/wiki/Discord-Setup) - Discord bot configuration
-- [Tunnel Setup](/wiki/Tunnel-Setup) - Cloudflare Tunnel for OAuth
+- [Getting Started](/fightrise-bot/wiki/Getting-Started) - Quick start guide
+- [Discord Setup](/fightrise-bot/wiki/Discord-Setup) - Discord bot configuration
+- [Tunnel Setup](/fightrise-bot/wiki/Tunnel-Setup) - Cloudflare Tunnel for OAuth

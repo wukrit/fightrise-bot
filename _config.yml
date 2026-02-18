@@ -1,7 +1,7 @@
 title: "FightRise Wiki"
 description: "Documentation for the FightRise Discord bot"
-url: ""
-baseurl: ""
+url: "https://wukrit.github.io"
+baseurl: "/fightrise-bot"
 author: "FightRise Team"
 
 markdown: kramdown

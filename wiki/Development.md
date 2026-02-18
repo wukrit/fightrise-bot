@@ -203,4 +203,4 @@ All 11 Prisma models:
 
 - [CLAUDE.md](https://github.com/wukrit/fightrise-bot/blob/main/CLAUDE.md) - AI assistant instructions
 - [Codebase Reference](https://github.com/wukrit/fightrise-bot/blob/main/docs/CODEBASE_REFERENCE.md) - Detailed code documentation
-- [Architecture](/wiki/Architecture) - System design
+- [Architecture](/fightrise-bot/wiki/Architecture) - System design

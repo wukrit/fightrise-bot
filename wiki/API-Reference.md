@@ -319,6 +319,6 @@ Create a dispute for a match.
 
 ## Related Documentation
 
-- [Architecture](/wiki/Architecture) - System design
-- [Commands](/wiki/Commands) - Discord commands
-- [Getting Started](/wiki/Getting-Started) - Quick start guide
+- [Architecture](/fightrise-bot/wiki/Architecture) - System design
+- [Commands](/fightrise-bot/wiki/Commands) - Discord commands
+- [Getting Started](/fightrise-bot/wiki/Getting-Started) - Quick start guide
