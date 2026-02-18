@@ -3,6 +3,8 @@ import type { Event, ExtendedClient } from '../types.js';
 import { buttonHandlers } from '../handlers/index.js';
 import { parseInteractionId } from '@fightrise/shared';
 import { getRedisConnection } from '../lib/redis.js';
+import { randomUUID } from 'crypto';
+import { logger } from '../lib/logger.js';
 
 // Rate limit configuration
 const RATE_LIMIT_WINDOW_SECONDS = 10;
@@ -21,7 +23,7 @@ async function isRateLimited(userId: string): Promise<boolean> {
     const windowStart = now - (RATE_LIMIT_WINDOW_SECONDS * 1000);
 
     // Use a sorted set to track timestamps of actions
-    await redis.zadd(key, now, `${now}:${Math.random()}`);
+    await redis.zadd(key, now, `${now}:${randomUUID()}`);
     await redis.expire(key, RATE_LIMIT_WINDOW_SECONDS);
 
     // Remove old entries outside the window
@@ -32,7 +34,7 @@ async function isRateLimited(userId: string): Promise<boolean> {
 
     return count > RATE_LIMIT_MAX_ACTIONS;
   } catch (error) {
-    console.error('Rate limit check failed:', error);
+    logger.error({ err: error, userId }, 'Rate limit check failed');
     // Fail open - allow the action if rate limiting fails
     return false;
   }
@@ -74,7 +76,7 @@ const event: Event = {
       try {
         await command.autocomplete(interaction);
       } catch (error) {
-        console.error(`Error handling autocomplete for ${interaction.commandName}:`, error);
+        logger.error({ err: error, commandName: interaction.commandName }, 'Error handling autocomplete');
       }
       return;
     }
@@ -94,14 +96,14 @@ const event: Event = {
       const command = client.commands.get(interaction.commandName);
 
       if (!command) {
-        console.warn(`Unknown command received: ${interaction.commandName}`);
+        logger.warn({ commandName: interaction.commandName }, 'Unknown command received');
         return;
       }
 
       try {
         await command.execute(interaction);
       } catch (error) {
-        console.error(`Error executing command ${interaction.commandName}:`, error);
+        logger.error({ err: error, commandName: interaction.commandName }, 'Error executing command');
         await replyWithError(interaction, 'There was an error executing this command.');
       }
       return;
@@ -122,14 +124,14 @@ const event: Event = {
       const handler = buttonHandlers.get(prefix);
 
       if (!handler) {
-        console.warn(`Unknown button prefix: ${prefix}`);
+        logger.warn({ prefix }, 'Unknown button prefix');
         return;
       }
 
       try {
         await handler.execute(interaction, parts);
       } catch (error) {
-        console.error(`Error handling button ${interaction.customId}:`, error);
+        logger.error({ err: error, customId: interaction.customId }, 'Error handling button');
         await replyWithError(interaction, 'There was an error processing this action.');
       }
       return;

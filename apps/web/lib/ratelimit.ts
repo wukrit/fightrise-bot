@@ -1,4 +1,5 @@
 import { Redis } from 'ioredis';
+import { randomUUID } from 'crypto';
 
 let redis: Redis | null = null;
 
@@ -95,7 +96,7 @@ export async function checkRateLimit(key: string, config: RateLimitConfig): Prom
     pipeline.zcard(windowKey);
 
     // Add current request
-    pipeline.zadd(windowKey, now.toString(), `${now}-${Math.random()}`);
+    pipeline.zadd(windowKey, now.toString(), `${now}-${randomUUID()}`);
 
     // Set expiry on the key
     pipeline.pexpire(windowKey, config.windowMs);
@@ -145,14 +146,49 @@ export async function checkRateLimit(key: string, config: RateLimitConfig): Prom
 }
 
 /**
- * Get client IP from request headers
+ * Trusted proxy configuration
+ * Only trust X-Forwarded-For header from these IPs
+ * In production, this should be set to your reverse proxy's IP(s)
  */
-export function getClientIp(request: Request): string {
+const TRUSTED_PROXIES = process.env.TRUSTED_PROXY_IPS?.split(',').map(ip => ip.trim()) ?? [];
+
+/**
+ * Get client IP from request headers
+ * Validates X-Forwarded-For to prevent IP spoofing attacks
+ * Only trusts X-Forwarded-For if request comes from a trusted proxy
+ */
+export function getClientIp(request: Request, connectionIp?: string): string {
+  // If we have a direct connection IP and it's from a trusted proxy, we can trust X-Forwarded-For
+  const isFromTrustedProxy = connectionIp && TRUSTED_PROXIES.includes(connectionIp);
+
   const forwardedFor = request.headers.get('x-forwarded-for');
-  if (forwardedFor) {
-    return forwardedFor.split(',')[0].trim();
+  if (forwardedFor && isFromTrustedProxy) {
+    // Only trust X-Forwarded-For from trusted proxies
+    // Take the first IP (original client) and validate it's a valid IP format
+    const clientIp = forwardedFor.split(',')[0].trim();
+    if (isValidIp(clientIp)) {
+      return clientIp;
+    }
   }
-  return request.headers.get('x-real-ip') ?? '127.0.0.1';
+
+  // Fall back to x-real-ip or direct connection IP, or localhost
+  return request.headers.get('x-real-ip') ?? connectionIp ?? '127.0.0.1';
+}
+
+/**
+ * Validate IP address format
+ */
+function isValidIp(ip: string): boolean {
+  // IPv4 validation
+  const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+  if (ipv4Regex.test(ip)) {
+    const parts = ip.split('.').map(Number);
+    return parts.every(part => part >= 0 && part <= 255);
+  }
+
+  // IPv6 validation (simplified)
+  const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
+  return ipv6Regex.test(ip);
 }
 
 /**
