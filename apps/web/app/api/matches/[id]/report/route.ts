@@ -172,7 +172,7 @@ export async function POST(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error reporting score:', error);
 
     // Handle specific race condition errors

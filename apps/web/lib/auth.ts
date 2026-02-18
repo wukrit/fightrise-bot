@@ -1,6 +1,11 @@
 import { prisma } from '@fightrise/database';
 import type { NextAuthOptions } from 'next-auth';
+import { getServerSession } from 'next-auth';
+import type { NextRequest } from 'next/server';
 import DiscordProvider from 'next-auth/providers/discord';
+import crypto from 'crypto';
+import { getToken } from 'next-auth/jwt';
+import type { GetServerSidePropsContext } from 'next';
 
 // Note: We intentionally don't use an adapter here because:
 // 1. We're using JWT sessions (not database sessions)
@@ -23,6 +28,113 @@ const providers = [
     },
   }),
 ];
+
+/**
+ * Validate an API key and return the associated user
+ */
+export async function validateApiKey(rawKey: string): Promise<{
+  userId: string;
+  apiKeyId: string;
+} | null> {
+  if (!rawKey || !rawKey.startsWith('frk_')) {
+    return null;
+  }
+
+  // Hash the provided key to compare with stored hash
+  const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
+
+  // Find the API key
+  const apiKey = await prisma.apiKey.findUnique({
+    where: { key: keyHash },
+    include: { user: true },
+  });
+
+  if (!apiKey) {
+    return null;
+  }
+
+  // Check if the key has expired
+  if (apiKey.expiresAt && apiKey.expiresAt < new Date()) {
+    return null;
+  }
+
+  // Update lastUsedAt
+  await prisma.apiKey.update({
+    where: { id: apiKey.id },
+    data: { lastUsedAt: new Date() },
+  });
+
+  return { userId: apiKey.userId, apiKeyId: apiKey.id };
+}
+
+/**
+ * Extract API key from request headers
+ */
+export function getApiKeyFromRequest(req: NextRequest | GetServerSidePropsContext['req']): string | null {
+  let authHeader: string | undefined;
+
+  if (req instanceof Request) {
+    // NextRequest or regular Request
+    authHeader = req.headers.get('authorization') || req.headers.get('Authorization') || undefined;
+  } else {
+    // GetServerSidePropsContext req
+    authHeader = (req as { headers: Record<string, string | string[] | undefined> }).headers.authorization as string | undefined
+      || (req as { headers: Record<string, string | string[] | undefined> }).headers.Authorization as string | undefined;
+  }
+
+  if (authHeader && authHeader.startsWith('ApiKey ')) {
+    return authHeader.substring(7); // Remove 'ApiKey ' prefix
+  }
+
+  return null;
+}
+
+/**
+ * Get authenticated user from request - tries session first, then API key
+ * Returns the user object with discordId for database queries
+ */
+export async function getAuthenticatedUser(
+  request: NextRequest | GetServerSidePropsContext['req']
+): Promise<{ id: string; discordId: string; discordUsername: string; discordAvatar: string | null } | null> {
+  // First try session-based authentication
+  const session = await getServerSession(authOptions);
+  if (session?.user?.discordId) {
+    return {
+      id: session.user.id,
+      discordId: session.user.discordId,
+      discordUsername: session.user.discordUsername,
+      discordAvatar: session.user.discordAvatar,
+    };
+  }
+
+  // Then try API key authentication
+  const apiKey = getApiKeyFromRequest(request);
+  if (apiKey) {
+    const result = await validateApiKey(apiKey);
+    if (result) {
+      // Fetch user details from database
+      const user = await prisma.user.findUnique({
+        where: { id: result.userId },
+        select: {
+          id: true,
+          discordId: true,
+          discordUsername: true,
+          discordAvatar: true,
+        },
+      });
+      if (user && user.discordId && user.discordUsername) {
+        return {
+          id: user.id,
+          discordId: user.discordId,
+          discordUsername: user.discordUsername,
+          discordAvatar: user.discordAvatar,
+        };
+      }
+    }
+  }
+
+  return null;
+}
 
 export const authOptions: NextAuthOptions = {
   // No adapter - we manage users directly in signIn callback

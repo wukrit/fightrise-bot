@@ -29,14 +29,14 @@ async function isRateLimited(userId: string): Promise<boolean> {
     const windowStart = now - (RATE_LIMIT_WINDOW_SECONDS * 1000);
 
     // Use a sorted set to track timestamps of actions
-    await redis.zadd(key, now, `${now}:${randomUUID()}`);
-    await redis.expire(key, RATE_LIMIT_WINDOW_SECONDS);
-
-    // Remove old entries outside the window
+    // Remove OLD entries first to fix race condition
     await redis.zremrangebyscore(key, 0, windowStart);
-
+    // Then add NEW entry
+    await redis.zadd(key, now, `${now}:${randomUUID()}`);
     // Count actions in the current window
     const count = await redis.zcard(key);
+    // Finally set expiry
+    await redis.expire(key, RATE_LIMIT_WINDOW_SECONDS);
 
     return count > RATE_LIMIT_MAX_ACTIONS;
   } catch (error) {

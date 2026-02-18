@@ -70,7 +70,7 @@ export async function POST(
       where: {
         userId: user.id,
         tournamentId,
-        role: { in: [AdminRole.OWNER, AdminRole.ADMIN] },
+        role: { in: [AdminRole.OWNER, AdminRole.ADMIN, AdminRole.MODERATOR] },
       },
     });
 
@@ -95,6 +95,21 @@ export async function POST(
       });
     }
 
+    // Check for existing registration
+    const existingRegistration = await prisma.registration.findFirst({
+      where: {
+        userId: player.id,
+        tournamentId,
+      },
+    });
+
+    if (existingRegistration) {
+      return NextResponse.json(
+        { error: 'Player already registered for this tournament' },
+        { status: 400 }
+      );
+    }
+
     // Create registration
     const registration = await prisma.registration.create({
       data: {
@@ -113,7 +128,7 @@ export async function POST(
         status: registration.status,
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Admin registration error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

@@ -47,6 +47,7 @@ model User {
   initiatedDisputes Dispute[] @relation("DisputeInitiator")
   resolvedDisputes Dispute[] @relation("DisputeResolver")
   auditLogs      AuditLog[]
+  apiKeys        ApiKey[]
 
   @@index([discordId])
   @@index([startggId])
@@ -450,4 +451,20 @@ enum AuditSource {
   DISCORD
   WEB
   API
+}
+
+// API keys for agent authentication
+model ApiKey {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  key         String   @unique
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([key])
 }

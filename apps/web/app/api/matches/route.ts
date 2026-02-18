@@ -1,30 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@fightrise/database';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthenticatedUser } from '@/lib/auth';
 
 /**
  * GET /api/matches
  * Returns matches for the authenticated user
+ * Supports both session and API key authentication
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = await getAuthenticatedUser(request);
 
-    if (!session?.user?.discordId) {
+    if (!user?.discordId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
-    }
-
-    // Find the user
-    const user = await prisma.user.findUnique({
-      where: { discordId: session.user.discordId },
-    });
-
-    if (!user) {
-      return NextResponse.json([]);
     }
 
     // Get matches where user is a player

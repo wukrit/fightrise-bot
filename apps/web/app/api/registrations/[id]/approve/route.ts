@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma, AdminRole } from '@fightrise/database';
+import { prisma, AdminRole, RegistrationStatus } from '@fightrise/database';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
 /**
- * GET /api/tournaments/[id]/admin/registrations
- * Get all registrations for a tournament (admin only)
+ * POST /api/registrations/[id]/approve
+ * Approve a registration (admin operation)
  */
-export async function GET(
+export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -21,19 +21,24 @@ export async function GET(
       );
     }
 
-    const { id: tournamentId } = await params;
+    const { id: registrationId } = await params;
 
-    // Find the tournament
-    const tournament = await prisma.tournament.findUnique({
-      where: { id: tournamentId },
+    // Find the registration
+    const registration = await prisma.registration.findUnique({
+      where: { id: registrationId },
+      include: {
+        tournament: true,
+      },
     });
 
-    if (!tournament) {
+    if (!registration) {
       return NextResponse.json(
-        { error: 'Tournament not found' },
+        { error: 'Registration not found' },
         { status: 404 }
       );
     }
+
+    const tournamentId = registration.tournamentId;
 
     // Check if user is admin
     const user = await prisma.user.findUnique({
@@ -57,39 +62,34 @@ export async function GET(
 
     if (!adminCheck) {
       return NextResponse.json(
-        { error: 'Only tournament admins can view registrations' },
+        { error: 'Only tournament admins can approve registrations' },
         { status: 403 }
       );
     }
 
-    // Get all registrations
-    const registrations = await prisma.registration.findMany({
-      where: { tournamentId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            discordId: true,
-            discordUsername: true,
-            startggId: true,
-            startggGamerTag: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
+    // Check if registration is already processed
+    if (registration.status !== RegistrationStatus.PENDING) {
+      return NextResponse.json(
+        { error: 'Registration is not pending approval' },
+        { status: 400 }
+      );
+    }
+
+    // Approve the registration
+    const updatedRegistration = await prisma.registration.update({
+      where: { id: registrationId },
+      data: { status: RegistrationStatus.CONFIRMED },
     });
 
     return NextResponse.json({
-      registrations: registrations.map((r) => ({
-        id: r.id,
-        user: r.user,
-        status: r.status,
-        source: r.source,
-        createdAt: r.createdAt,
-      })),
+      success: true,
+      registration: {
+        id: updatedRegistration.id,
+        status: updatedRegistration.status,
+      },
     });
   } catch (error: unknown) {
-    console.error('Admin registrations error:', error);
+    console.error('Approve registration error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

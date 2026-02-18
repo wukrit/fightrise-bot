@@ -328,6 +328,8 @@ async function processSet(
   if (existingMatch && set.state === STARTGG_SET_STATE.COMPLETED && existingMatch.state !== MatchState.COMPLETED) {
     const score1 = set.slots?.[0]?.standing?.stats?.score?.value ?? null;
     const score2 = set.slots?.[1]?.standing?.stats?.score?.value ?? null;
+    const validScore1 = typeof score1 === 'number' ? score1 : 0;
+    const validScore2 = typeof score2 === 'number' ? score2 : 0;
     const hasValidScores =
       score1 !== null && score2 !== null && typeof score1 === 'number' && typeof score2 === 'number' && (score1 > 0 || score2 > 0);
 
@@ -340,11 +342,11 @@ async function processSet(
             updateMany: [
               {
                 where: { startggEntrantId: player1.id },
-                data: { reportedScore: score1 as number, isWinner: (score1 as number) > (score2 as number) },
+                data: { reportedScore: validScore1, isWinner: validScore1 > validScore2 },
               },
               {
                 where: { startggEntrantId: player2.id },
-                data: { reportedScore: score2 as number, isWinner: (score2 as number) > (score1 as number) },
+                data: { reportedScore: validScore2, isWinner: validScore2 > validScore1 },
               },
             ],
           },
