@@ -1,7 +1,5 @@
-'use client';
-
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { prisma } from '@fightrise/database';
 
 // Types
 type TournamentState = 'CREATED' | 'REGISTRATION_OPEN' | 'REGISTRATION_CLOSED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
@@ -77,54 +75,29 @@ function TournamentCard({ tournament }: { tournament: Tournament }) {
           {formatDate(tournament.startAt)}
         </span>
         <span className="text-zinc-600 group-hover:text-zinc-300 transition-colors">
-          View →
+          View -&gt;
         </span>
       </div>
     </Link>
   );
 }
 
-export default function TournamentsPage() {
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+// Server component to fetch tournaments
+async function getTournaments(): Promise<Tournament[]> {
+  const tournaments = await prisma.tournament.findMany({
+    orderBy: { startAt: 'desc' },
+    include: {
+      _count: {
+        select: { registrations: true },
+      },
+    },
+  });
 
-  useEffect(() => {
-    async function fetchTournaments() {
-      try {
-        const response = await fetch('/api/tournaments');
-        if (!response.ok) {
-          throw new Error('Failed to fetch tournaments');
-        }
-        const data = await response.json();
-        // Handle both { tournaments: [...] } and [...] response formats
-        const tournamentsArray = Array.isArray(data) ? data : (data.tournaments || []);
-        setTournaments(tournamentsArray);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setLoading(false);
-      }
-    }
+  return tournaments as Tournament[];
+}
 
-    fetchTournaments();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="text-zinc-400">Loading tournaments...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="text-red-400">Error: {error}</div>
-      </div>
-    );
-  }
+export default async function TournamentsPage() {
+  const tournaments = await getTournaments();
 
   return (
     <div className="min-h-screen bg-zinc-950">
