@@ -279,17 +279,12 @@ async function handleSetup(interaction: ChatInputCommandInteraction): Promise<vo
   // Defer reply since API calls may take time
   await interaction.deferReply({ ephemeral: true });
 
+  const guildId = await requireGuildWithReply(interaction);
+  if (!guildId) return;
+
   const slug = interaction.options.getString('slug', true);
   const matchChannel = interaction.options.getChannel('match-channel', true);
-  const guildId = interaction.guildId;
   const userId = interaction.user.id;
-
-  if (!guildId) {
-    await interaction.editReply({
-      content: 'This command can only be used in a server.',
-    });
-    return;
-  }
 
   try {
     const tournamentService = getTournamentService();
