@@ -2,6 +2,7 @@ import { ButtonInteraction, EmbedBuilder, Colors, PermissionFlagsBits } from 'di
 import { prisma, RegistrationStatus } from '@fightrise/database';
 import type { ButtonHandler } from './buttonHandlers.js';
 import { isValidCuid } from './validation.js';
+import { INTERACTION_PREFIX } from '@fightrise/shared';
 
 /**
  * Verifies that the user has Discord Manage Server permissions.
@@ -21,7 +22,7 @@ async function verifyDiscordPermissions(
 }
 
 export const registrationHandler: ButtonHandler = {
-  prefix: 'reg',
+  prefix: INTERACTION_PREFIX.REGISTER,
 
   async execute(interaction: ButtonInteraction, parts: string[]) {
     const action = parts[0];
