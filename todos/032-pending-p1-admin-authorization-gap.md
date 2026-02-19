@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "code-review"
 tags: [code-review, security, bot, authorization]
@@ -44,18 +44,20 @@ const admin = await prisma.tournamentAdmin.findFirst({
 ## Technical Details
 
 **Affected Files:**
-- `apps/bot/src/commands/admin.ts`
+- `apps/bot/src/commands/admin.ts` (already had checks)
+- `apps/bot/src/handlers/registration.ts` (added missing checks)
 
 ## Acceptance Criteria
 
-- [ ] Checks Discord permissions in addition to database
-- [ ] Works for both role-based and permission-based admins
+- [x] Checks Discord permissions in addition to database
+- [x] Works for both role-based and permission-based admins
 
 ## Work Log
 
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-18 | Created | Found during code review |
+| 2026-02-19 | Fixed | Added Discord permission checks to registration.ts |
 
 ## Resources
 

@@ -1,7 +1,24 @@
-import { ButtonInteraction, EmbedBuilder, Colors } from 'discord.js';
+import { ButtonInteraction, EmbedBuilder, Colors, PermissionFlagsBits } from 'discord.js';
 import { prisma, RegistrationStatus } from '@fightrise/database';
 import type { ButtonHandler } from './buttonHandlers.js';
 import { isValidCuid } from './validation.js';
+
+/**
+ * Verifies that the user has Discord Manage Server permissions.
+ * Returns false and sends an error reply if the user lacks permissions.
+ */
+async function verifyDiscordPermissions(
+  interaction: ButtonInteraction
+): Promise<boolean> {
+  const member = await interaction.guild?.members.fetch(interaction.user.id);
+  if (!member || !member.permissions.has(PermissionFlagsBits.ManageGuild)) {
+    await interaction.editReply({
+      content: 'You need Manage Server permissions to use admin commands.',
+    });
+    return false;
+  }
+  return true;
+}
 
 export const registrationHandler: ButtonHandler = {
   prefix: 'reg',
@@ -29,6 +46,10 @@ async function handleApprove(interaction: ButtonInteraction, registrationId: str
   }
 
   try {
+    // Verify Discord guild permissions first
+    const hasDiscordPerms = await verifyDiscordPermissions(interaction);
+    if (!hasDiscordPerms) return;
+
     // Verify admin permissions
     const adminId = interaction.user.id;
     const registration = await prisma.registration.findUnique({
@@ -110,6 +131,10 @@ async function handleReject(interaction: ButtonInteraction, registrationId: stri
   }
 
   try {
+    // Verify Discord guild permissions first
+    const hasDiscordPerms = await verifyDiscordPermissions(interaction);
+    if (!hasDiscordPerms) return;
+
     // Verify admin permissions
     const adminId = interaction.user.id;
     const registration = await prisma.registration.findUnique({
