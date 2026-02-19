@@ -9,9 +9,12 @@ datasource db {
 
 // User account with linked services
 //
-// NOTE: The User model requires a CHECK constraint to ensure at least one identity
-// field (discordId, startggId, or email) is not null. Prisma does not support
-// CHECK constraints natively, so this must be implemented via a raw SQL migration.
+// CHECK CONSTRAINT: The User table has a database-level CHECK constraint
+// (User_has_identity) ensuring at least one identity field (discordId, startggId,
+// or email) is not null. This is implemented via migration:
+//
+//   ALTER TABLE "User" ADD CONSTRAINT "User_has_identity"
+//   CHECK ("discordId" IS NOT NULL OR "startggId" IS NOT NULL OR "email" IS NOT NULL);
 //
 // TODO: Consider adding soft delete (deletedAt DateTime?) to preserve historical data.
 // This would require: adding deletedAt to key models, updating queries to filter
@@ -301,24 +304,16 @@ model Registration {
   eventId         String?   @map("event_id")  // Nullable for backwards compatibility
   event           Event?    @relation(fields: [eventId], references: [id])
 
-  // Note: Unique constraint on (eventId, startggEntrantId) is NOT added to the database schema
-  // because existing production data may contain duplicates from before this was enforced.
-  // Adding a unique constraint would require a data migration to clean duplicates.
-  //
-  // For ghost registrations (Start.gg entrants without linked Discord users), we need a partial
-  // unique index on (eventId, startggEntrantId) WHERE startggEntrantId IS NOT NULL.
+  // Partial unique index for ghost registrations (Start.gg entrants without linked Discord users)
+  // Added via migration: 20260219120000_add_registration_unique_constraint
   // PostgreSQL treats NULLs as distinct, so a standard unique constraint would allow multiple
-  // NULL values. Since Prisma doesn't support partial indexes natively, this requires a raw SQL
+  // NULL values. Since Prisma doesn't support partial indexes natively, this uses a raw SQL
   // migration (see migrations/ folder).
   //
   // Application-level enforcement is implemented as follows:
   // 1. RegistrationSyncService uses a transaction with atomic operations to prevent race conditions
   // 2. The /register and /admin register commands check for existing registrations before creating
   // 3. The unique constraint on (userId, eventId) provides some protection for Discord-based registrations
-  //
-  // TODO: Add partial unique index via raw SQL migration after cleaning duplicate data in production:
-  // CREATE UNIQUE INDEX "registration_event_entrant_unique" ON "Registration"
-  // ("eventId", "startggEntrantId") WHERE "startggEntrantId" IS NOT NULL;
   @@unique([userId, eventId])
   @@index([tournamentId])
   @@index([eventId])
