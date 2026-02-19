@@ -1,6 +1,20 @@
 // Design tokens for UI package
 // These provide type-safe access to design values
 
+// Gray scale for borders and neutrals
+const grayScale = {
+  50: '#f9fafb',
+  100: '#f3f4f6',
+  200: '#e5e7eb',
+  300: '#d1d5db',
+  400: '#9ca3af',
+  500: '#6b7280',
+  600: '#4b5563',
+  700: '#374151',
+  800: '#1f2937',
+  900: '#111827',
+} as const;
+
 export const colors = {
   // Primary
   primary: '#3b82f6',
@@ -26,18 +40,11 @@ export const colors = {
   // Neutrals
   white: '#ffffff',
   black: '#000000',
-  gray: {
-    50: '#f9fafb',
-    100: '#f3f4f6',
-    200: '#e5e7eb',
-    300: '#d1d5db',
-    400: '#9ca3af',
-    500: '#6b7280',
-    600: '#4b5563',
-    700: '#374151',
-    800: '#1f2937',
-    900: '#111827',
-  },
+  gray: grayScale,
+
+  // Border
+  border: grayScale[200],
+  borderHover: grayScale[300],
 } as const;
 
 export const spacing = {
@@ -109,6 +116,18 @@ export const colorsDark = {
   text: '#f9fafb',
   textMuted: '#9ca3af',
   border: '#4b5563',
+} as const;
+
+// Combined tokens export for easy importing
+export const tokens = {
+  colors,
+  spacing,
+  typography,
+  borderRadius,
+  shadows,
+  transitions,
+  zIndex,
+  colorsDark,
 } as const;
 
 export type Colors = typeof colors;

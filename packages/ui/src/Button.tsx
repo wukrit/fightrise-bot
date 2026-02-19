@@ -1,4 +1,5 @@
 import React from 'react';
+import { tokens } from './tokens.js';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'discord';
@@ -8,35 +9,35 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const variantStyles: Record<string, React.CSSProperties> = {
   primary: {
-    backgroundColor: '#3b82f6',
-    color: 'white',
+    backgroundColor: tokens.colors.primary,
+    color: tokens.colors.white,
   },
   secondary: {
-    backgroundColor: '#6b7280',
-    color: 'white',
+    backgroundColor: tokens.colors.secondary,
+    color: tokens.colors.white,
   },
   danger: {
-    backgroundColor: '#ef4444',
-    color: 'white',
+    backgroundColor: tokens.colors.danger,
+    color: tokens.colors.white,
   },
   discord: {
-    backgroundColor: '#5865F2',
-    color: 'white',
+    backgroundColor: tokens.colors.discord,
+    color: tokens.colors.white,
   },
 };
 
 const sizeStyles: Record<string, React.CSSProperties> = {
   sm: {
-    padding: '6px 12px',
-    fontSize: '14px',
+    padding: `${tokens.spacing.xs} ${tokens.spacing.sm}`,
+    fontSize: tokens.typography.fontSize.sm,
   },
   md: {
-    padding: '10px 20px',
-    fontSize: '16px',
+    padding: `${tokens.spacing.sm} ${tokens.spacing.md}`,
+    fontSize: tokens.typography.fontSize.base,
   },
   lg: {
-    padding: '14px 28px',
-    fontSize: '18px',
+    padding: `${tokens.spacing.md} ${tokens.spacing.lg}`,
+    fontSize: tokens.typography.fontSize.lg,
   },
 };
 
@@ -44,17 +45,17 @@ const baseStyles: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  gap: '8px',
+  gap: tokens.spacing.sm,
   border: 'none',
-  borderRadius: '4px',
-  fontWeight: 500,
+  borderRadius: tokens.borderRadius.sm,
+  fontWeight: tokens.typography.fontWeight.medium,
   cursor: 'pointer',
-  transition: 'opacity 0.15s ease',
+  transition: tokens.transitions.fast,
   outline: 'none',
 };
 
 const focusStyles: React.CSSProperties = {
-  boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.5)',
+  boxShadow: `0 0 0 3px ${tokens.colors.primary}40`,
 };
 
 export function Button({
@@ -100,7 +101,7 @@ export function Button({
       {...props}
     >
       {loading && (
-        <span style={{ display: 'inline-block', width: '16px', height: '16px', border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}>
+        <span style={{ display: 'inline-block', width: tokens.spacing.md, height: tokens.spacing.md, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </span>
       )}

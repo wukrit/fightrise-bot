@@ -1,4 +1,5 @@
 import React from 'react';
+import { tokens } from './tokens.js';
 
 export interface DrawerProps {
   isOpen: boolean;
@@ -16,7 +17,7 @@ const overlayStyles: React.CSSProperties = {
   right: 0,
   bottom: 0,
   backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  zIndex: 1000,
+  zIndex: tokens.zIndex.modal,
   animation: 'fadeIn 0.2s ease',
 };
 
@@ -33,11 +34,11 @@ const getDrawerStyles = (side: 'left' | 'right', size: string): React.CSSPropert
   bottom: 0,
   width: size,
   maxWidth: '100vw',
-  backgroundColor: 'var(--color-bg, #ffffff)',
+  backgroundColor: tokens.colors.white,
   boxShadow: side === 'left'
-    ? '4px 0 6px -1px rgba(0, 0, 0, 0.1)'
-    : '-4px 0 6px -1px rgba(0, 0, 0, 0.1)',
-  zIndex: 1001,
+    ? tokens.shadows.md
+    : `-4px 0 6px -1px rgba(0, 0, 0, 0.1)`,
+  zIndex: tokens.zIndex.modal + 1,
   display: 'flex',
   flexDirection: 'column',
   animation: side === 'left' ? 'slideInLeft 0.2s ease' : 'slideInRight 0.2s ease',
@@ -47,42 +48,42 @@ const headerStyles: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  padding: '20px 24px',
-  borderBottom: '1px solid var(--color-border, #e5e5e5)',
+  padding: `${tokens.spacing.md} ${tokens.spacing.lg}`,
+  borderBottom: `1px solid ${tokens.colors.border}`,
   flexShrink: 0,
 };
 
 const titleStyles: React.CSSProperties = {
   margin: 0,
-  fontSize: '18px',
-  fontWeight: 600,
-  color: 'var(--color-text, #1a1a1a)',
+  fontSize: tokens.typography.fontSize.lg,
+  fontWeight: tokens.typography.fontWeight.semibold,
+  color: tokens.colors.gray[900],
 };
 
 const closeButtonStyles: React.CSSProperties = {
   background: 'none',
   border: 'none',
   cursor: 'pointer',
-  padding: '8px',
-  borderRadius: '6px',
-  color: '#6b7280',
+  padding: tokens.spacing.sm,
+  borderRadius: tokens.borderRadius.md,
+  color: tokens.colors.gray[500],
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  transition: 'background-color 0.15s ease',
+  transition: tokens.transitions.fast,
 };
 
 const contentStyles: React.CSSProperties = {
-  padding: '24px',
+  padding: tokens.spacing.lg,
   overflow: 'auto',
   flex: 1,
 };
 
 const footerStyles: React.CSSProperties = {
-  padding: '16px 24px',
-  borderTop: '1px solid var(--color-border, #e5e5e5)',
+  padding: `${tokens.spacing.md} ${tokens.spacing.lg}`,
+  borderTop: `1px solid ${tokens.colors.border}`,
   display: 'flex',
-  gap: '12px',
+  gap: tokens.spacing.sm,
   justifyContent: 'flex-end',
   flexShrink: 0,
 };
