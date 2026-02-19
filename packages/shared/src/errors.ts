@@ -119,6 +119,50 @@ export class MatchError extends FightRiseError {
   }
 }
 
+// Start.gg error - for Start.gg API/interaction failures
+export class StartGGError extends FightRiseError {
+  constructor(
+    message: string,
+    code: ErrorCodeType = ErrorCode.STARTGG_ERROR,
+    details?: Record<string, unknown>
+  ) {
+    super(message, code, details);
+    this.name = 'StartGGError';
+  }
+}
+
+// Rate limit error - for Start.gg API rate limiting
+export class RateLimitError extends StartGGError {
+  constructor(
+    message: string,
+    public readonly retryAfterMs?: number,
+    details?: Record<string, unknown>
+  ) {
+    super(message, ErrorCode.RATE_LIMIT, { retryAfterMs, ...details });
+    this.name = 'RateLimitError';
+  }
+}
+
+// Auth error - for Start.gg authentication failures
+export class AuthError extends StartGGError {
+  constructor(message: string, details?: Record<string, unknown>) {
+    super(message, ErrorCode.STARTGG_ERROR, details);
+    this.name = 'AuthError';
+  }
+}
+
+// GraphQL error - for Start.gg GraphQL response errors
+export class GraphQLError extends StartGGError {
+  constructor(
+    message: string,
+    public readonly errors: Array<{ message: string; path?: string[] }>,
+    details?: Record<string, unknown>
+  ) {
+    super(message, ErrorCode.STARTGG_ERROR, { errors, ...details });
+    this.name = 'GraphQLError';
+  }
+}
+
 // Helper to check if an error is a FightRise error
 export function isFightRiseError(error: unknown): error is FightRiseError {
   return error instanceof FightRiseError;

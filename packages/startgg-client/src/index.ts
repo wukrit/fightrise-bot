@@ -12,6 +12,7 @@ import {
   Set,
   Entrant,
   Connection,
+  StartGGError,
   AuthError,
   GraphQLError as StartGGGraphQLError,
 } from './types.js';
