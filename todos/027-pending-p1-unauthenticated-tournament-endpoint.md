@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "code-review"
 tags: [code-review, security, web, authentication]
@@ -31,25 +31,22 @@ export async function GET(
   });
 ```
 
-## Proposed Solutions
+## Resolution
 
-### Solution A: Add session check to the endpoint
-- **Description:** Add NextAuth session verification to the GET handler
-- **Pros:** Simple fix, follows existing pattern
-- **Cons:** None
-- **Effort:** Small
-- **Risk:** Low
+**Solution A** was implemented - session check added to the endpoint following the pattern used in other routes.
 
-### Solution B: Use middleware for auth enforcement
-- **Description:** Move auth logic to middleware
-- **Pros:** Consistent auth for all routes
-- **Cons:** More complex
-- **Effort:** Medium
-- **Risk:** Low
+The endpoint now verifies the NextAuth session and returns 401 if not authenticated:
 
-## Recommended Action
+```typescript
+const session = await getServerSession(authOptions);
 
-**Solution A** - Add session check to the endpoint following the pattern used in other routes.
+if (!session?.user?.discordId) {
+  return NextResponse.json(
+    { error: 'Unauthorized' },
+    { status: 401 }
+  );
+}
+```
 
 ## Technical Details
 
@@ -58,15 +55,16 @@ export async function GET(
 
 ## Acceptance Criteria
 
-- [ ] GET /api/tournaments/[id] returns 401 without session
-- [ ] GET /api/tournaments/[id] returns data with valid session
-- [ ] Consistent auth with other tournament endpoints
+- [x] GET /api/tournaments/[id] returns 401 without session
+- [x] GET /api/tournaments/[id] returns data with valid session
+- [x] Consistent auth with other tournament endpoints
 
 ## Work Log
 
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-18 | Created | Found during code review |
+| 2026-02-19 | Resolved | Authentication already implemented in codebase |
 
 ## Resources
 
