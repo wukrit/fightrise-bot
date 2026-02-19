@@ -3,6 +3,7 @@ import { loadCommands } from './utils/commandLoader.js';
 import { loadEvents } from './utils/eventLoader.js';
 import { startPollingService, stopPollingService } from './services/pollingService.js';
 import type { Command, ExtendedClient } from './types.js';
+import { logger } from './lib/logger.js';
 
 const client = new Client({
   intents: [
@@ -22,18 +23,18 @@ async function main() {
   }
 
   // Load commands and events
-  console.log('Loading commands...');
+  logger.info('Loading commands...');
   client.commands = await loadCommands();
 
-  console.log('Loading events...');
+  logger.info('Loading events...');
   await loadEvents(client);
 
   // Graceful shutdown handling
   const shutdown = async (signal: string) => {
-    console.log(`\nReceived ${signal}. Shutting down gracefully...`);
+    logger.info(`Received ${signal}. Shutting down gracefully...`);
     await stopPollingService();
     client.destroy();
-    console.log('Discord client destroyed. Goodbye!');
+    logger.info('Discord client destroyed. Goodbye!');
     process.exit(0);
   };
 
@@ -48,11 +49,11 @@ async function main() {
   if (process.env.REDIS_URL && process.env.STARTGG_API_KEY) {
     await startPollingService(client);
   } else {
-    console.warn('[PollingService] Skipped - REDIS_URL or STARTGG_API_KEY not configured');
+    logger.warn('[PollingService] Skipped - REDIS_URL or STARTGG_API_KEY not configured');
   }
 }
 
 main().catch((error) => {
-  console.error('Failed to start bot:', error);
+  logger.error({ err: error }, 'Failed to start bot');
   process.exit(1);
 });

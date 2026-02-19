@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder, Colors } from 'discord.js';
 import type { Command } from '../types.js';
 import { prisma, MatchState } from '@fightrise/database';
+import { logger } from '../lib/logger.js';
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -147,7 +148,7 @@ async function handleMyMatches(interaction: ChatInputCommandInteraction): Promis
       embeds: [embed],
     });
   } catch (error) {
-    console.error('Error fetching matches:', error);
+    logger.error({ err: error }, 'Error fetching matches');
     await interaction.editReply({
       content: 'Failed to fetch your matches. Please try again.',
     });
