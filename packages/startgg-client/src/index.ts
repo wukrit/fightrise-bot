@@ -122,7 +122,7 @@ export class StartGGClient {
           path: e.path?.map(String),
         }));
         throw new StartGGGraphQLError(
-          `GraphQL error: ${errors[0].message}`,
+          `GraphQL errors: ${errors.map((e) => e.message).join(', ')}`,
           errors
         );
       }
