@@ -118,6 +118,7 @@ export interface ToastProviderProps {
 
 export function ToastProvider({ children }: ToastProviderProps) {
   const [toasts, setToasts] = React.useState<Toast[]>([]);
+  const timeoutIdsRef = React.useRef<Set<NodeJS.Timeout>>(new Set());
 
   const addToast = React.useCallback((toast: Omit<Toast, 'id'>) => {
     const id = generateId();
@@ -126,10 +127,22 @@ export function ToastProvider({ children }: ToastProviderProps) {
 
     const duration = toast.duration ?? 5000;
     if (duration > 0) {
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
+        timeoutIdsRef.current.delete(timeoutId);
       }, duration);
+      timeoutIdsRef.current.add(timeoutId);
     }
+  }, []);
+
+  // Cleanup all timeouts on unmount to prevent memory leaks
+  React.useEffect(() => {
+    return () => {
+      timeoutIdsRef.current.forEach((timeoutId) => {
+        clearTimeout(timeoutId);
+      });
+      timeoutIdsRef.current.clear();
+    };
   }, []);
 
   const removeToast = React.useCallback((id: string) => {
