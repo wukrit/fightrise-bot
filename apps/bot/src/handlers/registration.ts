@@ -82,10 +82,25 @@ async function handleApprove(interaction: ButtonInteraction, registrationId: str
       return;
     }
 
-    // Update registration status
-    await prisma.registration.update({
-      where: { id: registrationId },
-      data: { status: RegistrationStatus.CONFIRMED },
+    // Use transaction to prevent race conditions between admin check and update
+    await prisma.$transaction(async (tx) => {
+      // Re-verify admin permissions within transaction to prevent race condition
+      const adminCheck = await tx.tournamentAdmin.findFirst({
+        where: {
+          user: { discordId: adminId },
+          tournamentId: registration.tournamentId,
+        },
+      });
+
+      if (!adminCheck) {
+        throw new Error('Not authorized: admin permissions changed during operation');
+      }
+
+      // Update registration status
+      await tx.registration.update({
+        where: { id: registrationId },
+        data: { status: RegistrationStatus.CONFIRMED },
+      });
     });
 
     // Send confirmation to admin
@@ -167,10 +182,25 @@ async function handleReject(interaction: ButtonInteraction, registrationId: stri
       return;
     }
 
-    // Update registration status
-    await prisma.registration.update({
-      where: { id: registrationId },
-      data: { status: RegistrationStatus.CANCELLED },
+    // Use transaction to prevent race conditions between admin check and update
+    await prisma.$transaction(async (tx) => {
+      // Re-verify admin permissions within transaction to prevent race condition
+      const adminCheck = await tx.tournamentAdmin.findFirst({
+        where: {
+          user: { discordId: adminId },
+          tournamentId: registration.tournamentId,
+        },
+      });
+
+      if (!adminCheck) {
+        throw new Error('Not authorized: admin permissions changed during operation');
+      }
+
+      // Update registration status
+      await tx.registration.update({
+        where: { id: registrationId },
+        data: { status: RegistrationStatus.CANCELLED },
+      });
     });
 
     // Send confirmation to admin
