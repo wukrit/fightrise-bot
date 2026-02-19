@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "060"
 tags: [code-review, concurrency, race-condition]
@@ -14,30 +14,20 @@ The web API route for score reporting does not use the same robust state guard p
 
 ## Findings
 
-**Location:** `apps/web/app/api/matches/[id]/report/route.ts` lines 66-71
+**Location:** `apps/web/app/api/matches/[id]/report/route.ts` lines 108-134
 
-```typescript
-if (!['CALLED', 'CHECKED_IN', 'IN_PROGRESS', 'PENDING_CONFIRMATION'].includes(match.state)) {
-  return NextResponse.json({ error: 'Match is not in a state that allows reporting' }, { status: 400 });
-}
-```
+The web route already implements the proper state guard pattern using:
+- `prisma.$transaction` for atomic operations
+- `updateMany` with state filter in WHERE clause (lines 117-124)
+- Race condition detection via `matchUpdate.count === 0` (lines 127-134)
+- Consistent with the bot's dqService.ts pattern
 
-This is less robust than the bot's approach using `updateMany` with state filter.
+## Resolution
 
-## Proposed Solutions
-
-### Solution A: Use updateMany with State Filter (Recommended)
-Use Prisma's updateMany with state in WHERE clause for optimistic locking.
-
-**Pros:** Prevents race conditions, consistent with bot pattern
-
-**Cons:** Slightly more complex
-
-**Effort:** Small
-
-## Recommended Action
-
-<!-- To be filled during triage -->
+The state guard was already implemented correctly. The code uses:
+- Atomic `updateMany` with state in WHERE clause for optimistic locking
+- Transaction wrapper for atomicity
+- Race condition detection with appropriate error handling
 
 ## Technical Details
 
@@ -46,6 +36,6 @@ Use Prisma's updateMany with state in WHERE clause for optimistic locking.
 
 ## Acceptance Criteria
 
-- [ ] Score reporting uses atomic state guard
-- [ ] No race condition between state check and update
-- [ ] Consistent with bot's dqService.ts pattern
+- [x] Score reporting uses atomic state guard
+- [x] No race condition between state check and update
+- [x] Consistent with bot's dqService.ts pattern
