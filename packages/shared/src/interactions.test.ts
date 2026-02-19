@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseInteractionId, createInteractionId } from './interactions.js';
+import type { InteractionPrefix } from './interactions.js';
 import { INTERACTION_PREFIX } from './constants.js';
 
 describe('parseInteractionId', () => {
@@ -36,29 +37,29 @@ describe('parseInteractionId', () => {
 
 describe('createInteractionId', () => {
   it('creates simple interaction ID', () => {
-    const result = createInteractionId('checkin');
+    const result = createInteractionId(INTERACTION_PREFIX.CHECK_IN);
     expect(result).toBe('checkin');
   });
 
   it('creates interaction ID with one part', () => {
-    const result = createInteractionId('checkin', '123');
+    const result = createInteractionId(INTERACTION_PREFIX.CHECK_IN, '123');
     expect(result).toBe('checkin:123');
   });
 
   it('creates interaction ID with multiple parts', () => {
-    const result = createInteractionId('report', 'match1', 'player2');
+    const result = createInteractionId(INTERACTION_PREFIX.REPORT, 'match1', 'player2');
     expect(result).toBe('report:match1:player2');
   });
 
   it('creates interaction ID with empty parts', () => {
-    const result = createInteractionId('confirm', '');
+    const result = createInteractionId(INTERACTION_PREFIX.CONFIRM, '');
     expect(result).toBe('confirm:');
   });
 
   it('roundtrips with parseInteractionId', () => {
     const original = 'checkin:123:456';
     const [prefix, ...parts] = original.split(':');
-    const created = createInteractionId(prefix, ...parts);
+    const created = createInteractionId(prefix as InteractionPrefix, ...parts);
     const parsed = parseInteractionId(created);
     expect(parsed.prefix).toBe('checkin');
     expect(parsed.parts).toEqual(['123', '456']);

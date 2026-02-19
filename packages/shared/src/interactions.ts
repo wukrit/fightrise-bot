@@ -14,6 +14,6 @@ export function parseInteractionId(customId: string): ParsedInteractionId {
   return { prefix: prefix as InteractionPrefix, parts };
 }
 
-export function createInteractionId(prefix: InteractionPrefix | string, ...parts: string[]) {
+export function createInteractionId(prefix: InteractionPrefix, ...parts: string[]): string {
   return [prefix, ...parts].join(':');
 }
