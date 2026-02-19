@@ -33,6 +33,7 @@ export class StartGGClient {
       headers: {
         Authorization: `Bearer ${config.apiKey}`,
       },
+      timeout: config.timeout ?? 30000, // 30 second default to prevent indefinite hangs
     });
 
     this.cache = new ResponseCache(config.cache ?? { enabled: false });
@@ -92,6 +93,13 @@ export class StartGGClient {
 
   private handleError(error: unknown): never {
     if (error instanceof ClientError) {
+      // Check for timeout errors
+      if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
+        throw new StartGGError(
+          'Request to Start.gg timed out. Please try again later.'
+        );
+      }
+
       // Check for auth errors
       if (error.response.status === 401 || error.response.status === 403) {
         throw new AuthError(
@@ -108,6 +116,15 @@ export class StartGGClient {
         throw new StartGGGraphQLError(
           `GraphQL error: ${errors[0].message}`,
           errors
+        );
+      }
+    }
+
+    // Check for network errors (including timeouts)
+    if (error instanceof Error) {
+      if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
+        throw new StartGGError(
+          'Request to Start.gg timed out. Please try again later.'
         );
       }
     }
