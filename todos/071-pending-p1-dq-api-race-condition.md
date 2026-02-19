@@ -61,8 +61,8 @@ Solution A - Add state guard pattern.
 
 ## Acceptance Criteria
 
-- [ ] DQ uses updateMany with state filter
-- [ ] Returns error if match already completed/DQ'd
+- [x] DQ uses updateMany with state filter
+- [x] Returns error if match already completed/DQ'd
 
 ## Work Log
 
