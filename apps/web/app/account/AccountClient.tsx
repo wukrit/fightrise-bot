@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { Button, Card, CardContent, CardHeader, Select } from '@fightrise/ui';
+import { DiscordIcon } from '@fightrise/ui';
 
 // Types
 interface UserProfile {
@@ -48,10 +50,14 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-xl p-6">
-      <h3 className="text-lg font-semibold text-zinc-100 mb-4">{title}</h3>
-      {children}
-    </div>
+    <Card style={{ backgroundColor: 'rgba(24, 24, 27, 0.3)', border: '1px solid rgba(63, 63, 70, 0.5)', borderRadius: '12px', padding: '24px' }}>
+      <CardHeader>
+        <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#f4f4f5', margin: 0, marginBottom: '16px' }}>{title}</h3>
+      </CardHeader>
+      <CardContent>
+        {children}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -67,11 +73,11 @@ function StatCard({
   accent?: string;
 }) {
   return (
-    <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-lg p-4">
-      <p className="text-xs text-zinc-500 uppercase tracking-wider">{label}</p>
-      <p className={`text-2xl font-bold mt-1 ${accent || 'text-zinc-100'}`}>{value}</p>
-      {trend && <p className="text-xs text-zinc-500 mt-1">{trend}</p>}
-    </div>
+    <Card style={{ backgroundColor: 'rgba(24, 24, 27, 0.3)', border: '1px solid rgba(63, 63, 70, 0.5)', borderRadius: '8px', padding: '16px' }}>
+      <p style={{ fontSize: '12px', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>{label}</p>
+      <p style={{ fontSize: '24px', fontWeight: 700, marginTop: '4px', color: accent || '#f4f4f5' }}>{value}</p>
+      {trend && <p style={{ fontSize: '12px', color: '#71717a', marginTop: '4px' }}>{trend}</p>}
+    </Card>
   );
 }
 
@@ -95,9 +101,7 @@ function LinkedAccount({
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center">
           {provider === 'Discord' ? (
-            <svg className="w-5 h-5 text-zinc-400" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z" />
-            </svg>
+            <DiscordIcon size={20} />
           ) : (
             <svg className="w-5 h-5 text-zinc-400" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 0C5.372 0 0 5.373 0 12s5.372 12 12 12 12-5.373 12-12S18.628 0 12 0zm0 21.6c-5.302 0-9.6-4.298-9.6-9.6S6.698 2.4 12 2.4s9.6 4.298 9.6 9.6-4.298 9.6-9.6 9.6z" />
@@ -112,12 +116,14 @@ function LinkedAccount({
       {connected ? (
         <span className="text-xs text-emerald-400 font-medium">Connected</span>
       ) : action && actionLabel ? (
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={action}
-          className="px-3 py-1.5 text-xs font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
+          style={{ padding: '6px 12px', fontSize: '12px' }}
         >
           {actionLabel}
-        </button>
+        </Button>
       ) : null}
     </div>
   );
@@ -234,20 +240,17 @@ function TimeSelect({
     }
   }
 
+  const timeOptions = times.map((time) => ({ value: time, label: time }));
+
   return (
     <div className="flex items-center gap-2">
       <label className="text-sm text-zinc-400">{label}</label>
-      <select
+      <Select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-zinc-800/50 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-600"
-      >
-        {times.map((time) => (
-          <option key={time} value={time}>
-            {time}
-          </option>
-        ))}
-      </select>
+        options={timeOptions}
+        style={{ backgroundColor: 'rgba(63, 63, 70, 0.5)', border: '1px solid #3f3f46', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#f4f4f5' }}
+      />
     </div>
   );
 }
@@ -260,17 +263,20 @@ function ReminderSelect({
   value: number;
   onChange: (value: number) => void;
 }) {
+  const options = [
+    { value: '5', label: '5 minutes' },
+    { value: '10', label: '10 minutes' },
+    { value: '15', label: '15 minutes' },
+    { value: '30', label: '30 minutes' },
+  ];
+
   return (
-    <select
-      value={value}
+    <Select
+      value={value.toString()}
       onChange={(e) => onChange(parseInt(e.target.value))}
-      className="bg-zinc-800/50 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-600 ml-auto"
-    >
-      <option value={5}>5 minutes</option>
-      <option value={10}>10 minutes</option>
-      <option value={15}>15 minutes</option>
-      <option value={30}>30 minutes</option>
-    </select>
+      options={options}
+      style={{ backgroundColor: 'rgba(63, 63, 70, 0.5)', border: '1px solid #3f3f46', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#f4f4f5', marginLeft: 'auto' }}
+    />
   );
 }
 
@@ -356,19 +362,20 @@ function NotificationSection({
               </div>
               <div className="flex items-center gap-2">
                 <label className="text-sm text-zinc-400">Timezone:</label>
-                <select
+                <Select
                   value={preferences.timezone}
                   onChange={(e) => onChange({ ...preferences, timezone: e.target.value })}
-                  className="bg-zinc-800/50 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-600"
-                >
-                  <option value="America/New_York">Eastern Time</option>
-                  <option value="America/Chicago">Central Time</option>
-                  <option value="America/Denver">Mountain Time</option>
-                  <option value="America/Los_Angeles">Pacific Time</option>
-                  <option value="Europe/London">London</option>
-                  <option value="Europe/Paris">Paris</option>
-                  <option value="Asia/Tokyo">Tokyo</option>
-                </select>
+                  options={[
+                    { value: 'America/New_York', label: 'Eastern Time' },
+                    { value: 'America/Chicago', label: 'Central Time' },
+                    { value: 'America/Denver', label: 'Mountain Time' },
+                    { value: 'America/Los_Angeles', label: 'Pacific Time' },
+                    { value: 'Europe/London', label: 'London' },
+                    { value: 'Europe/Paris', label: 'Paris' },
+                    { value: 'Asia/Tokyo', label: 'Tokyo' },
+                  ]}
+                  style={{ backgroundColor: 'rgba(63, 63, 70, 0.5)', border: '1px solid #3f3f46', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#f4f4f5' }}
+                />
               </div>
             </div>
           )}
@@ -498,17 +505,17 @@ export function AccountContent({ user: initialUser, tournaments: initialTourname
                 onChange={setNotifications}
               />
               <div className="mt-6 pt-4 border-t border-zinc-800/50">
-                <button className="px-4 py-2 text-sm font-medium text-zinc-900 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors">
+                <Button variant="primary" size="md" style={{ padding: '8px 16px', fontSize: '14px' }}>
                   Save Preferences
-                </button>
+                </Button>
               </div>
             </SectionCard>
 
             {/* Danger Zone */}
             <SectionCard title="Account">
-              <button className="w-full py-2 text-sm text-red-400 border border-red-900/50 hover:bg-red-900/20 rounded-lg transition-colors">
+              <Button variant="danger" size="md" style={{ width: '100%', padding: '8px 16px', fontSize: '14px', color: '#f87171', border: '1px solid rgba(127, 29, 29, 0.5)' }}>
                 Delete Account
-              </button>
+              </Button>
               <p className="text-xs text-zinc-500 mt-2">
                 This action is irreversible. All your data will be permanently deleted.
               </p>

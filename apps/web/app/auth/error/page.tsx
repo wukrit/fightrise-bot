@@ -3,6 +3,7 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Card, CardContent, Button } from '@fightrise/ui';
 
 function ErrorContent() {
   const searchParams = useSearchParams();
@@ -23,24 +24,25 @@ function ErrorContent() {
   const errorMessage = error ? errorMessages[error] || errorMessages.unknown : errorMessages.unknown;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900">
-      <div className="max-w-md w-full bg-gray-800 rounded-lg p-8 shadow-lg">
-        <h1 className="text-2xl font-bold text-red-500 mb-4">Authorization Failed</h1>
-        <p className="text-gray-300 mb-6">{errorMessage}</p>
-        <Link
-          href="/auth/signin"
-          className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors"
-        >
-          Back to Sign In
-        </Link>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+      <Card style={{ maxWidth: '400px', width: '100%', padding: '32px' }}>
+        <CardContent>
+          <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#f87171', marginBottom: '16px' }}>Authorization Failed</h1>
+          <p style={{ color: '#d4d4d8', marginBottom: '24px' }}>{errorMessage}</p>
+          <Link href="/auth/signin" passHref>
+            <Button variant="primary" style={{ display: 'inline-block' }}>
+              Back to Sign In
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
 export default function AuthErrorPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-900">Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-zinc-950">Loading...</div>}>
       <ErrorContent />
     </Suspense>
   );
