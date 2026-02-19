@@ -7,6 +7,7 @@ import {
   ButtonBuilder,
   ButtonStyle,
 } from 'discord.js';
+import { randomBytes } from 'crypto';
 import type { Command } from '../types.js';
 import { prisma } from '@fightrise/database';
 
@@ -69,7 +70,15 @@ async function handleLinkStartgg(interaction: ChatInputCommandInteraction): Prom
 
     // Build OAuth URL with Discord user ID as state
     // The state will be used to link the Start.gg account to the Discord user
-    const state = Buffer.from(JSON.stringify({ discordId, discordUsername })).toString('base64');
+    // Include nonce and timestamp for CSRF protection
+    const state = Buffer.from(
+      JSON.stringify({
+        discordId,
+        discordUsername,
+        nonce: randomBytes(32).toString('hex'),
+        createdAt: Date.now(),
+      })
+    ).toString('base64');
 
     const oauthUrl = new URL('https://start.gg/oauth/authorize');
     oauthUrl.searchParams.set('client_id', startggClientId);

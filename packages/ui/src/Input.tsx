@@ -59,8 +59,12 @@ export function Input({
   style,
   onFocus,
   onBlur,
+  id,
   ...props
 }: InputProps) {
+  const generatedId = React.useId();
+  const inputId = id || generatedId;
+
   const [isFocused, setIsFocused] = React.useState(false);
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -82,8 +86,9 @@ export function Input({
 
   return (
     <div>
-      {label && <label style={labelStyles}>{label}</label>}
+      {label && <label style={labelStyles} htmlFor={inputId}>{label}</label>}
       <input
+        id={inputId}
         style={inputStyles}
         onFocus={handleFocus}
         onBlur={handleBlur}

@@ -62,8 +62,12 @@ export function Textarea({
   style,
   onFocus,
   onBlur,
+  id,
   ...props
 }: TextareaProps) {
+  const generatedId = React.useId();
+  const textareaId = id || generatedId;
+
   const [isFocused, setIsFocused] = React.useState(false);
 
   const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
@@ -85,8 +89,9 @@ export function Textarea({
 
   return (
     <div>
-      {label && <label style={labelStyles}>{label}</label>}
+      {label && <label style={labelStyles} htmlFor={textareaId}>{label}</label>}
       <textarea
+        id={textareaId}
         style={textareaStyles}
         onFocus={handleFocus}
         onBlur={handleBlur}

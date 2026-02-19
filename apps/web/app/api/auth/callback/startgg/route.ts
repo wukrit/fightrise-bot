@@ -35,11 +35,25 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Decode state to get Discord user info
+    // Decode and validate state for CSRF protection
     let discordId: string;
     let discordUsername: string;
     try {
       const stateData = JSON.parse(Buffer.from(state, 'base64').toString('utf-8'));
+
+      // Validate state has required fields
+      if (!stateData.discordId || !stateData.nonce || !stateData.createdAt) {
+        console.error('Invalid state parameter: missing required fields');
+        return NextResponse.redirect(new URL('/auth/error?error=invalid_state', request.url));
+      }
+
+      // Validate state has not expired (10 minute window)
+      const STATE_EXPIRATION_MS = 10 * 60 * 1000;
+      if (Date.now() - stateData.createdAt > STATE_EXPIRATION_MS) {
+        console.error('OAuth state expired');
+        return NextResponse.redirect(new URL('/auth/error?error=state_expired', request.url));
+      }
+
       discordId = stateData.discordId;
       discordUsername = stateData.discordUsername;
     } catch {

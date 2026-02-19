@@ -70,8 +70,12 @@ export function Select({
   style,
   onFocus,
   onBlur,
+  id,
   ...props
 }: SelectProps) {
+  const generatedId = React.useId();
+  const selectId = id || generatedId;
+
   const [isFocused, setIsFocused] = React.useState(false);
 
   const handleFocus = (e: React.FocusEvent<HTMLSelectElement>) => {
@@ -92,8 +96,9 @@ export function Select({
 
   return (
     <div>
-      {label && <label style={labelStyles}>{label}</label>}
+      {label && <label style={labelStyles} htmlFor={selectId}>{label}</label>}
       <select
+        id={selectId}
         style={selectStyles}
         onFocus={handleFocus}
         onBlur={handleBlur}
