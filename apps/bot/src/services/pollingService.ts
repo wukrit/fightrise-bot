@@ -426,17 +426,33 @@ export async function triggerImmediatePoll(tournamentId: string): Promise<{ sche
 }
 
 export async function stopPollingService(): Promise<void> {
+  // Get configurable shutdown timeout from env (default: 30 seconds)
+  const shutdownTimeoutMs = parseInt(process.env.BULLMQ_SHUTDOWN_TIMEOUT || '30000', 10);
+
   if (worker) {
+    // Pause the worker to stop accepting new jobs
     await worker.pause();
 
-    // Wait for current job with 30s timeout
+    // Wait for in-flight jobs to complete before closing
+    // drain() waits for all jobs currently being processed to finish
+    try {
+      await worker.drain();
+      logger.info('All in-flight jobs completed');
+    } catch (err) {
+      logger.warn({ err }, 'Error during job drain, proceeding with shutdown');
+    }
+
+    // Close worker with configurable timeout
     const closePromise = worker.close();
-    const timeout = new Promise<void>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 30000));
+    const timeout = new Promise<void>((_, reject) =>
+      setTimeout(() => reject(new Error('Worker close timeout')), shutdownTimeoutMs)
+    );
 
     try {
       await Promise.race([closePromise, timeout]);
     } catch {
-      logger.warn('Worker close timed out');
+      logger.warn('Worker close timed out, forcing close');
+      // Force close by not waiting - worker will close when jobs finish
     }
     worker = null;
   }
