@@ -1,5 +1,7 @@
 // Date/time utilities for tournament scheduling and display
 
+import { TIME } from './constants.js';
+
 /**
  * Format a Unix timestamp (seconds) for display
  * @param timestamp Unix timestamp in seconds
@@ -95,7 +97,7 @@ export function isWithinWindow(
   windowMinutes: number,
   nowMs: number = Date.now()
 ): boolean {
-  const windowEndMs = windowStartMs + windowMinutes * 60 * 1000;
+  const windowEndMs = windowStartMs + windowMinutes * TIME.MINUTES_TO_MS;
   return nowMs >= windowStartMs && nowMs <= windowEndMs;
 }
 
@@ -123,7 +125,7 @@ export function getWindowRemaining(
     return { status: 'not_started', startsInMs: windowStartMs - nowMs };
   }
 
-  const windowEndMs = windowStartMs + windowMinutes * 60 * 1000;
+  const windowEndMs = windowStartMs + windowMinutes * TIME.MINUTES_TO_MS;
   const remaining = windowEndMs - nowMs;
 
   if (remaining <= 0) {
