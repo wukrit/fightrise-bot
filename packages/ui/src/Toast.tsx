@@ -1,5 +1,20 @@
 import React from 'react';
 
+/**
+ * Generate a unique ID for toast notifications.
+ * Uses crypto.randomUUID() if available, falls back to a compatible method.
+ */
+function generateId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Fallback for environments without crypto.randomUUID
+  // Uses timestamp + random hex to ensure uniqueness
+  const timestamp = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).substring(2, 15);
+  return `${timestamp}-${randomPart}`;
+}
+
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 export interface Toast {
@@ -105,7 +120,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
   const [toasts, setToasts] = React.useState<Toast[]>([]);
 
   const addToast = React.useCallback((toast: Omit<Toast, 'id'>) => {
-    const id = crypto.randomUUID();
+    const id = generateId();
     const newToast = { ...toast, id };
     setToasts((prev) => [...prev, newToast]);
 
