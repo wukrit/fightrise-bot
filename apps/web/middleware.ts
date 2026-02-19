@@ -27,24 +27,10 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl;
 
-        // Skip auth check in test environment or for localhost (E2E tests)
-        // The E2E tests mock the session API but don't set JWT tokens
-        // SECURITY: In production, only allow test ports (not general localhost)
-        const isTestPort = req.nextUrl.port === '4000' || req.nextUrl.port === '3000';
-        const isLocalhost = req.nextUrl.hostname === 'localhost' ||
-                           req.nextUrl.hostname === '127.0.0.1' ||
-                           req.nextUrl.hostname === '0.0.0.0';
-
-        if (process.env.NODE_ENV === 'production') {
-          // In production, only allow test ports for E2E tests
-          if (isTestPort) {
-            return true;
-          }
-        } else {
-          // In dev/test/CI, allow localhost bypass for testing
-          if (isLocalhost || isTestPort) {
-            return true;
-          }
+        // Skip auth check in test or development environments only
+        // SECURITY: No hostname/port-based bypass in production
+        if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
+          return true;
         }
 
         // Always allow public routes
