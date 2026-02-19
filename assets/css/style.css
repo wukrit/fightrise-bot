@@ -176,8 +176,15 @@ body {
 
 .content table {
   width: 100%;
+  min-width: 400px;
   border-collapse: collapse;
   margin-bottom: 1rem;
+  display: table;
+}
+
+.content table th,
+.content table td {
+  min-width: 100px;
 }
 
 .content th, .content td {
