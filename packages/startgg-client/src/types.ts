@@ -6,18 +6,18 @@
 
 // Tournament states from Start.gg API
 export enum TournamentState {
-  CREATED = 1,
-  ACTIVE = 2,
-  COMPLETED = 3,
+  CREATED = 'CREATED',
+  ACTIVE = 'ACTIVE',
+  COMPLETED = 'COMPLETED',
 }
 
 // Set (Match) states from Start.gg API
 export enum SetState {
-  CREATED = 1,
-  ACTIVE = 2,
-  COMPLETED = 3,
-  READY = 6,
-  STARTED = 7,
+  CREATED = 'CREATED',
+  ACTIVE = 'ACTIVE',
+  COMPLETED = 'COMPLETED',
+  READY = 'READY',
+  STARTED = 'STARTED',
 }
 
 // Common types
