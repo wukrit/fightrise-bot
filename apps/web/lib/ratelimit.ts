@@ -49,8 +49,12 @@ export const RATE_LIMIT_CONFIGS = {
   auth: { limit: 5, windowMs: 60000 },
   // Stricter limit for health check (10 per second)
   health: { limit: 10, windowMs: 1000 },
-  // General API limit (100 per minute)
-  api: { limit: 100, windowMs: 60000 },
+  // General API read limit (60 per minute)
+  read: { limit: 60, windowMs: 60000 },
+  // Write operations (30 per minute) - more restrictive
+  write: { limit: 30, windowMs: 60000 },
+  // Admin operations (20 per minute)
+  admin: { limit: 20, windowMs: 60000 },
 } as const;
 
 /**

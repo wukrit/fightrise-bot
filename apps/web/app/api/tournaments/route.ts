@@ -68,17 +68,28 @@ export async function GET(request: NextRequest) {
     // Get total count for metadata
     const total = await prisma.tournament.count({ where });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       items,
       nextCursor,
       hasMore,
       total,
     });
+
+    // Add rate limit headers
+    for (const [key, value] of headers.entries()) {
+      response.headers.set(key, value);
+    }
+
+    return response;
   } catch (error) {
     console.error('Error fetching tournaments:', error);
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { error: 'Failed to fetch tournaments' },
       { status: 500 }
     );
+    for (const [key, value] of headers.entries()) {
+      errorResponse.headers.set(key, value);
+    }
+    return errorResponse;
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@fightrise/database';
 import { getAuthenticatedUser } from '@/lib/auth';
+import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
 
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 100;
@@ -14,14 +15,29 @@ const MAX_PAGE_SIZE = 100;
  *   - limit: Number of results per page (default 10, max 100)
  */
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request);
+  const result = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.read);
+
+  const headers = createRateLimitHeaders(result);
+  if (!result.allowed) {
+    return new Response('Too Many Requests', {
+      status: 429,
+      headers,
+    });
+  }
+
   try {
     const user = await getAuthenticatedUser(request);
 
     if (!user?.discordId) {
-      return NextResponse.json(
+      const errorResponse = NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
+      for (const [key, value] of headers.entries()) {
+        errorResponse.headers.set(key, value);
+      }
+      return errorResponse;
     }
 
     const { searchParams } = new URL(request.url);
@@ -115,17 +131,28 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       items: matchDetails,
       nextCursor,
       hasMore,
       total,
     });
+
+    // Add rate limit headers
+    for (const [key, value] of headers.entries()) {
+      response.headers.set(key, value);
+    }
+
+    return response;
   } catch (error) {
     console.error('Error fetching matches:', error);
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { error: 'Failed to fetch matches' },
       { status: 500 }
     );
+    for (const [key, value] of headers.entries()) {
+      errorResponse.headers.set(key, value);
+    }
+    return errorResponse;
   }
 }

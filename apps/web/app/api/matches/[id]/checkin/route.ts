@@ -3,6 +3,7 @@ import { prisma } from '@fightrise/database';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { MatchState } from '@prisma/client';
+import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
 
 /**
  * POST /api/matches/[id]/checkin
@@ -12,6 +13,17 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ip = getClientIp(request);
+  const result = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.write);
+
+  const headers = createRateLimitHeaders(result);
+  if (!result.allowed) {
+    return new Response('Too Many Requests', {
+      status: 429,
+      headers,
+    });
+  }
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -132,23 +144,38 @@ export async function POST(
       return { state: MatchState.CHECKED_IN };
     });
 
-    return NextResponse.json({ success: true, state: result.state });
+    const response = NextResponse.json({ success: true, state: result.state });
+
+    // Add rate limit headers
+    for (const [key, value] of headers.entries()) {
+      response.headers.set(key, value);
+    }
+
+    return response;
   } catch (error: unknown) {
     console.error('Error checking in:', error);
 
     // Handle specific race condition errors
     if (error instanceof Error) {
       if (error.message === 'INVALID_STATE') {
-        return NextResponse.json(
+        const errorResponse = NextResponse.json(
           { error: 'Match is not in a state that allows check-in' },
           { status: 400 }
         );
+        for (const [key, value] of headers.entries()) {
+          errorResponse.headers.set(key, value);
+        }
+        return errorResponse;
       }
     }
 
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { error: 'Failed to check in' },
       { status: 500 }
     );
+    for (const [key, value] of headers.entries()) {
+      errorResponse.headers.set(key, value);
+    }
+    return errorResponse;
   }
 }

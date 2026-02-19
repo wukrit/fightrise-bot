@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { MatchState } from '@prisma/client';
 import { z } from 'zod';
+import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
 
 // Validation schema for score reporting
 const scoreReportSchema = z.object({
@@ -28,6 +29,16 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ip = getClientIp(request);
+  const result = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.write);
+
+  const headers = createRateLimitHeaders(result);
+  if (!result.allowed) {
+    return new Response('Too Many Requests', {
+      status: 429,
+      headers,
+    });
+  }
   try {
     const session = await getServerSession(authOptions);
 
@@ -171,29 +182,48 @@ export async function POST(
       return { state: MatchState.PENDING_CONFIRMATION };
     });
 
-    return NextResponse.json({ success: true });
+    const response = NextResponse.json({ success: true });
+
+    // Add rate limit headers
+    for (const [key, value] of headers.entries()) {
+      response.headers.set(key, value);
+    }
+
+    return response;
   } catch (error: unknown) {
     console.error('Error reporting score:', error);
 
     // Handle specific race condition errors
     if (error instanceof Error) {
       if (error.message === 'MATCH_COMPLETED') {
-        return NextResponse.json(
+        const errorResponse = NextResponse.json(
           { error: 'Match has already been completed' },
           { status: 400 }
         );
+        for (const [key, value] of headers.entries()) {
+          errorResponse.headers.set(key, value);
+        }
+        return errorResponse;
       }
       if (error.message === 'INVALID_STATE') {
-        return NextResponse.json(
+        const errorResponse = NextResponse.json(
           { error: 'Match is not in a state that allows reporting' },
           { status: 400 }
         );
+        for (const [key, value] of headers.entries()) {
+          errorResponse.headers.set(key, value);
+        }
+        return errorResponse;
       }
     }
 
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { error: 'Failed to report score' },
       { status: 500 }
     );
+    for (const [key, value] of headers.entries()) {
+      errorResponse.headers.set(key, value);
+    }
+    return errorResponse;
   }
 }
