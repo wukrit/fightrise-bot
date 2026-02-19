@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "code-review"
 tags: [code-review, database, types]
@@ -43,14 +43,15 @@ state           Int       @default(1)
 
 ## Acceptance Criteria
 
-- [ ] EventState enum created
-- [ ] All code uses enum
+- [x] EventState enum created
+- [x] All code uses enum
 
 ## Work Log
 
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-18 | Created | Found during code review |
+| 2026-02-19 | Completed | Added EventState enum and updated code |
 
 ## Resources
 

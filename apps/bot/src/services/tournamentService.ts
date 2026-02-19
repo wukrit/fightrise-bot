@@ -1,4 +1,4 @@
-import { prisma, TournamentState, AdminRole, Prisma, AuditAction, AuditSource } from '@fightrise/database';
+import { prisma, TournamentState, EventState, AdminRole, Prisma, AuditAction, AuditSource } from '@fightrise/database';
 import { StartGGClient, Tournament as StartGGTournament } from '@fightrise/startgg-client';
 import { Client } from 'discord.js';
 import { schedulePoll, calculatePollInterval } from './pollingService.js';
@@ -263,13 +263,13 @@ export class TournamentService {
               startggId: event.id,
               name: event.name,
               numEntrants: event.numEntrants ?? 0,
-              state: this.parseEventState(event.state) as any,
+              state: this.parseEventState(event.state),
               tournamentId: tournament.id,
             },
             update: {
               name: event.name,
               numEntrants: event.numEntrants ?? 0,
-              state: this.parseEventState(event.state) as any,
+              state: this.parseEventState(event.state),
             },
           });
         }
@@ -402,19 +402,19 @@ export class TournamentService {
   }
 
   /**
-   * Parse event state string to number
+   * Parse event state string to EventState enum
    */
-  private parseEventState(state: string | undefined): number {
-    if (!state) return 1;
+  private parseEventState(state: string | undefined): EventState {
+    if (!state) return EventState.CREATED;
     switch (state.toUpperCase()) {
       case 'CREATED':
-        return 1;
+        return EventState.CREATED;
       case 'ACTIVE':
-        return 2;
+        return EventState.ACTIVE;
       case 'COMPLETED':
-        return 3;
+        return EventState.COMPLETED;
       default:
-        return 1;
+        return EventState.CREATED;
     }
   }
 }

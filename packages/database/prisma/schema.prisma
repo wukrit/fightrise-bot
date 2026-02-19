@@ -390,7 +390,7 @@ model AuditLog {
 
   // Who performed the action
   userId      String
-  user        User      @relation(fields: [userId], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Before/after state
   before      Json?     // Previous state
