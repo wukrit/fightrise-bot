@@ -17,6 +17,7 @@ export {
 
 // Interaction helpers
 export { parseInteractionId, createInteractionId } from './interactions.js';
+export type { InteractionPrefix, ParsedInteractionId } from './interactions.js';
 
 // Validation schemas
 export {
@@ -47,6 +48,10 @@ export {
   DiscordError,
   ConfigurationError,
   MatchError,
+  StartGGError,
+  RateLimitError,
+  AuthError,
+  GraphQLError,
   isFightRiseError,
   hasErrorCode,
 } from './errors.js';
