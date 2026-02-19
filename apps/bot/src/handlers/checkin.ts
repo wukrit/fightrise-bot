@@ -30,7 +30,7 @@ export const checkinHandler: ButtonHandler = {
   async execute(interaction: ButtonInteraction, parts: string[]): Promise<void> {
     // Validate customId parts before destructuring
     if (parts.length !== 2 || !parts[0]) {
-      await interaction.reply({ content: 'Invalid button format.', ephemeral: true });
+      await interaction.reply({ content: 'Invalid button format: expected match ID and player slot.', ephemeral: true });
       return;
     }
 
@@ -38,13 +38,13 @@ export const checkinHandler: ButtonHandler = {
     const slot = parseInt(playerSlot, 10);
 
     if (isNaN(slot) || slot < 1 || slot > 2) {
-      await interaction.reply({ content: 'Invalid button.', ephemeral: true });
+      await interaction.reply({ content: `Invalid player slot: "${playerSlot}" - must be 1 or 2.`, ephemeral: true });
       return;
     }
 
     // Validate matchId format (CUID) before database query
     if (!isValidCuid(matchId)) {
-      await interaction.reply({ content: 'Invalid button.', ephemeral: true });
+      await interaction.reply({ content: `Invalid match ID format: "${matchId}" is not a valid ID.`, ephemeral: true });
       return;
     }
 

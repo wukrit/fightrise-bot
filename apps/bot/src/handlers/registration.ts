@@ -41,7 +41,7 @@ async function handleApprove(interaction: ButtonInteraction, registrationId: str
 
   // Validate registrationId format (CUID) before database query
   if (!isValidCuid(registrationId)) {
-    await interaction.editReply({ content: 'Invalid button.' });
+    await interaction.editReply({ content: `Invalid registration ID: "${registrationId}" is not a valid format.` });
     return;
   }
 
@@ -126,7 +126,7 @@ async function handleReject(interaction: ButtonInteraction, registrationId: stri
 
   // Validate registrationId format (CUID) before database query
   if (!isValidCuid(registrationId)) {
-    await interaction.editReply({ content: 'Invalid button.' });
+    await interaction.editReply({ content: `Invalid registration ID: "${registrationId}" is not a valid format.` });
     return;
   }
 
@@ -211,7 +211,7 @@ async function handleInfo(interaction: ButtonInteraction, registrationId: string
 
   // Validate registrationId format (CUID) before database query
   if (!isValidCuid(registrationId)) {
-    await interaction.editReply({ content: 'Invalid button.' });
+    await interaction.editReply({ content: `Invalid registration ID: "${registrationId}" is not a valid format.` });
     return;
   }
 
