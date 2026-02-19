@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { prisma } from '@fightrise/database';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { MatchState } from '@prisma/client';
 import { z } from 'zod';
 import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
+import { createErrorResponse, createRateLimitResponse, createSuccessResponse, HttpStatus } from '@/lib/api-response';
 
 // Validation schema for score reporting
 const scoreReportSchema = z.object({
@@ -34,19 +35,13 @@ export async function POST(
 
   const headers = createRateLimitHeaders(result);
   if (!result.allowed) {
-    return new Response('Too Many Requests', {
-      status: 429,
-      headers,
-    });
+    return createRateLimitResponse(result);
   }
   try {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.discordId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return createErrorResponse('Unauthorized', HttpStatus.UNAUTHORIZED, { rateLimitHeaders: headers });
     }
 
     const { id } = await params;
@@ -55,10 +50,10 @@ export async function POST(
     // Validate input
     const validationResult = scoreReportSchema.safeParse(body);
     if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: validationResult.error.issues },
-        { status: 400 }
-      );
+      return createErrorResponse('Invalid input', HttpStatus.BAD_REQUEST, {
+        details: validationResult.error.issues,
+        rateLimitHeaders: headers,
+      });
     }
 
     const { winnerId, player1Score, player2Score } = validationResult.data;
@@ -69,10 +64,7 @@ export async function POST(
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return createErrorResponse('User not found', HttpStatus.NOT_FOUND, { rateLimitHeaders: headers });
     }
 
     // Get the match
@@ -84,20 +76,14 @@ export async function POST(
     });
 
     if (!match) {
-      return NextResponse.json(
-        { error: 'Match not found' },
-        { status: 404 }
-      );
+      return createErrorResponse('Match not found', HttpStatus.NOT_FOUND, { rateLimitHeaders: headers });
     }
 
     // Check if user is a player in this match
     const userPlayer = match.players.find((p) => p.userId === user.id);
 
     if (!userPlayer) {
-      return NextResponse.json(
-        { error: 'Not authorized to report for this match' },
-        { status: 403 }
-      );
+      return createErrorResponse('Not authorized to report for this match', HttpStatus.FORBIDDEN, { rateLimitHeaders: headers });
     }
 
     // Determine if user won
@@ -182,48 +168,24 @@ export async function POST(
       return { state: MatchState.PENDING_CONFIRMATION };
     });
 
-    const response = NextResponse.json({ success: true });
-
-    // Add rate limit headers
-    for (const [key, value] of headers.entries()) {
-      response.headers.set(key, value);
-    }
-
-    return response;
+    return createSuccessResponse({ success: true }, HttpStatus.OK, headers);
   } catch (error: unknown) {
     console.error('Error reporting score:', error);
 
     // Handle specific race condition errors
     if (error instanceof Error) {
       if (error.message === 'MATCH_COMPLETED') {
-        const errorResponse = NextResponse.json(
-          { error: 'Match has already been completed' },
-          { status: 400 }
-        );
-        for (const [key, value] of headers.entries()) {
-          errorResponse.headers.set(key, value);
-        }
-        return errorResponse;
+        return createErrorResponse('Match has already been completed', HttpStatus.BAD_REQUEST, {
+          rateLimitHeaders: headers,
+        });
       }
       if (error.message === 'INVALID_STATE') {
-        const errorResponse = NextResponse.json(
-          { error: 'Match is not in a state that allows reporting' },
-          { status: 400 }
-        );
-        for (const [key, value] of headers.entries()) {
-          errorResponse.headers.set(key, value);
-        }
-        return errorResponse;
+        return createErrorResponse('Match is not in a state that allows reporting', HttpStatus.BAD_REQUEST, {
+          rateLimitHeaders: headers,
+        });
       }
     }
 
-    const errorResponse = NextResponse.json(
-      { error: 'Failed to report score' },
-      { status: 500 }
-    );
-    for (const [key, value] of headers.entries()) {
-      errorResponse.headers.set(key, value);
-    }
-    return errorResponse;
+    return createErrorResponse('Failed to report score', HttpStatus.INTERNAL_SERVER_ERROR, { rateLimitHeaders: headers });
   }
 }

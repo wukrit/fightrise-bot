@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p3
 issue_id: "064"
 tags: [code-review, api, error-handling]
@@ -27,16 +27,37 @@ Create `createErrorResponse(message, statusCode)` helper.
 
 **Effort:** Small
 
-## Recommended Action
+## Resolution
 
-<!-- To be filled during triage -->
+Implemented standardized API response helpers:
+
+1. Created `/home/ubuntu/fightrise-bot/apps/web/lib/api-response.ts` with:
+   - `createErrorResponse(message, statusCode, options)` - Standardized error responses
+   - `createSuccessResponse(data, statusCode, rateLimitHeaders)` - Standardized success responses
+   - `createRateLimitResponse(rateLimitResult)` - Standardized rate limit responses
+   - `HttpStatus` enum for consistent status codes
+   - `ApiError` interface for consistent error structure
+
+2. Updated `/home/ubuntu/fightrise-bot/apps/web/lib/ratelimit.ts` to use `createRateLimitResponse`
+
+3. Updated `/home/ubuntu/fightrise-bot/apps/web/app/api/matches/[id]/report/route.ts` to use helpers
+
+4. Updated `/home/ubuntu/fightrise-bot/apps/web/app/api/tournaments/[id]/route.ts` to use helpers
+
+All error responses now use consistent format:
+```json
+{ "error": "message", "code": "optional-code", "details": {} }
+```
 
 ## Technical Details
 
 - **Affected Files:**
-  - Multiple API routes in `apps/web/app/api/`
+  - `apps/web/lib/api-response.ts` (new)
+  - `apps/web/lib/ratelimit.ts`
+  - `apps/web/app/api/matches/[id]/report/route.ts`
+  - `apps/web/app/api/tournaments/[id]/route.ts`
 
 ## Acceptance Criteria
 
-- [ ] Standardized error response format
-- [ ] Consistent status codes
+- [x] Standardized error response format
+- [x] Consistent status codes

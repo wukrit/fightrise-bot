@@ -1,5 +1,6 @@
 import { Redis } from 'ioredis';
 import { randomUUID } from 'crypto';
+import { createRateLimitResponse } from './api-response';
 
 let redis: Redis | null = null;
 
@@ -234,10 +235,7 @@ export async function withRateLimit(
   const headers = createRateLimitHeaders(result);
 
   if (!result.allowed) {
-    return new Response('Too Many Requests', {
-      status: 429,
-      headers,
-    });
+    return createRateLimitResponse(result);
   }
 
   const response = await handler();
