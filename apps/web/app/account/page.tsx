@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // Types
 interface UserProfile {
@@ -29,29 +29,15 @@ interface MatchHistory {
   tournament: string;
 }
 
-// Mock user data
-const mockUser: UserProfile = {
-  id: '1',
-  discordUsername: 'fighter123',
+// Initial mock data for SSR
+const initialUser: UserProfile = {
+  id: '',
+  discordUsername: 'Loading...',
   discordAvatar: null,
-  startggId: '123456',
-  startggGamerTag: 'FighterPro',
-  startggSlug: 'fighterpro',
+  startggId: null,
+  startggGamerTag: null,
+  startggSlug: null,
 };
-
-const mockTournaments: TournamentHistory[] = [
-  { id: '1', name: 'FightRise Weekly #41', date: '2026-02-13', placement: 3, status: 'completed' },
-  { id: '2', name: 'FightRise Weekly #40', date: '2026-02-06', placement: 1, status: 'completed' },
-  { id: '3', name: 'FightRise Weekly #39', date: '2026-01-30', placement: null, status: 'dq' },
-  { id: '4', name: 'FightRise Championship', date: '2026-01-15', placement: 8, status: 'completed' },
-];
-
-const mockMatches: MatchHistory[] = [
-  { id: '1', opponent: 'PlayerOne', result: 'win', score: '2-0', date: '2026-02-13', tournament: 'FightRise Weekly #41' },
-  { id: '2', opponent: 'TopPlayer', result: 'loss', score: '1-2', date: '2026-02-13', tournament: 'FightRise Weekly #41' },
-  { id: '3', opponent: 'NewChallenger', result: 'win', score: '2-0', date: '2026-02-06', tournament: 'FightRise Weekly #40' },
-  { id: '4', opponent: 'ProGamer', result: 'win', score: '2-1', date: '2026-02-06', tournament: 'FightRise Weekly #40' },
-];
 
 // Utility components
 function SectionCard({
@@ -394,6 +380,11 @@ function NotificationSection({
 
 // Main component
 export default function AccountPage() {
+  const [user, setUser] = useState<UserProfile>(initialUser);
+  const [tournaments, setTournaments] = useState<TournamentHistory[]>([]);
+  const [matches, setMatches] = useState<MatchHistory[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [notifications, setNotifications] = useState<NotificationPreferences>({
     matchReadyDm: true,
     matchReadyMention: false,
@@ -407,12 +398,69 @@ export default function AccountPage() {
     timezone: 'America/New_York',
   });
 
+  useEffect(() => {
+    async function fetchUserData() {
+      try {
+        // Fetch user profile
+        const userResponse = await fetch('/api/user/profile');
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          setUser({
+            id: userData.id || '',
+            discordUsername: userData.discordUsername || userData.name || 'Unknown',
+            discordAvatar: userData.discordAvatar || null,
+            startggId: userData.startggId || null,
+            startggGamerTag: userData.startggGamerTag || null,
+            startggSlug: userData.startggSlug || null,
+          });
+        }
+
+        // Fetch tournament history
+        const tournamentsResponse = await fetch('/api/user/tournaments');
+        if (tournamentsResponse.ok) {
+          const tournamentsData = await tournamentsResponse.json();
+          setTournaments(
+            (tournamentsData.tournaments || []).map((t: any) => ({
+              id: t.id,
+              name: t.name,
+              date: t.startAt ? new Date(t.startAt).toISOString().split('T')[0] : '',
+              placement: t.placement,
+              status: t.state?.toLowerCase() || 'completed',
+            }))
+          );
+        }
+
+        // Fetch match history
+        const matchesResponse = await fetch('/api/user/matches');
+        if (matchesResponse.ok) {
+          const matchesData = await matchesResponse.json();
+          setMatches(
+            (matchesData.matches || []).map((m: any) => ({
+              id: m.id,
+              opponent: m.opponent || 'Unknown',
+              result: m.result || 'pending',
+              score: m.score || '-',
+              date: m.date || '',
+              tournament: m.tournamentName || '',
+            }))
+          );
+        }
+      } catch (err) {
+        console.error('Failed to fetch user data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchUserData();
+  }, []);
+
   // Calculate stats
-  const totalTournaments = mockTournaments.length;
-  const completedTournaments = mockTournaments.filter((t) => t.status === 'completed').length;
-  const wins = mockMatches.filter((m) => m.result === 'win').length;
-  const losses = mockMatches.filter((m) => m.result === 'loss').length;
-  const winRate = completedTournaments > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
+  const totalTournaments = tournaments.length;
+  const completedTournaments = tournaments.filter((t) => t.status === 'completed').length;
+  const wins = matches.filter((m) => m.result === 'win').length;
+  const losses = matches.filter((m) => m.result === 'loss').length;
+  const winRate = (wins + losses) > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -422,10 +470,10 @@ export default function AccountPage() {
         <div className="relative max-w-7xl mx-auto px-6 py-12">
           <div className="flex items-center gap-6">
             <div className="w-20 h-20 bg-gradient-to-br from-zinc-700 to-zinc-800 rounded-full flex items-center justify-center text-2xl font-bold text-zinc-300">
-              {mockUser.discordUsername.charAt(0).toUpperCase()}
+              {user.discordUsername.charAt(0).toUpperCase()}
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-zinc-100">{mockUser.discordUsername}</h1>
+              <h1 className="text-3xl font-bold text-zinc-100">{user.discordUsername}</h1>
               <p className="text-zinc-400 mt-1">Fighting game competitor</p>
             </div>
           </div>
@@ -449,20 +497,32 @@ export default function AccountPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Match History */}
             <SectionCard title="Recent Matches">
-              <div className="divide-y divide-zinc-800/30">
-                {mockMatches.map((match) => (
-                  <MatchRow key={match.id} match={match} />
-                ))}
-              </div>
+              {loading ? (
+                <div className="text-zinc-500 py-4">Loading matches...</div>
+              ) : matches.length > 0 ? (
+                <div className="divide-y divide-zinc-800/30">
+                  {matches.map((match) => (
+                    <MatchRow key={match.id} match={match} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-zinc-500 py-4">No matches yet</div>
+              )}
             </SectionCard>
 
             {/* Tournament History */}
             <SectionCard title="Tournament History">
-              <div className="divide-y divide-zinc-800/30">
-                {mockTournaments.map((tournament) => (
-                  <TournamentRow key={tournament.id} tournament={tournament} />
-                ))}
-              </div>
+              {loading ? (
+                <div className="text-zinc-500 py-4">Loading tournaments...</div>
+              ) : tournaments.length > 0 ? (
+                <div className="divide-y divide-zinc-800/30">
+                  {tournaments.map((tournament) => (
+                    <TournamentRow key={tournament.id} tournament={tournament} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-zinc-500 py-4">No tournaments yet</div>
+              )}
             </SectionCard>
           </div>
 
@@ -474,13 +534,13 @@ export default function AccountPage() {
                 <LinkedAccount
                   provider="Discord"
                   connected={true}
-                  username={mockUser.discordUsername}
-                  avatar={mockUser.discordAvatar}
+                  username={user.discordUsername}
+                  avatar={user.discordAvatar}
                 />
                 <LinkedAccount
                   provider="Start.gg"
-                  connected={!!mockUser.startggId}
-                  username={mockUser.startggGamerTag || undefined}
+                  connected={!!user.startggId}
+                  username={user.startggGamerTag || undefined}
                   actionLabel="Connect"
                   action={() => console.log('Link Start.gg')}
                 />
