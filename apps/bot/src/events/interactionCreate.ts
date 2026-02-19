@@ -29,13 +29,19 @@ async function isRateLimited(userId: string): Promise<boolean> {
     const windowStart = now - (RATE_LIMIT_WINDOW_SECONDS * 1000);
 
     // Use a sorted set to track timestamps of actions
-    // Remove OLD entries first to fix race condition
-    await redis.zremrangebyscore(key, 0, windowStart);
-    // Then add NEW entry
-    await redis.zadd(key, now, `${now}:${randomUUID()}`);
-    // Count actions in the current window
-    const count = await redis.zcard(key);
-    // Finally set expiry
+    // Use pipeline for atomicity to prevent race conditions
+    const pipeline = redis.pipeline();
+    pipeline.zremrangebyscore(key, 0, windowStart); // Remove OLD entries first
+    pipeline.zadd(key, now, `${now}:${randomUUID()}`); // Then add NEW entry
+    pipeline.zcard(key); // Count actions in the current window
+    const results = await pipeline.exec();
+
+    if (!results) {
+      return false;
+    }
+
+    const count = results[2][1] as number;
+    // Set expiry after pipeline completes
     await redis.expire(key, RATE_LIMIT_WINDOW_SECONDS);
 
     return count > RATE_LIMIT_MAX_ACTIONS;
