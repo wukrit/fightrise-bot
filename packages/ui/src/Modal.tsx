@@ -88,9 +88,19 @@ function CloseIcon() {
 }
 
 export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+  const modalRef = React.useRef<HTMLDivElement>(null);
+  const previousActiveElement = React.useRef<HTMLElement | null>(null);
+
   React.useEffect(() => {
     if (isOpen) {
+      // Store the currently focused element to return focus later
+      previousActiveElement.current = document.activeElement as HTMLElement;
       document.body.style.overflow = 'hidden';
+
+      // Focus the modal container
+      setTimeout(() => {
+        modalRef.current?.focus();
+      }, 0);
     } else {
       document.body.style.overflow = '';
     }
@@ -99,23 +109,80 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
     };
   }, [isOpen]);
 
+  // Escape key handler
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  // Focus trap
+  React.useEffect(() => {
+    if (!isOpen || !modalRef.current) return;
+
+    const modal = modalRef.current;
+    const focusableElements = modal.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+
+      if (e.shiftKey) {
+        // Shift + Tab
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        }
+      } else {
+        // Tab
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    };
+
+    modal.addEventListener('keydown', handleTabKey);
+    return () => modal.removeEventListener('keydown', handleTabKey);
+  }, [isOpen]);
+
+  const handleClose = () => {
+    onClose();
+    // Return focus to the trigger element
+    previousActiveElement.current?.focus();
+  };
+
   if (!isOpen) return null;
 
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
-      onClose();
+      handleClose();
     }
   };
 
   return (
-    <div style={overlayStyles} onClick={handleOverlayClick}>
-      <div style={{ ...modalStyles, ...sizeStyles[size] }}>
+    <div style={overlayStyles} onClick={handleOverlayClick} role="dialog" aria-modal="true" aria-labelledby={title ? 'modal-title' : undefined}>
+      <div
+        ref={modalRef}
+        style={{ ...modalStyles, ...sizeStyles[size] }}
+        tabIndex={-1}
+      >
         {title && (
           <div style={headerStyles}>
-            <h2 style={titleStyles}>{title}</h2>
+            <h2 id="modal-title" style={titleStyles}>{title}</h2>
             <button
               style={closeButtonStyles}
-              onClick={onClose}
+              onClick={handleClose}
               aria-label="Close modal"
             >
               <CloseIcon />
