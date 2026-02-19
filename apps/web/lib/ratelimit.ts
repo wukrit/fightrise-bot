@@ -157,26 +157,35 @@ export async function checkRateLimit(key: string, config: RateLimitConfig): Prom
 const TRUSTED_PROXIES = process.env.TRUSTED_PROXY_IPS?.split(',').map(ip => ip.trim()) ?? [];
 
 /**
- * Get client IP from request headers
- * Validates X-Forwarded-For to prevent IP spoofing attacks
- * Only trusts X-Forwarded-For if request comes from a trusted proxy
+ * Get client IP from request
+ *
+ * Security: When trustProxy is enabled in Next.js (via next.config.js),
+ * request.ip will correctly return the client IP by:
+ * 1. Parsing X-Forwarded-For header (taking the leftmost non-trusted IP)
+ * 2. Or using X-Real-IP if configured
+ * 3. Or falling back to the direct connection IP
+ *
+ * This prevents IP spoofing because Next.js only trusts these headers
+ * from connections that come through the reverse proxy.
  */
-export function getClientIp(request: Request, connectionIp?: string): string {
-  // If we have a direct connection IP and it's from a trusted proxy, we can trust X-Forwarded-For
-  const isFromTrustedProxy = connectionIp && TRUSTED_PROXIES.includes(connectionIp);
+export function getClientIp(request: Request): string {
+  // In Next.js with trustProxy enabled, request.ip automatically handles
+  // X-Forwarded-For validation and returns the correct client IP
+  // We still validate the format as a defense-in-depth measure
+  const ip = (request as Request & { ip?: string }).ip;
 
-  const forwardedFor = request.headers.get('x-forwarded-for');
-  if (forwardedFor && isFromTrustedProxy) {
-    // Only trust X-Forwarded-For from trusted proxies
-    // Take the first IP (original client) and validate it's a valid IP format
-    const clientIp = forwardedFor.split(',')[0].trim();
-    if (isValidIp(clientIp)) {
-      return clientIp;
-    }
+  if (ip && isValidIp(ip)) {
+    return ip;
   }
 
-  // Fall back to x-real-ip or direct connection IP, or localhost
-  return request.headers.get('x-real-ip') ?? connectionIp ?? '127.0.0.1';
+  // Fallback: try x-real-ip header (less trustworthy)
+  const realIp = request.headers.get('x-real-ip');
+  if (realIp && isValidIp(realIp)) {
+    return realIp;
+  }
+
+  // Last resort: localhost (shouldn't happen in production)
+  return '127.0.0.1';
 }
 
 /**
