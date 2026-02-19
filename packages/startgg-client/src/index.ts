@@ -2,6 +2,13 @@ import { GraphQLClient, ClientError } from 'graphql-request';
 import { ResponseCache } from './cache.js';
 import { withRetry } from './retry.js';
 import {
+  GET_TOURNAMENT,
+  GET_EVENT_SETS,
+  GET_EVENT_ENTRANTS,
+  GET_TOURNAMENTS_BY_OWNER,
+} from './queries/index.js';
+import { REPORT_SET } from './mutations/index.js';
+import {
   StartGGClientConfig,
   GetTournamentResponse,
   GetEventSetsResponse,
@@ -134,27 +141,8 @@ export class StartGGClient {
   }
 
   async getTournament(slug: string): Promise<Tournament | null> {
-    const query = `
-      query GetTournament($slug: String!) {
-        tournament(slug: $slug) {
-          id
-          name
-          slug
-          startAt
-          endAt
-          state
-          events {
-            id
-            name
-            numEntrants
-            state
-          }
-        }
-      }
-    `;
-
     const result = await this.request<GetTournamentResponse>(
-      query,
+      GET_TOURNAMENT,
       { slug },
       { cacheKey: 'getTournament' }
     );
@@ -167,47 +155,8 @@ export class StartGGClient {
     page = 1,
     perPage = 50
   ): Promise<Connection<Set> | null> {
-    const query = `
-      query GetEventSets($eventId: ID!, $page: Int!, $perPage: Int!) {
-        event(id: $eventId) {
-          sets(page: $page, perPage: $perPage, sortType: STANDARD) {
-            pageInfo {
-              total
-              totalPages
-            }
-            nodes {
-              id
-              state
-              fullRoundText
-              identifier
-              round
-              slots {
-                entrant {
-                  id
-                  name
-                  participants {
-                    user {
-                      id
-                      slug
-                    }
-                  }
-                }
-                standing {
-                  stats {
-                    score {
-                      value
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    `;
-
     const result = await this.request<GetEventSetsResponse>(
-      query,
+      GET_EVENT_SETS,
       { eventId, page, perPage },
       { cacheKey: 'getEventSets' }
     );
@@ -220,32 +169,8 @@ export class StartGGClient {
     page = 1,
     perPage = 50
   ): Promise<Connection<Entrant> | null> {
-    const query = `
-      query GetEventEntrants($eventId: ID!, $page: Int!, $perPage: Int!) {
-        event(id: $eventId) {
-          entrants(query: { page: $page, perPage: $perPage }) {
-            pageInfo {
-              total
-              totalPages
-            }
-            nodes {
-              id
-              name
-              participants {
-                user {
-                  id
-                  slug
-                  name
-                }
-              }
-            }
-          }
-        }
-      }
-    `;
-
     const result = await this.request<GetEventEntrantsResponse>(
-      query,
+      GET_EVENT_ENTRANTS,
       { eventId, page, perPage },
       { cacheKey: 'getEventEntrants' }
     );
@@ -257,35 +182,8 @@ export class StartGGClient {
     page = 1,
     perPage = 25
   ): Promise<Connection<Tournament> | null> {
-    const query = `
-      query GetTournamentsByOwner($page: Int!, $perPage: Int!) {
-        currentUser {
-          tournaments(query: { page: $page, perPage: $perPage }) {
-            pageInfo {
-              total
-              totalPages
-            }
-            nodes {
-              id
-              name
-              slug
-              startAt
-              endAt
-              state
-              events {
-                id
-                name
-                numEntrants
-                state
-              }
-            }
-          }
-        }
-      }
-    `;
-
     const result = await this.request<GetTournamentsByOwnerResponse>(
-      query,
+      GET_TOURNAMENTS_BY_OWNER,
       { page, perPage },
       { cacheKey: 'getTournamentsByOwner' }
     );
@@ -297,17 +195,8 @@ export class StartGGClient {
     setId: string,
     winnerId: string
   ): Promise<{ id: string; state: number } | null> {
-    const mutation = `
-      mutation ReportSet($setId: ID!, $winnerId: ID!) {
-        reportBracketSet(setId: $setId, winnerId: $winnerId) {
-          id
-          state
-        }
-      }
-    `;
-
     const result = await this.request<ReportSetResponse>(
-      mutation,
+      REPORT_SET,
       { setId, winnerId },
       { skipCache: true } // Mutations should never be cached
     );
