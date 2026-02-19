@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@fightrise/database';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { MatchState } from '@prisma/client';
 import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
 
 /**
@@ -73,7 +74,7 @@ export async function POST(
     }
 
     // Check if match is in pending confirmation state
-    if (match.state !== 'PENDING_CONFIRMATION') {
+    if (match.state !== MatchState.PENDING_CONFIRMATION) {
       return NextResponse.json(
         { error: 'Match is not waiting for confirmation' },
         { status: 400 }
@@ -85,7 +86,7 @@ export async function POST(
     await prisma.match.update({
       where: { id },
       data: {
-        state: 'COMPLETED',
+        state: MatchState.COMPLETED,
       },
     });
 

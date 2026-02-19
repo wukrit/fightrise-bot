@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@fightrise/database';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { MatchState } from '@prisma/client';
 import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
 
 /**
@@ -78,7 +79,7 @@ export async function POST(
     await prisma.match.update({
       where: { id },
       data: {
-        state: 'DISPUTED',
+        state: MatchState.DISPUTED,
       },
     });
 

@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "062"
 tags: [code-review, type-safety]
@@ -40,8 +40,10 @@ Replace strings with `MatchState.COMPLETED`, `MatchState.DISPUTED`.
 
 - **Affected Files:**
   - `apps/web/app/api/matches/[id]/report/route.ts`
+  - `apps/web/app/api/matches/[id]/dispute/route.ts`
+  - `apps/web/app/api/matches/[id]/confirm/route.ts`
 
 ## Acceptance Criteria
 
-- [ ] Uses MatchState enum values instead of strings
-- [ ] Type safety improved
+- [x] Uses MatchState enum values instead of strings
+- [x] Type safety improved
