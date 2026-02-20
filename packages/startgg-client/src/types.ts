@@ -1,13 +1,38 @@
 // Start.gg API Response Types
-import {
-  StartGGError as SharedStartGGError,
-  RateLimitError as SharedRateLimitError,
-  AuthError as SharedAuthError,
-  GraphQLError as SharedGraphQLError,
-} from '@fightrise/shared';
 
-// Re-export from shared package for backward compatibility
-export { SharedStartGGError as StartGGError, SharedRateLimitError as RateLimitError, SharedAuthError as AuthError, SharedGraphQLError as GraphQLError };
+export class StartGGError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'StartGGError';
+  }
+}
+
+export class RateLimitError extends StartGGError {
+  retryAfterMs?: number;
+
+  constructor(message: string, retryAfterMs?: number) {
+    super(message);
+    this.name = 'RateLimitError';
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
+export class AuthError extends StartGGError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AuthError';
+  }
+}
+
+export class GraphQLError extends StartGGError {
+  errors: Array<{ message: string; path?: string[] }>;
+
+  constructor(message: string, errors: Array<{ message: string; path?: string[] }>) {
+    super(message);
+    this.name = 'GraphQLError';
+    this.errors = errors;
+  }
+}
 
 // ============================================
 // Enums
