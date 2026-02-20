@@ -17,37 +17,19 @@ export async function GET() {
 
     // Fetch guild configs from database
     const guildConfigs = await prisma.guildConfig.findMany({
-      where: {
-        discordGuildId: {
-          not: null,
-        },
-      },
       select: {
         discordGuildId: true,
-        guildName: true,
-        channels: true,
       },
     });
 
     // Transform to guild format
-    const guilds = guildConfigs
-      .filter((config) => config.discordGuildId)
-      .map((config) => ({
-        id: config.discordGuildId,
-        name: config.guildName || 'Unknown Server',
-      }));
+    const guilds = guildConfigs.map((config) => ({
+      id: config.discordGuildId,
+      name: 'Unknown Server',
+    }));
 
-    // Get unique channels from all guilds
+    // Get unique channels from all guilds - GuildConfig doesn't have channels field
     const channelsSet = new Map<string, string>();
-    guildConfigs.forEach((config) => {
-      if (config.channels) {
-        Object.entries(config.channels).forEach(([id, channel]) => {
-          if (!channelsSet.has(id)) {
-            channelsSet.set(id, typeof channel === 'string' ? channel : channel.name || 'unknown');
-          }
-        });
-      }
-    });
 
     const channels = Array.from(channelsSet.entries()).map(([id, name]) => ({
       id,

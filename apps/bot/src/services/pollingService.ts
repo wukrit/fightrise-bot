@@ -2,8 +2,8 @@ import { Queue, Worker, Job } from 'bullmq';
 import type { Client } from 'discord.js';
 import { getRedisConnection, closeRedisConnection } from '../lib/redis.js';
 import { prisma, TournamentState, MatchState, Prisma } from '@fightrise/database';
-import { StartGGClient, AuthError, Set } from '@fightrise/startgg-client';
-import { POLL_INTERVALS, STARTGG_SET_STATE } from '@fightrise/shared';
+import { StartGGClient, AuthError, Set, SetState } from '@fightrise/startgg-client';
+import { POLL_INTERVALS } from '@fightrise/shared';
 import { createMatchThread } from './matchService.js';
 import { RegistrationSyncService } from './registrationSyncService.js';
 import { createServiceLogger } from '../lib/logger.js';
@@ -272,9 +272,9 @@ async function processSet(
 
   // Check if set is ready for a match
   const isReady =
-    set.state === STARTGG_SET_STATE.READY ||
-    set.state === STARTGG_SET_STATE.STARTED ||
-    set.state === STARTGG_SET_STATE.IN_PROGRESS;
+    set.state === SetState.READY ||
+    set.state === SetState.STARTED ||
+    set.state === SetState.ACTIVE;
 
   // P1 fix: Use prefetched map instead of database query (O(1) lookup)
   const existingMatch = matchMap.get(set.id);
@@ -325,7 +325,7 @@ async function processSet(
   }
 
   // Update existing match if completed
-  if (existingMatch && set.state === STARTGG_SET_STATE.COMPLETED && existingMatch.state !== MatchState.COMPLETED) {
+  if (existingMatch && set.state === SetState.COMPLETED && existingMatch.state !== MatchState.COMPLETED) {
     const score1 = set.slots?.[0]?.standing?.stats?.score?.value ?? null;
     const score2 = set.slots?.[1]?.standing?.stats?.score?.value ?? null;
     const validScore1 = typeof score1 === 'number' ? score1 : 0;
@@ -433,16 +433,7 @@ export async function stopPollingService(): Promise<void> {
     // Pause the worker to stop accepting new jobs
     await worker.pause();
 
-    // Wait for in-flight jobs to complete before closing
-    // drain() waits for all jobs currently being processed to finish
-    try {
-      await worker.drain();
-      logger.info('All in-flight jobs completed');
-    } catch (err) {
-      logger.warn({ err }, 'Error during job drain, proceeding with shutdown');
-    }
-
-    // Close worker with configurable timeout
+    // Close worker with configurable timeout - BullMQ handles in-flight jobs automatically
     const closePromise = worker.close();
     const timeout = new Promise<void>((_, reject) =>
       setTimeout(() => reject(new Error('Worker close timeout')), shutdownTimeoutMs)

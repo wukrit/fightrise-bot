@@ -13,4 +13,9 @@ export const prisma =
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 export * from '@prisma/client';
+
+// Re-export Prisma enums that need both type and value exports
+import { TournamentState, EventState, MatchState, StartggSyncStatus, DisputeStatus, RegistrationSource, RegistrationStatus, AdminRole, AuditAction, AuditSource } from '@prisma/client';
+export { TournamentState, EventState, MatchState, StartggSyncStatus, DisputeStatus, RegistrationSource, RegistrationStatus, AdminRole, AuditAction, AuditSource };
+
 export default prisma;

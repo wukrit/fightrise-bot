@@ -131,6 +131,8 @@ services:
       - ../apps/web/.eslintrc.json:/app/apps/web/.eslintrc.json:ro
       - ../packages/shared/src:/app/packages/shared/src:ro
       - ../packages/ui/src:/app/packages/ui/src:ro
+      - ../packages/ui/vitest.config.ts:/app/packages/ui/vitest.config.ts:ro
+      - ../packages/ui/vitest.setup.ts:/app/packages/ui/vitest.setup.ts:ro
       - ../packages/database/src:/app/packages/database/src:ro
       # Preserve container node_modules
       - /app/node_modules

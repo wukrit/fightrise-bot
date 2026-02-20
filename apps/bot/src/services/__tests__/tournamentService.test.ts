@@ -62,6 +62,17 @@ vi.mock('@fightrise/startgg-client', () => ({
     getTournamentsByOwner: vi.fn(),
     getEventEntrants: vi.fn().mockResolvedValue({ nodes: [] }),
   })),
+  TournamentState: {
+    CREATED: 'CREATED',
+    ACTIVE: 'ACTIVE',
+    COMPLETED: 'COMPLETED',
+  },
+  SetState: {
+    READY: 'READY',
+    STARTED: 'STARTED',
+    ACTIVE: 'ACTIVE',
+    COMPLETED: 'COMPLETED',
+  },
 }));
 
 // Mock the RegistrationSyncService

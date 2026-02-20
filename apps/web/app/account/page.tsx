@@ -41,8 +41,8 @@ async function getUserProfile(sessionEmail: string): Promise<UserProfile | null>
 
   return {
     id: user.id,
-    discordUsername: user.name || 'Unknown',
-    discordAvatar: user.image,
+    discordUsername: user.discordUsername || user.displayName || 'Unknown',
+    discordAvatar: user.discordAvatar,
     startggId: user.startggId,
     startggGamerTag: user.startggGamerTag,
     startggSlug: user.startggSlug,
@@ -112,7 +112,7 @@ export default async function AccountPage() {
   const userProfile: UserProfile = user || {
     id: '',
     discordUsername: session.user.name || session.user.email || 'Unknown',
-    discordAvatar: session.user.image,
+    discordAvatar: session.user.image ?? null,
     startggId: null,
     startggGamerTag: null,
     startggSlug: null,
