@@ -3,7 +3,7 @@ import { StartGGClient, Tournament as StartGGTournament } from '@fightrise/start
 import { Client } from 'discord.js';
 import { schedulePoll, calculatePollInterval } from './pollingService.js';
 import { RegistrationSyncService } from './registrationSyncService.js';
-import { validateTournamentSlug } from '@fightrise/shared';
+import { decodeStartggToken, validateTournamentSlug } from '@fightrise/shared';
 import { ValidationError } from '@fightrise/shared';
 import { createAuditLog } from './auditService.js';
 
@@ -94,7 +94,9 @@ export class TournamentService {
       };
     }
 
-    const isAdmin = await this.validateUserIsAdmin(user.startggToken, normalizedSlug);
+    const decodedToken = decodeStartggToken(user.startggToken);
+    const accessToken = decodedToken?.accessToken ?? user.startggToken;
+    const isAdmin = await this.validateUserIsAdmin(accessToken, normalizedSlug);
     if (!isAdmin) {
       return {
         success: false,

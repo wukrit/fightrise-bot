@@ -91,6 +91,25 @@ export async function POST(
 
     // Determine if user won
     const userWon = winnerId === user.id;
+    const [playerA, playerB] = match.players;
+    if (!playerA || !playerB) {
+      return NextResponse.json(
+        { error: 'Match does not have two players' },
+        { status: 400 }
+      );
+    }
+
+    // Winner must be one of the players in the match
+    const winnerIsParticipant = match.players.some((p) => p.userId === winnerId);
+    if (!winnerIsParticipant) {
+      return NextResponse.json(
+        { error: 'Winner is not a participant in this match' },
+        { status: 400 }
+      );
+    }
+
+    // Map request scores to the current user/opponent based on match player ordering
+    const userScore = userPlayer.id === playerA.id ? player1Score : player2Score;
 
     // Update the match player's reported score and determine match state in a transaction
     // Use atomic updateMany with state guards to prevent race conditions
@@ -127,7 +146,7 @@ export async function POST(
         where: { id: userPlayer.id },
         data: {
           isWinner: userWon,
-          reportedScore: userWon ? player1Score : player2Score,
+          reportedScore: userScore,
         },
       });
 
@@ -150,7 +169,7 @@ export async function POST(
         // Both have reported - check if scores match
         const opponentWon = opponentPlayer.isWinner;
 
-        if (userWon === opponentWon) {
+        if (userWon !== opponentWon) {
           // Both agree - use atomic updateMany with state guard
           await tx.match.updateMany({
             where: { id, state: MatchState.PENDING_CONFIRMATION },

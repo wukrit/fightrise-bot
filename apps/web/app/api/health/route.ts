@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from "../../../lib/ratelimit";
+import {
+  checkRateLimit,
+  getClientIp,
+  getConnectionIpFromRequest,
+  createRateLimitHeaders,
+  RATE_LIMIT_CONFIGS,
+} from "../../../lib/ratelimit";
 
 export async function GET(request: NextRequest) {
-  const ip = getClientIp(request);
+  const ip = getClientIp(request, getConnectionIpFromRequest(request));
   const result = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.health);
   const headers = createRateLimitHeaders(result);
 

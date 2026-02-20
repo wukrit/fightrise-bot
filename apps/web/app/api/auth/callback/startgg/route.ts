@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@fightrise/database';
-import { encrypt, isEncryptionConfigured } from '@fightrise/shared';
+import {
+  encodeStartggToken,
+  isEncryptionConfigured,
+  verifySignedStartggOAuthState,
+} from '@fightrise/shared';
+import { consumeStartggOAuthNonce } from '@/lib/startggStateStore';
 
 // Start.gg OAuth endpoints
 const STARTGG_TOKEN_URL = 'https://start.gg/oauth/token';
@@ -24,17 +29,22 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Decode state to get Discord user info
-    let discordId: string;
-    let discordUsername: string;
-    try {
-      const stateData = JSON.parse(Buffer.from(state, 'base64').toString('utf-8'));
-      discordId = stateData.discordId;
-      discordUsername = stateData.discordUsername;
-    } catch {
+    // Verify signed state and decode Discord user info
+    const stateData = verifySignedStartggOAuthState(state);
+    if (!stateData) {
       console.error('Invalid state parameter');
       return NextResponse.redirect(new URL('/auth/error?error=invalid_state', request.url));
     }
+
+    const nonceTtlSeconds = Math.max(1, stateData.exp - Math.floor(Date.now() / 1000));
+    const nonceConsumed = await consumeStartggOAuthNonce(stateData.nonce, nonceTtlSeconds);
+    if (!nonceConsumed) {
+      console.error('State replay detected');
+      return NextResponse.redirect(new URL('/auth/error?error=invalid_state', request.url));
+    }
+
+    const discordId = stateData.discordId;
+    const discordUsername = stateData.discordUsername;
 
     // Exchange code for tokens
     const clientId = process.env.STARTGG_CLIENT_ID;
@@ -122,12 +132,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/auth/error?error=encryption_not_configured', request.url));
     }
 
-    const tokenData = JSON.stringify({
+    const tokenData = {
       accessToken,
       refreshToken,
       expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
-    });
-    const encryptedToken = encrypt(tokenData);
+    };
 
     // Update user with Start.gg info and tokens
     await prisma.user.update({
@@ -136,7 +145,7 @@ export async function GET(request: NextRequest) {
         startggId: startggUser.id,
         startggSlug: startggUser.slug,
         startggGamerTag: startggUser.gamerTag || startggUser.name,
-        startggToken: encryptedToken,
+        startggToken: encodeStartggToken(tokenData),
       },
     });
 

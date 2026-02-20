@@ -9,6 +9,7 @@ import {
 } from 'discord.js';
 import type { Command } from '../types.js';
 import { prisma } from '@fightrise/database';
+import { createSignedStartggOAuthState } from '@fightrise/shared';
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -67,9 +68,8 @@ async function handleLinkStartgg(interaction: ChatInputCommandInteraction): Prom
       return;
     }
 
-    // Build OAuth URL with Discord user ID as state
-    // The state will be used to link the Start.gg account to the Discord user
-    const state = Buffer.from(JSON.stringify({ discordId, discordUsername })).toString('base64');
+    // Build signed OAuth state for CSRF protection and identity integrity
+    const state = createSignedStartggOAuthState({ discordId, discordUsername });
 
     const oauthUrl = new URL('https://start.gg/oauth/authorize');
     oauthUrl.searchParams.set('client_id', startggClientId);

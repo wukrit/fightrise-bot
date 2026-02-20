@@ -1,4 +1,4 @@
-import type { ButtonInteraction } from 'discord.js';
+import type { ButtonInteraction, StringSelectMenuInteraction } from 'discord.js';
 
 /**
  * Interface for button handlers.
@@ -8,7 +8,7 @@ export interface ButtonHandler {
   /** The prefix used in the button's custom ID (e.g., 'checkin') */
   prefix: string;
   /** Execute the handler for a button interaction */
-  execute(interaction: ButtonInteraction, parts: string[]): Promise<void>;
+  execute(interaction: ButtonInteraction | StringSelectMenuInteraction, parts: string[]): Promise<void>;
 }
 
 /**

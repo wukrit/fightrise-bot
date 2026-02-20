@@ -151,6 +151,25 @@ export async function checkRateLimit(key: string, config: RateLimitConfig): Prom
  * In production, this should be set to your reverse proxy's IP(s)
  */
 const TRUSTED_PROXIES = process.env.TRUSTED_PROXY_IPS?.split(',').map(ip => ip.trim()) ?? [];
+const CONNECTION_IP_HEADERS = [
+  'cf-connecting-ip',           // Cloudflare
+  'x-vercel-forwarded-for',     // Vercel Edge
+  'x-nf-client-connection-ip',  // Netlify
+];
+
+/**
+ * Best-effort extraction of runtime-provided connection metadata.
+ * These headers are expected to be set by hosting edge/runtime, not by end clients.
+ */
+export function getConnectionIpFromRequest(request: Request): string | undefined {
+  for (const header of CONNECTION_IP_HEADERS) {
+    const value = request.headers.get(header)?.trim();
+    if (value && isValidIp(value)) {
+      return value;
+    }
+  }
+  return undefined;
+}
 
 /**
  * Get client IP from request headers
@@ -171,8 +190,8 @@ export function getClientIp(request: Request, connectionIp?: string): string {
     }
   }
 
-  // Fall back to x-real-ip or direct connection IP, or localhost
-  return request.headers.get('x-real-ip') ?? connectionIp ?? '127.0.0.1';
+  // Fallback to direct connection IP only (never trust x-real-ip from untrusted clients)
+  return connectionIp ?? '127.0.0.1';
 }
 
 /**
@@ -216,7 +235,7 @@ export async function withRateLimit(
   config: RateLimitConfig,
   handler: () => Promise<Response>
 ): Promise<Response> {
-  const ip = getClientIp(request);
+  const ip = getClientIp(request, getConnectionIpFromRequest(request));
   const result = await checkRateLimit(ip, config);
   const headers = createRateLimitHeaders(result);
 

@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Events, Client, ButtonInteraction } from 'discord.js';
+import { Events, Client, ButtonInteraction, StringSelectMenuInteraction } from 'discord.js';
 import { createDiscordTestClient, DiscordTestClient } from '../harness/index.js';
 import {
   MockChatInputInteraction,
@@ -28,7 +28,7 @@ import { registerButtonHandler, buttonHandlers } from '../../handlers/buttonHand
 // Test button handler for verification
 const testButtonHandler = {
   prefix: 'test',
-  async execute(interaction: ButtonInteraction) {
+  async execute(interaction: ButtonInteraction | StringSelectMenuInteraction) {
     await interaction.reply({ content: 'Test button handled!', ephemeral: true });
   },
 };
@@ -166,6 +166,34 @@ describe('interactionCreate Event Handler', () => {
       await interactionCreateEvent.execute(interaction);
 
       // Verify button handler was executed
+      expect(interaction.replied).toBe(true);
+      expect(interaction.lastReply?.content).toBe('Test button handled!');
+    });
+
+    it('should route string select menu interactions to registered handlers', async () => {
+      const channel = testClient.channels.get(testClient.channelId)!;
+
+      const interaction = createMockButtonInteraction({
+        customId: 'test:action',
+        user: { id: testClient.userId, username: testClient.username },
+        member: { id: testClient.userId, guildId: testClient.guildId },
+        guild: { id: testClient.guildId },
+        channel,
+        client: testClient.toExtendedClient(),
+      });
+
+      Object.defineProperty(interaction, 'isButton', {
+        value: () => false,
+      });
+      Object.defineProperty(interaction, 'isStringSelectMenu', {
+        value: () => true,
+      });
+      Object.defineProperty(interaction, 'values', {
+        value: ['1|2-1'],
+      });
+
+      await interactionCreateEvent.execute(interaction as unknown);
+
       expect(interaction.replied).toBe(true);
       expect(interaction.lastReply?.content).toBe('Test button handled!');
     });

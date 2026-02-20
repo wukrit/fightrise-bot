@@ -1,74 +1,13 @@
 import { prisma } from '@fightrise/database';
-import { encrypt, decrypt, isEncryptionConfigured } from '@fightrise/shared';
-
-interface StartggTokenData {
-  accessToken: string;
-  refreshToken: string | null;
-  expiresAt: string;
-}
+import {
+  encodeStartggToken,
+  decodeStartggToken,
+} from '@fightrise/shared';
+import type { StartggTokenData } from '@fightrise/shared';
 
 interface TokenResult {
   accessToken: string;
   isExpired: boolean;
-}
-
-/**
- * Attempt to decrypt or decode a token string
- * Handles both encrypted tokens and legacy base64-encoded tokens
- */
-function decodeToken(tokenString: string): StartggTokenData | null {
-  try {
-    // First, try to parse as JSON (both encrypted and unencrypted tokens are JSON)
-    const tokenData = JSON.parse(tokenString);
-
-    // Check if the accessToken looks encrypted (base64 but not plain JWT)
-    // Encrypted tokens will decrypt to a JSON string
-    if (isEncryptionConfigured()) {
-      try {
-        const decrypted = decrypt(tokenData.accessToken);
-        return JSON.parse(decrypted);
-      } catch {
-        // Not encrypted, use as-is
-      }
-    }
-
-    // Legacy base64 encoding
-    return {
-      accessToken: Buffer.from(tokenData.accessToken, 'base64').toString('utf-8'),
-      refreshToken: tokenData.refreshToken
-        ? Buffer.from(tokenData.refreshToken, 'base64').toString('utf-8')
-        : null,
-      expiresAt: tokenData.expiresAt,
-    };
-  } catch {
-    console.error('Failed to decode token');
-    return null;
-  }
-}
-
-/**
- * Encode token for storage
- * Uses encryption if configured, otherwise falls back to base64
- */
-function encodeToken(tokenData: StartggTokenData): string {
-  if (isEncryptionConfigured()) {
-    return JSON.stringify({
-      accessToken: encrypt(JSON.stringify({
-        accessToken: tokenData.accessToken,
-        refreshToken: tokenData.refreshToken,
-      })),
-      expiresAt: tokenData.expiresAt,
-    });
-  }
-
-  // Legacy base64 encoding
-  return JSON.stringify({
-    accessToken: Buffer.from(tokenData.accessToken).toString('base64'),
-    refreshToken: tokenData.refreshToken
-      ? Buffer.from(tokenData.refreshToken).toString('base64')
-      : null,
-    expiresAt: tokenData.expiresAt,
-  });
 }
 
 /**
@@ -86,7 +25,7 @@ export async function getStartggToken(userId: string): Promise<TokenResult | nul
   }
 
   try {
-    const tokenData = decodeToken(user.startggToken);
+    const tokenData = decodeStartggToken(user.startggToken);
     if (!tokenData) {
       return null;
     }
@@ -156,7 +95,7 @@ async function refreshStartggToken(
     await prisma.user.update({
       where: { id: userId },
       data: {
-        startggToken: encodeToken(tokenData),
+        startggToken: encodeStartggToken(tokenData),
       },
     });
 

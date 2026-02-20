@@ -4,7 +4,7 @@ import {
   ButtonBuilder,
   ButtonStyle,
 } from 'discord.js';
-import type { ButtonInteraction } from 'discord.js';
+import type { ButtonInteraction, StringSelectMenuInteraction } from 'discord.js';
 import {
   INTERACTION_PREFIX,
   DISCORD_COLORS,
@@ -27,7 +27,12 @@ import { isValidCuid } from './validation.js';
 export const checkinHandler: ButtonHandler = {
   prefix: INTERACTION_PREFIX.CHECK_IN,
 
-  async execute(interaction: ButtonInteraction, parts: string[]): Promise<void> {
+  async execute(interaction: ButtonInteraction | StringSelectMenuInteraction, parts: string[]): Promise<void> {
+    if (!interaction.isButton()) {
+      await interaction.reply({ content: 'Invalid interaction type.', ephemeral: true });
+      return;
+    }
+
     // Validate customId parts before destructuring
     if (parts.length !== 2 || !parts[0]) {
       await interaction.reply({ content: 'Invalid button format.', ephemeral: true });
