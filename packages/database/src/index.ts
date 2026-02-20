@@ -13,4 +13,8 @@ export const prisma =
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 export * from '@prisma/client';
+
+// Re-export Prisma enums that may not be automatically exported
+export type { TournamentState, EventState, MatchState, StartggSyncStatus, DisputeStatus, RegistrationSource, RegistrationStatus, AdminRole, AuditAction, AuditSource } from '@prisma/client';
+
 export default prisma;
