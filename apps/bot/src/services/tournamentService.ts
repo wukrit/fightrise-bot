@@ -1,5 +1,9 @@
-import { prisma, TournamentState, EventState, AdminRole, Prisma, AuditAction, AuditSource } from '@fightrise/database';
-import { StartGGClient, Tournament as StartGGTournament } from '@fightrise/startgg-client';
+import { prisma, TournamentState, AdminRole, Prisma, AuditAction, AuditSource } from '@fightrise/database';
+import {
+  StartGGClient,
+  Tournament as StartGGTournament,
+  TournamentState as StartGGTournamentState,
+} from '@fightrise/startgg-client';
 import { Client } from 'discord.js';
 import { schedulePoll, calculatePollInterval } from './pollingService.js';
 import { RegistrationSyncService } from './registrationSyncService.js';
@@ -389,14 +393,13 @@ export class TournamentService {
   /**
    * Map Start.gg tournament state number to our enum
    */
-  private mapStartggState(state: number | null): TournamentState {
-    // Start.gg states: 1 = CREATED, 2 = ACTIVE, 3 = COMPLETED
+  private mapStartggState(state: StartGGTournamentState | null): TournamentState {
     switch (state) {
-      case 1:
+      case StartGGTournamentState.CREATED:
         return TournamentState.CREATED;
-      case 2:
+      case StartGGTournamentState.ACTIVE:
         return TournamentState.IN_PROGRESS;
-      case 3:
+      case StartGGTournamentState.COMPLETED:
         return TournamentState.COMPLETED;
       default:
         return TournamentState.CREATED;
@@ -404,19 +407,19 @@ export class TournamentService {
   }
 
   /**
-   * Parse event state string to EventState enum
+   * Parse Start.gg event state string to persisted numeric state.
    */
-  private parseEventState(state: string | undefined): EventState {
-    if (!state) return EventState.CREATED;
+  private parseEventState(state: string | undefined): number {
+    if (!state) return 1;
     switch (state.toUpperCase()) {
       case 'CREATED':
-        return EventState.CREATED;
+        return 1;
       case 'ACTIVE':
-        return EventState.ACTIVE;
+        return 2;
       case 'COMPLETED':
-        return EventState.COMPLETED;
+        return 3;
       default:
-        return EventState.CREATED;
+        return 1;
     }
   }
 }
