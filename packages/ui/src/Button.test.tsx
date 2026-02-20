@@ -13,28 +13,28 @@ describe('Button', () => {
       render(<Button variant="primary">Primary</Button>);
       const button = screen.getByRole('button');
       expect(button.style.backgroundColor).toBe('rgb(59, 130, 246)');
-      expect(button.style.color).toBe('white');
+      expect(button.style.color).toBe('rgb(255, 255, 255)');
     });
 
     it('applies secondary variant styles', () => {
       render(<Button variant="secondary">Secondary</Button>);
       const button = screen.getByRole('button');
       expect(button.style.backgroundColor).toBe('rgb(107, 114, 128)');
-      expect(button.style.color).toBe('white');
+      expect(button.style.color).toBe('rgb(255, 255, 255)');
     });
 
     it('applies danger variant styles', () => {
       render(<Button variant="danger">Danger</Button>);
       const button = screen.getByRole('button');
       expect(button.style.backgroundColor).toBe('rgb(239, 68, 68)');
-      expect(button.style.color).toBe('white');
+      expect(button.style.color).toBe('rgb(255, 255, 255)');
     });
 
     it('applies discord variant styles', () => {
       render(<Button variant="discord">Discord</Button>);
       const button = screen.getByRole('button');
       expect(button.style.backgroundColor).toBe('rgb(88, 101, 242)');
-      expect(button.style.color).toBe('white');
+      expect(button.style.color).toBe('rgb(255, 255, 255)');
     });
 
     it('defaults to primary variant', () => {
@@ -48,28 +48,28 @@ describe('Button', () => {
     it('applies small size styles', () => {
       render(<Button size="sm">Small</Button>);
       const button = screen.getByRole('button');
-      expect(button.style.padding).toBe('6px 12px');
+      expect(button.style.padding).toBe('4px 8px');
       expect(button.style.fontSize).toBe('14px');
     });
 
     it('applies medium size styles', () => {
       render(<Button size="md">Medium</Button>);
       const button = screen.getByRole('button');
-      expect(button.style.padding).toBe('10px 20px');
+      expect(button.style.padding).toBe('8px 12px');
       expect(button.style.fontSize).toBe('16px');
     });
 
     it('applies large size styles', () => {
       render(<Button size="lg">Large</Button>);
       const button = screen.getByRole('button');
-      expect(button.style.padding).toBe('14px 28px');
+      expect(button.style.padding).toBe('12px 16px');
       expect(button.style.fontSize).toBe('18px');
     });
 
     it('defaults to medium size', () => {
       render(<Button>Default</Button>);
       const button = screen.getByRole('button');
-      expect(button.style.padding).toBe('10px 20px');
+      expect(button.style.padding).toBe('8px 12px');
     });
   });
 
