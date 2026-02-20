@@ -41,8 +41,8 @@ async function getUserProfile(sessionEmail: string): Promise<UserProfile | null>
 
   return {
     id: user.id,
-    discordUsername: user.name || 'Unknown',
-    discordAvatar: user.image,
+    discordUsername: user.discordUsername || 'Unknown',
+    discordAvatar: user.discordAvatar,
     startggId: user.startggId,
     startggGamerTag: user.startggGamerTag,
     startggSlug: user.startggSlug,
@@ -111,8 +111,8 @@ export default async function AccountPage() {
   // If no user found, create a default profile
   const userProfile: UserProfile = user || {
     id: '',
-    discordUsername: session.user.name || session.user.email || 'Unknown',
-    discordAvatar: session.user.image,
+    discordUsername: session.user.email || 'Unknown',
+    discordAvatar: session.user.image ?? null,
     startggId: null,
     startggGamerTag: null,
     startggSlug: null,

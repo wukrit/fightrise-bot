@@ -252,6 +252,27 @@ function DashboardContent({ initialTournaments }: DashboardContentProps) {
 
   return (
     <div className="min-h-screen bg-zinc-950">
+      {/* Add custom font and animations */}
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fadeIn {
+          animation: fadeIn 0.4s ease-out forwards;
+          opacity: 0;
+        }
+      `}</style>
+
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-zinc-900/30 border-b border-zinc-800/50">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-zinc-800/20 via-zinc-950/0 to-zinc-950/0" />
