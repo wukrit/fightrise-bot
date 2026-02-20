@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import { prisma } from '@fightrise/database';
 
+// Force dynamic rendering - database data changes frequently
+export const dynamic = 'force-dynamic';
+
 // Types
 type TournamentState = 'CREATED' | 'REGISTRATION_OPEN' | 'REGISTRATION_CLOSED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 

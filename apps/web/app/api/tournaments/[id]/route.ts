@@ -95,12 +95,10 @@ export async function PUT(
       data: {
         discordGuildId: body.discordGuildId,
         discordChannelId: body.discordChannelId,
-        settings: {
-          autoCreateThreads: body.autoCreateThreads,
-          requireCheckIn: body.requireCheckIn,
-          checkInWindowMinutes: body.checkInWindowMinutes,
-          allowSelfReporting: body.allowSelfReporting,
-        },
+        autoCreateThreads: body.autoCreateThreads,
+        requireCheckIn: body.requireCheckIn,
+        checkInWindowMinutes: body.checkInWindowMinutes,
+        allowSelfReporting: body.allowSelfReporting,
       },
     });
 

@@ -17,6 +17,7 @@ import {
   ReportSetResponse,
   Tournament,
   Set,
+  SetState,
   Entrant,
   Connection,
   StartGGError,
@@ -41,12 +42,14 @@ export class StartGGClient {
       headers: {
         Authorization: `Bearer ${config.apiKey}`,
       },
-      timeout: config.timeout ?? 30000, // 30 second default to prevent indefinite hangs
     });
 
     this.cache = new ResponseCache(config.cache ?? { enabled: false });
     this.retryConfig = config.retry;
+    this.timeout = config.timeout ?? 30000;
   }
+
+  private timeout: number;
 
   private getRequestKey(query: string, variables: Record<string, unknown>): string {
     return `${query}:${JSON.stringify(variables)}`;
@@ -72,11 +75,18 @@ export class StartGGClient {
       return existingRequest as Promise<T>;
     }
 
-    // Make request with retry logic
+    // Make request with retry logic and timeout
     const requestPromise = withRetry(
       async () => {
         try {
-          return await this.client.request<T>(query, variables);
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Request timeout')), this.timeout);
+          });
+
+          return await Promise.race([
+            this.client.request<T>(query, variables),
+            timeoutPromise,
+          ]);
         } catch (error) {
           this.handleError(error);
         }
@@ -194,7 +204,7 @@ export class StartGGClient {
   async reportSet(
     setId: string,
     winnerId: string
-  ): Promise<{ id: string; state: number } | null> {
+  ): Promise<{ id: string; state: SetState } | null> {
     const result = await this.request<ReportSetResponse>(
       REPORT_SET,
       { setId, winnerId },

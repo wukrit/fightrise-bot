@@ -1,5 +1,5 @@
-import { prisma, TournamentState, EventState, AdminRole, Prisma, AuditAction, AuditSource } from '@fightrise/database';
-import { StartGGClient, Tournament as StartGGTournament } from '@fightrise/startgg-client';
+import { prisma, TournamentState as DbTournamentState, EventState, AdminRole, Prisma, AuditAction, AuditSource } from '@fightrise/database';
+import { StartGGClient, Tournament as StartGGTournament, TournamentState as StartGGTournamentState } from '@fightrise/startgg-client';
 import { Client } from 'discord.js';
 import { schedulePoll, calculatePollInterval } from './pollingService.js';
 import { RegistrationSyncService } from './registrationSyncService.js';
@@ -387,17 +387,16 @@ export class TournamentService {
   /**
    * Map Start.gg tournament state number to our enum
    */
-  private mapStartggState(state: number | null): TournamentState {
-    // Start.gg states: 1 = CREATED, 2 = ACTIVE, 3 = COMPLETED
+  private mapStartggState(state: StartGGTournamentState | null): DbTournamentState {
+    // Start.gg states: 'CREATED', 'ACTIVE', 'COMPLETED'
     switch (state) {
-      case 1:
-        return TournamentState.CREATED;
-      case 2:
-        return TournamentState.IN_PROGRESS;
-      case 3:
-        return TournamentState.COMPLETED;
+      case StartGGTournamentState.ACTIVE:
+        return DbTournamentState.IN_PROGRESS;
+      case StartGGTournamentState.COMPLETED:
+        return DbTournamentState.COMPLETED;
+      case StartGGTournamentState.CREATED:
       default:
-        return TournamentState.CREATED;
+        return DbTournamentState.CREATED;
     }
   }
 
