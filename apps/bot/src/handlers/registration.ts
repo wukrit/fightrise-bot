@@ -1,4 +1,4 @@
-import { ButtonInteraction, EmbedBuilder, Colors, PermissionFlagsBits } from 'discord.js';
+import { ButtonInteraction, EmbedBuilder, Colors, StringSelectMenuInteraction, PermissionFlagsBits } from 'discord.js';
 import { prisma, RegistrationStatus } from '@fightrise/database';
 import type { ButtonHandler } from './buttonHandlers.js';
 import { isValidCuid } from './validation.js';
@@ -24,7 +24,12 @@ async function verifyDiscordPermissions(
 export const registrationHandler: ButtonHandler = {
   prefix: INTERACTION_PREFIX.REGISTER,
 
-  async execute(interaction: ButtonInteraction, parts: string[]) {
+  async execute(interaction: ButtonInteraction | StringSelectMenuInteraction, parts: string[]) {
+    if (!interaction.isButton()) {
+      await interaction.reply({ content: 'Invalid interaction type.', ephemeral: true });
+      return;
+    }
+
     const action = parts[0];
 
     if (action === 'approve') {

@@ -29,7 +29,11 @@ export async function GET() {
       include: {
         match: {
           include: {
-            tournament: true,
+            event: {
+              include: {
+                tournament: true,
+              },
+            },
           },
         },
       },
@@ -77,7 +81,7 @@ export async function GET() {
           result,
           score,
           date: mp.match.updatedAt ? mp.match.updatedAt.toISOString().split('T')[0] : '',
-          tournamentName: mp.match.tournament?.name || 'Unknown Tournament',
+          tournamentName: mp.match.event?.tournament?.name || 'Unknown Tournament',
         };
       })
     );

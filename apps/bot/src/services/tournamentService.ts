@@ -1,9 +1,13 @@
-import { prisma, TournamentState, EventState, AdminRole, Prisma, AuditAction, AuditSource } from '@fightrise/database';
-import { StartGGClient, Tournament as StartGGTournament } from '@fightrise/startgg-client';
+import { prisma, TournamentState, AdminRole, Prisma, AuditAction, AuditSource, EventState } from '@fightrise/database';
+import {
+  StartGGClient,
+  Tournament as StartGGTournament,
+  TournamentState as StartGGTournamentState,
+} from '@fightrise/startgg-client';
 import { Client } from 'discord.js';
 import { schedulePoll, calculatePollInterval } from './pollingService.js';
 import { RegistrationSyncService } from './registrationSyncService.js';
-import { validateTournamentSlug } from '@fightrise/shared';
+import { decodeStartggToken, validateTournamentSlug } from '@fightrise/shared';
 import { ValidationError } from '@fightrise/shared';
 import { createAuditLog } from './auditService.js';
 
@@ -94,7 +98,9 @@ export class TournamentService {
       };
     }
 
-    const isAdmin = await this.validateUserIsAdmin(user.startggToken, normalizedSlug);
+    const decodedToken = decodeStartggToken(user.startggToken);
+    const accessToken = decodedToken?.accessToken ?? user.startggToken;
+    const isAdmin = await this.validateUserIsAdmin(accessToken, normalizedSlug);
     if (!isAdmin) {
       return {
         success: false,
@@ -387,14 +393,13 @@ export class TournamentService {
   /**
    * Map Start.gg tournament state number to our enum
    */
-  private mapStartggState(state: number | null): TournamentState {
-    // Start.gg states: 1 = CREATED, 2 = ACTIVE, 3 = COMPLETED
+  private mapStartggState(state: StartGGTournamentState | null): TournamentState {
     switch (state) {
-      case 1:
+      case StartGGTournamentState.CREATED:
         return TournamentState.CREATED;
-      case 2:
+      case StartGGTournamentState.ACTIVE:
         return TournamentState.IN_PROGRESS;
-      case 3:
+      case StartGGTournamentState.COMPLETED:
         return TournamentState.COMPLETED;
       default:
         return TournamentState.CREATED;
@@ -402,7 +407,7 @@ export class TournamentService {
   }
 
   /**
-   * Parse event state string to EventState enum
+   * Parse Start.gg event state string to persisted EventState enum.
    */
   private parseEventState(state: string | undefined): EventState {
     if (!state) return EventState.CREATED;

@@ -156,20 +156,34 @@ export async function checkRateLimit(key: string, config: RateLimitConfig): Prom
  * In production, this should be set to your reverse proxy's IP(s)
  */
 const TRUSTED_PROXIES = process.env.TRUSTED_PROXY_IPS?.split(',').map(ip => ip.trim()) ?? [];
+const CONNECTION_IP_HEADERS = [
+  'cf-connecting-ip',           // Cloudflare
+  'x-vercel-forwarded-for',     // Vercel Edge
+  'x-nf-client-connection-ip',  // Netlify
+];
 
 /**
- * Get client IP from request
- *
- * Security: When trustProxy is enabled in Next.js (via next.config.js),
- * request.ip will correctly return the client IP by:
- * 1. Parsing X-Forwarded-For header (taking the leftmost non-trusted IP)
- * 2. Or using X-Real-IP if configured
- * 3. Or falling back to the direct connection IP
- *
- * This prevents IP spoofing because Next.js only trusts these headers
- * from connections that come through the reverse proxy.
+ * Best-effort extraction of runtime-provided connection metadata.
+ * These headers are expected to be set by hosting edge/runtime, not by end clients.
  */
-export function getClientIp(request: Request): string {
+export function getConnectionIpFromRequest(request: Request): string | undefined {
+  for (const header of CONNECTION_IP_HEADERS) {
+    const value = request.headers.get(header)?.trim();
+    if (value && isValidIp(value)) {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Get client IP from request.
+ *
+ * Security: rely on Next.js-provided request.ip when trustProxy is enabled.
+ * For fallback, only use runtime connection metadata passed by the caller.
+ * Do not trust direct x-real-ip header values from untrusted clients.
+ */
+export function getClientIp(request: Request, connectionIp?: string): string {
   // In Next.js with trustProxy enabled, request.ip automatically handles
   // X-Forwarded-For validation and returns the correct client IP
   // We still validate the format as a defense-in-depth measure
@@ -179,14 +193,8 @@ export function getClientIp(request: Request): string {
     return ip;
   }
 
-  // Fallback: try x-real-ip header (less trustworthy)
-  const realIp = request.headers.get('x-real-ip');
-  if (realIp && isValidIp(realIp)) {
-    return realIp;
-  }
-
-  // Last resort: localhost (shouldn't happen in production)
-  return '127.0.0.1';
+  // Fallback to direct connection IP only.
+  return connectionIp ?? '127.0.0.1';
 }
 
 /**
@@ -230,7 +238,7 @@ export async function withRateLimit(
   config: RateLimitConfig,
   handler: () => Promise<Response>
 ): Promise<Response> {
-  const ip = getClientIp(request);
+  const ip = getClientIp(request, getConnectionIpFromRequest(request));
   const result = await checkRateLimit(ip, config);
   const headers = createRateLimitHeaders(result);
 

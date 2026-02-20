@@ -148,6 +148,39 @@ const event: Event = {
       }
       return;
     }
+
+    // Handle select menu interactions (used for detailed score reporting)
+    if (interaction.isStringSelectMenu()) {
+      if (userId && (await isRateLimited(userId))) {
+        await replyWithError(
+          interaction,
+          'You are performing actions too quickly. Please wait a moment before trying again.'
+        );
+        return;
+      }
+
+      const { prefix, parts } = parseInteractionId(interaction.customId);
+      const handler = buttonHandlers.get(prefix);
+
+      if (!handler) {
+        logger.warn({ prefix }, 'Unknown select menu prefix');
+        return;
+      }
+
+      try {
+        // For score menus, pass selected value as the second part:
+        // report:{matchId}:select + value "1|2-1" => ["{matchId}", "1|2-1", "select"]
+        const nextParts =
+          prefix === 'report'
+            ? [parts[0] ?? '', interaction.values[0] ?? '', parts[1] ?? 'select']
+            : parts;
+        await handler.execute(interaction, nextParts);
+      } catch (error) {
+        logger.error({ err: error, customId: interaction.customId }, 'Error handling select menu');
+        await replyWithError(interaction, 'There was an error processing this action.');
+      }
+      return;
+    }
   },
 };
 

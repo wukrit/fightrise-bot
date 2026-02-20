@@ -72,3 +72,17 @@ export type { WindowStatus } from './datetime.js';
 
 // Encryption utilities
 export { encrypt, decrypt, isEncryptionConfigured } from './crypto.js';
+
+// Start.gg token helpers
+export {
+  encodeStartggToken,
+  decodeStartggToken,
+  encodeStartggTokenLegacyBase64,
+} from './startggToken.js';
+export type { StartggTokenData } from './startggToken.js';
+
+// OAuth state helpers
+export {
+  createSignedStartggOAuthState,
+  verifySignedStartggOAuthState,
+} from './oauthState.js';

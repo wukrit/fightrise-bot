@@ -44,30 +44,5 @@ export default async function DashboardPage() {
   // Fetch tournaments server-side
   const tournaments = await getTournaments();
 
-  return (
-    <div>
-      {/* Add custom font */}
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.4s ease-out forwards;
-          opacity: 0;
-        }
-      `}</style>
-
-      <DashboardContent initialTournaments={tournaments} />
-    </div>
-  );
+  return <DashboardContent initialTournaments={tournaments} />;
 }

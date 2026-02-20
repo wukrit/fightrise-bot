@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach, type MockInstance } from 'vitest';
 import { TournamentService } from '../tournamentService.js';
 import { createMockTransaction } from '../../__tests__/utils/transactionMock.js';
+import { encodeStartggToken } from '@fightrise/shared';
 
 // Mock the audit service
 vi.mock('../auditService.js', () => ({
@@ -343,6 +344,26 @@ describe('TournamentService', () => {
       });
 
       expect(mockStartGGClient.getTournament).toHaveBeenCalledWith('test-tournament');
+    });
+
+    it('should decode stored Start.gg token before admin validation', async () => {
+      const storedToken = encodeStartggToken({
+        accessToken: 'decoded-access-token',
+        refreshToken: 'refresh-token',
+        expiresAt: new Date(Date.now() + 3600_000).toISOString(),
+      });
+
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        ...mockUser,
+        startggToken: storedToken,
+      } as unknown);
+      mockStartGGClient.getTournament.mockResolvedValue(mockTournament);
+      const validateSpy = vi.spyOn(service, 'validateUserIsAdmin').mockResolvedValue(true);
+      setupTransactionMock(null);
+
+      await service.setupTournament(mockSetupParams);
+
+      expect(validateSpy).toHaveBeenCalledWith('decoded-access-token', 'test-tournament');
     });
   });
 

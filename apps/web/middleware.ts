@@ -17,6 +17,9 @@ const publicRoutes = [
   '/api/auth',
 ];
 
+// Explicit test-only bypass, disabled by default.
+const allowTestBypass = process.env.AUTH_BYPASS_FOR_E2E === 'true';
+
 export default withAuth(
   function middleware(req) {
     // Allow the request to continue
@@ -27,9 +30,8 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl;
 
-        // Skip auth check in test or development environments only
-        // SECURITY: No hostname/port-based bypass in production
-        if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
+        // Optional auth bypass for dedicated E2E runs.
+        if (allowTestBypass && process.env.NODE_ENV !== 'production') {
           return true;
         }
 

@@ -17,6 +17,7 @@ import {
   ReportSetResponse,
   Tournament,
   Set,
+  SetState,
   Entrant,
   Connection,
   StartGGError,
@@ -34,6 +35,7 @@ export class StartGGClient {
   private client: GraphQLClient;
   private cache: ResponseCache;
   private retryConfig: StartGGClientConfig['retry'];
+  private timeoutMs: number;
   private pendingRequests: Map<string, Promise<unknown>> = new Map();
 
   constructor(config: StartGGClientConfig) {
@@ -41,11 +43,11 @@ export class StartGGClient {
       headers: {
         Authorization: `Bearer ${config.apiKey}`,
       },
-      timeout: config.timeout ?? 30000, // 30 second default to prevent indefinite hangs
     });
 
     this.cache = new ResponseCache(config.cache ?? { enabled: false });
     this.retryConfig = config.retry;
+    this.timeoutMs = config.timeout ?? 30000;
   }
 
   private getRequestKey(query: string, variables: Record<string, unknown>): string {
@@ -75,10 +77,19 @@ export class StartGGClient {
     // Make request with retry logic
     const requestPromise = withRetry(
       async () => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+
         try {
-          return await this.client.request<T>(query, variables);
+          return await this.client.request<T>({
+            document: query,
+            variables,
+            signal: controller.signal,
+          });
         } catch (error) {
           this.handleError(error);
+        } finally {
+          clearTimeout(timeoutId);
         }
       },
       this.retryConfig
@@ -130,6 +141,12 @@ export class StartGGClient {
 
     // Check for network errors (including timeouts)
     if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new StartGGError(
+          'Request to Start.gg timed out. Please try again later.'
+        );
+      }
+
       if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
         throw new StartGGError(
           'Request to Start.gg timed out. Please try again later.'
@@ -194,7 +211,7 @@ export class StartGGClient {
   async reportSet(
     setId: string,
     winnerId: string
-  ): Promise<{ id: string; state: number } | null> {
+  ): Promise<{ id: string; state: SetState } | null> {
     const result = await this.request<ReportSetResponse>(
       REPORT_SET,
       { setId, winnerId },

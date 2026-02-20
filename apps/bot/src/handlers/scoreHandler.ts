@@ -6,7 +6,7 @@ import {
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
 } from 'discord.js';
-import type { ButtonInteraction } from 'discord.js';
+import type { ButtonInteraction, StringSelectMenuInteraction } from 'discord.js';
 import {
   INTERACTION_PREFIX,
   DISCORD_COLORS,
@@ -26,7 +26,7 @@ import { isValidCuid } from './validation.js';
 export const scoreHandler: ButtonHandler = {
   prefix: INTERACTION_PREFIX.REPORT,
 
-  async execute(interaction: ButtonInteraction, parts: string[]): Promise<void> {
+  async execute(interaction: ButtonInteraction | StringSelectMenuInteraction, parts: string[]): Promise<void> {
     // Parts come after the prefix
     // Quick win: report:abc:1:quick -> parts = ["abc", "1", "quick"]
     // Detailed: report:abc:select -> parts = ["abc", "select"]
@@ -126,7 +126,12 @@ export const scoreHandler: ButtonHandler = {
 export const confirmHandler: ButtonHandler = {
   prefix: INTERACTION_PREFIX.CONFIRM,
 
-  async execute(interaction: ButtonInteraction, parts: string[]): Promise<void> {
+  async execute(interaction: ButtonInteraction | StringSelectMenuInteraction, parts: string[]): Promise<void> {
+    if (!interaction.isButton()) {
+      await interaction.reply({ content: 'Invalid interaction type.', ephemeral: true });
+      return;
+    }
+
     if (parts.length < 1 || !parts[0]) {
       await interaction.reply({ content: 'Invalid button format: missing match ID.', ephemeral: true });
       return;
@@ -168,7 +173,12 @@ export const confirmHandler: ButtonHandler = {
 export const disputeHandler: ButtonHandler = {
   prefix: INTERACTION_PREFIX.DISPUTE,
 
-  async execute(interaction: ButtonInteraction, parts: string[]): Promise<void> {
+  async execute(interaction: ButtonInteraction | StringSelectMenuInteraction, parts: string[]): Promise<void> {
+    if (!interaction.isButton()) {
+      await interaction.reply({ content: 'Invalid interaction type.', ephemeral: true });
+      return;
+    }
+
     if (parts.length < 1 || !parts[0]) {
       await interaction.reply({ content: 'Invalid button format: missing match ID.', ephemeral: true });
       return;
