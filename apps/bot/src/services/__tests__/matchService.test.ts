@@ -692,8 +692,14 @@ describe('MatchService', () => {
       // Mock dynamic import for Start.gg client
       vi.mock('@fightrise/startgg-client', () => ({
         StartGGClient: vi.fn().mockImplementation(() => ({
-          reportSet: vi.fn().mockResolvedValue({ id: 'set-456', state: 3 }),
+          reportSet: vi.fn().mockResolvedValue({ id: 'set-456', state: 'COMPLETED' }),
         })),
+        SetState: {
+          READY: 'READY',
+          STARTED: 'STARTED',
+          ACTIVE: 'ACTIVE',
+          COMPLETED: 'COMPLETED',
+        },
       }));
     });
 
