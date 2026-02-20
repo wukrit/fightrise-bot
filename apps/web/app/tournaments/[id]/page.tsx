@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
@@ -229,26 +229,60 @@ function TournamentSettingsForm({ tournament }: { tournament: Tournament }) {
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [guilds, setGuilds] = useState<DiscordGuild[]>([]);
+  const [channels, setChannels] = useState<DiscordChannel[]>([]);
 
-  // Mock data - in production this would come from API
-  const mockGuilds: DiscordGuild[] = [
-    { id: '1', name: 'FightRise Community', icon: null },
-    { id: '2', name: 'FGC Tournaments', icon: null },
-  ];
+  // Fetch Discord guilds and channels
+  useEffect(() => {
+    async function fetchDiscordData() {
+      try {
+        const response = await fetch('/api/discord/guilds');
+        if (response.ok) {
+          const data = await response.json();
+          setGuilds(
+            (data.guilds || []).map((g: any) => ({
+              id: g.id,
+              name: g.name,
+              icon: g.icon || null,
+            }))
+          );
+          setChannels(
+            (data.channels || []).map((c: any) => ({
+              id: c.id,
+              name: c.name,
+              type: 0,
+            }))
+          );
+        }
+      } catch (err) {
+        console.error('Failed to fetch Discord data:', err);
+      }
+    }
 
-  const mockChannels: DiscordChannel[] = [
-    { id: '1', name: 'general', type: 0 },
-    { id: '2', name: 'tournaments', type: 0 },
-    { id: '3', name: 'announcements', type: 0 },
-  ];
+    fetchDiscordData();
+  }, []);
 
   const handleSave = async () => {
     setIsSaving(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+
+    try {
+      const response = await fetch(`/api/tournaments/${tournament.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save settings');
+      }
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const formatDate = (dateStr: string | null) => {
@@ -299,7 +333,7 @@ function TournamentSettingsForm({ tournament }: { tournament: Tournament }) {
             <Select
               value={formData.discordGuildId}
               onChange={(v) => setFormData({ ...formData, discordGuildId: v })}
-              options={mockGuilds.map((g) => ({ value: g.id, label: g.name }))}
+              options={guilds.map((g) => ({ value: g.id, label: g.name }))}
               placeholder="Select a server..."
             />
           </FormField>
@@ -308,7 +342,7 @@ function TournamentSettingsForm({ tournament }: { tournament: Tournament }) {
             <Select
               value={formData.discordChannelId}
               onChange={(v) => setFormData({ ...formData, discordChannelId: v })}
-              options={mockChannels.map((c) => ({ value: c.id, label: `#${c.name}` }))}
+              options={channels.map((c) => ({ value: c.id, label: `#${c.name}` }))}
               placeholder="Select a channel..."
             />
           </FormField>
@@ -417,21 +451,59 @@ export default function TournamentSettingsPage() {
   const params = useParams();
   const tournamentId = params.id as string;
 
-  // Mock tournament data - in production fetch from API
-  const tournament: Tournament = {
-    id: tournamentId,
-    name: 'FightRise Weekly #42',
-    startggSlug: 'fightrise-weekly-42',
-    startAt: '2026-02-20T18:00:00Z',
-    endAt: '2026-02-20T23:00:00Z',
-    state: 'REGISTRATION_OPEN',
-    discordGuildId: '1',
-    discordChannelId: '2',
-    autoCreateThreads: true,
-    requireCheckIn: true,
-    checkInWindowMinutes: 10,
-    allowSelfReporting: true,
-  };
+  const [tournament, setTournament] = useState<Tournament | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchTournament() {
+      try {
+        const response = await fetch(`/api/tournaments/${tournamentId}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch tournament');
+        }
+        const data = await response.json();
+        setTournament({
+          id: data.id,
+          name: data.name,
+          startggSlug: data.startggSlug || '',
+          startAt: data.startAt,
+          endAt: data.endAt,
+          state: data.state,
+          discordGuildId: data.discordGuildId,
+          discordChannelId: data.discordChannelId,
+          autoCreateThreads: data.settings?.autoCreateThreads ?? true,
+          requireCheckIn: data.settings?.requireCheckIn ?? true,
+          checkInWindowMinutes: data.settings?.checkInWindowMinutes ?? 10,
+          allowSelfReporting: data.settings?.allowSelfReporting ?? true,
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (tournamentId) {
+      fetchTournament();
+    }
+  }, [tournamentId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-zinc-400">Loading tournament...</div>
+      </div>
+    );
+  }
+
+  if (error || !tournament) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-red-400">Error: {error || 'Tournament not found'}</div>
+      </div>
+    );
+  }
 
   return (
     <div>

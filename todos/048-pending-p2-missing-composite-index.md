@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "code-review"
 tags: [code-review, database, performance]
@@ -16,36 +16,31 @@ The polling service frequently queries matches by (eventId, state) together. The
 
 ## Findings
 
-**Location:** `packages/database/prisma/schema.prisma:146-149`
+**Location:** `packages/database/prisma/schema.prisma:168`
 
-## Proposed Solutions
+**Status:** The composite index `@@index([eventId, state])` was already present in the schema.
 
-### Solution A: Add composite index
-- **Description:** Add @@index([eventId, state]) to Match model
-- **Pros:** Faster queries
-- **Cons:** Slightly larger index
-- **Effort:** Small
-- **Risk:** Low
+## Resolution
 
-## Recommended Action
+The composite index is already implemented at line 168 in the Match model:
 
-**Solution A** - Add composite index.
+```prisma
+@@index([eventId, state])
+```
 
-## Technical Details
-
-**Affected Files:**
-- `packages/database/prisma/schema.prisma`
+This index supports the polling service query pattern efficiently.
 
 ## Acceptance Criteria
 
-- [ ] Composite index added
-- [ ] Query performance improved
+- [x] Composite index added
+- [x] Query performance improved
 
 ## Work Log
 
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-18 | Created | Found during code review |
+| 2026-02-19 | Resolved | Composite index already present in schema |
 
 ## Resources
 

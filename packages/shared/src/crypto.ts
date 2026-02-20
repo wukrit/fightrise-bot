@@ -1,6 +1,7 @@
 // Encryption utilities for sensitive data
 
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+import { ConfigurationError } from './errors.js';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12; // 96 bits for GCM
@@ -13,12 +14,12 @@ const KEY_LENGTH = 32; // 256 bits
 function getEncryptionKey(): Buffer {
   const keyHex = process.env.ENCRYPTION_KEY;
   if (!keyHex) {
-    throw new Error('ENCRYPTION_KEY environment variable is not set');
+    throw new ConfigurationError('ENCRYPTION_KEY environment variable is not set');
   }
 
   const key = Buffer.from(keyHex, 'hex');
   if (key.length !== KEY_LENGTH) {
-    throw new Error(`ENCRYPTION_KEY must be ${KEY_LENGTH * 2} hex characters (${KEY_LENGTH} bytes)`);
+    throw new ConfigurationError(`ENCRYPTION_KEY must be ${KEY_LENGTH * 2} hex characters (${KEY_LENGTH} bytes)`);
   }
 
   return key;

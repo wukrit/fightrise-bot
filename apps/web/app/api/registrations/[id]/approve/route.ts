@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma, AdminRole, RegistrationStatus } from '@fightrise/database';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
 
 /**
  * POST /api/registrations/[id]/approve
@@ -11,6 +12,17 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ip = getClientIp(request);
+  const result = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.write);
+
+  const headers = createRateLimitHeaders(result);
+  if (!result.allowed) {
+    return new Response('Too Many Requests', {
+      status: 429,
+      headers,
+    });
+  }
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -81,18 +93,29 @@ export async function POST(
       data: { status: RegistrationStatus.CONFIRMED },
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       registration: {
         id: updatedRegistration.id,
         status: updatedRegistration.status,
       },
     });
+
+    // Add rate limit headers
+    for (const [key, value] of headers.entries()) {
+      response.headers.set(key, value);
+    }
+
+    return response;
   } catch (error: unknown) {
     console.error('Approve registration error:', error);
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
+    for (const [key, value] of headers.entries()) {
+      errorResponse.headers.set(key, value);
+    }
+    return errorResponse;
   }
 }

@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "code-review"
 tags: [code-review, database, performance]
@@ -43,13 +43,14 @@ discordGuildId  String    @unique
 
 ## Acceptance Criteria
 
-- [ ] No redundant indexes
+- [x] No redundant indexes
 
 ## Work Log
 
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-18 | Created | Found during code review |
+| 2026-02-19 | Completed | Removed redundant indexes from User and GuildConfig models |
 
 ## Resources
 

@@ -10,6 +10,7 @@ import {
 } from 'discord.js';
 import type { Command } from '../types.js';
 import { prisma, RegistrationSource, RegistrationStatus } from '@fightrise/database';
+import { INTERACTION_PREFIX } from '@fightrise/shared';
 import { requireGuild, requireGuildWithReply } from '../utils/guildValidation.js';
 
 /**
@@ -345,15 +346,15 @@ async function handleAdminRegistrations(interaction: ChatInputCommandInteraction
       new ButtonBuilder()
         .setLabel('Approve')
         .setStyle(ButtonStyle.Success)
-        .setCustomId(`reg-approve:${firstReg.id}`),
+        .setCustomId(`${INTERACTION_PREFIX.REGISTER}:approve:${firstReg.id}`),
       new ButtonBuilder()
         .setLabel('Reject')
         .setStyle(ButtonStyle.Danger)
-        .setCustomId(`reg-reject:${firstReg.id}`),
+        .setCustomId(`${INTERACTION_PREFIX.REGISTER}:reject:${firstReg.id}`),
       new ButtonBuilder()
         .setLabel('Info')
         .setStyle(ButtonStyle.Secondary)
-        .setCustomId(`reg-info:${firstReg.id}`)
+        .setCustomId(`${INTERACTION_PREFIX.REGISTER}:info:${firstReg.id}`)
     );
 
     await interaction.editReply({

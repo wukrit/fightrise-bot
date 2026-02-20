@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -216,17 +216,29 @@ function DiscordSetupStep({
   onBack: () => void;
   onNext: () => void;
 }) {
-  // Mock data - in production, fetch from Discord API
-  const mockGuilds: DiscordGuild[] = [
-    { id: '1', name: 'FightRise Community' },
-    { id: '2', name: 'FGC Tournaments' },
-  ];
+  const [guilds, setGuilds] = useState<DiscordGuild[]>([]);
+  const [channels, setChannels] = useState<DiscordChannel[]>([]);
+  const [loadingDiscord, setLoadingDiscord] = useState(false);
 
-  const mockChannels: DiscordChannel[] = [
-    { id: '1', name: 'general' },
-    { id: '2', name: 'tournaments' },
-    { id: '3', name: 'announcements' },
-  ];
+  useEffect(() => {
+    async function fetchDiscordData() {
+      setLoadingDiscord(true);
+      try {
+        const response = await fetch('/api/discord/guilds');
+        if (response.ok) {
+          const data = await response.json();
+          setGuilds(data.guilds || []);
+          setChannels(data.channels || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch Discord data:', err);
+      } finally {
+        setLoadingDiscord(false);
+      }
+    }
+
+    fetchDiscordData();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -249,9 +261,12 @@ function DiscordSetupStep({
             value={formData.discordGuildId}
             onChange={(e) => updateFormData({ discordGuildId: e.target.value })}
             className="w-full bg-zinc-900/50 border border-zinc-700 rounded-lg px-4 py-3 text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            disabled={loadingDiscord}
           >
-            <option value="">Select a server...</option>
-            {mockGuilds.map((guild) => (
+            <option value="">
+              {loadingDiscord ? 'Loading servers...' : 'Select a server...'}
+            </option>
+            {guilds.map((guild) => (
               <option key={guild.id} value={guild.id}>
                 {guild.name}
               </option>
@@ -267,9 +282,12 @@ function DiscordSetupStep({
             value={formData.discordChannelId}
             onChange={(e) => updateFormData({ discordChannelId: e.target.value })}
             className="w-full bg-zinc-900/50 border border-zinc-700 rounded-lg px-4 py-3 text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            disabled={loadingDiscord}
           >
-            <option value="">Select a channel...</option>
-            {mockChannels.map((channel) => (
+            <option value="">
+              {loadingDiscord ? 'Loading channels...' : 'Select a channel...'}
+            </option>
+            {channels.map((channel) => (
               <option key={channel.id} value={channel.id}>
                 #{channel.name}
               </option>
@@ -506,20 +524,30 @@ export default function NewTournamentPage() {
     setValidationError(null);
 
     try {
-      // Simulate API call to validate tournament
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Call the API to validate the tournament against Start.gg
+      const response = await fetch('/api/tournaments/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: formData.startggSlug }),
+      });
 
-      // Mock successful validation - in production, call the API
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to validate tournament');
+      }
+
+      const data = await response.json();
+
       updateFormData({
-        tournamentName: 'FightRise Weekly #' + Math.floor(Math.random() * 100),
-        tournamentStartAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        tournamentEndAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 5 * 60 * 60 * 1000).toISOString(),
-        tournamentState: 'CREATED',
+        tournamentName: data.tournament.name,
+        tournamentStartAt: data.tournament.startAt,
+        tournamentEndAt: data.tournament.endAt,
+        tournamentState: data.tournament.state,
       });
 
       setCurrentStep('discord');
     } catch (error) {
-      setValidationError('Failed to validate tournament. Please check the URL and try again.');
+      setValidationError(error instanceof Error ? error.message : 'Failed to validate tournament. Please check the URL and try again.');
     } finally {
       setIsValidating(false);
     }
@@ -529,19 +557,33 @@ export default function NewTournamentPage() {
     setIsSubmitting(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Call the API to create the tournament
+      const response = await fetch('/api/tournaments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          startggSlug: formData.startggSlug,
+          discordGuildId: formData.discordGuildId,
+          discordChannelId: formData.discordChannelId,
+          settings: {
+            autoCreateThreads: formData.autoCreateThreads,
+            requireCheckIn: formData.requireCheckIn,
+            checkInWindowMinutes: formData.checkInWindowMinutes,
+            allowSelfReporting: formData.allowSelfReporting,
+          },
+        }),
+      });
 
-      // In production, call the API to create the tournament
-      // const response = await fetch('/api/tournaments', {
-      //   method: 'POST',
-      //   body: JSON.stringify(formData),
-      // });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create tournament');
+      }
 
       // Redirect to dashboard
       router.push('/dashboard');
     } catch (error) {
       console.error('Failed to create tournament:', error);
+      setValidationError('Failed to create tournament. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

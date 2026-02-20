@@ -70,3 +70,6 @@ tmp/
 _site/
 .jekyll-cache/
 .jekyll-metadata
+
+# Git worktrees location
+.worktrees/

@@ -10,6 +10,7 @@ import {
 import type { Command } from '../types.js';
 import { prisma } from '@fightrise/database';
 import { createSignedStartggOAuthState } from '@fightrise/shared';
+import { logger } from '../lib/logger.js';
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -101,7 +102,7 @@ async function handleLinkStartgg(interaction: ChatInputCommandInteraction): Prom
       components: [row],
     });
   } catch (error) {
-    console.error('Error in link-startgg command:', error);
+    logger.error({ err: error }, 'Error in link-startgg command');
     await interaction.editReply({
       content: 'Failed to generate OAuth link. Please try again.',
     });

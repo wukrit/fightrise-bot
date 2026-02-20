@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p3
 issue_id: "065"
 tags: [code-review, type-safety, database]
@@ -41,5 +41,28 @@ Add `enum EventState { CREATED, ACTIVE, COMPLETED }` to schema.
 
 ## Acceptance Criteria
 
-- [ ] EventState enum added to schema
-- [ ] Code uses enum values instead of magic numbers
+- [x] EventState enum added to schema
+- [x] Code uses enum values instead of magic numbers
+
+## Resolution
+
+The issue has been resolved:
+
+1. **EventState enum** was added to `packages/database/prisma/schema.prisma` (lines 106-110):
+   ```prisma
+   enum EventState {
+     CREATED
+     ACTIVE
+     COMPLETED
+   }
+   ```
+
+2. **Event model** now uses the enum instead of an integer:
+   ```prisma
+   state           EventState @default(CREATED)
+   ```
+
+3. **tournamentService.ts** properly imports and uses `EventState`:
+   - Imports: `import { ..., EventState, ... } from '@fightrise/database';`
+   - Uses `parseEventState()` method to convert Start.gg API strings to enum values
+   - All event state operations use enum values (e.g., `EventState.CREATED`, `EventState.ACTIVE`, `EventState.COMPLETED`)

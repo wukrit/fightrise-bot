@@ -6,6 +6,7 @@ import {
 } from 'discord.js';
 import type { Command } from '../types.js';
 import { prisma } from '@fightrise/database';
+import { logger } from '../lib/logger.js';
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -71,7 +72,7 @@ async function handleUnlinkStartgg(interaction: ChatInputCommandInteraction): Pr
       embeds: [embed],
     });
   } catch (error) {
-    console.error('Error in unlink-startgg command:', error);
+    logger.error({ err: error }, 'Error in unlink-startgg command');
     await interaction.editReply({
       content: 'Failed to unlink account. Please try again.',
     });

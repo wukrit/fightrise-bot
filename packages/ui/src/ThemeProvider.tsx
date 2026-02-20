@@ -53,6 +53,12 @@ export function ThemeProvider({ children, defaultTheme = 'light' }: ThemeProvide
     setThemeState(newTheme);
   }, []);
 
+  // Wait until mounted to avoid hydration mismatch
+  // This ensures server and client render the same initial state
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
       {children}

@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enable trust proxy for proper IP detection behind reverse proxies
+  // This allows Next.js to correctly parse X-Forwarded-For header
+  trustProxy: true,
   transpilePackages: ['@fightrise/ui', '@fightrise/shared'],
   images: {
     remotePatterns: [

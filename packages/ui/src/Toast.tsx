@@ -1,5 +1,20 @@
 import React from 'react';
 
+/**
+ * Generate a unique ID for toast notifications.
+ * Uses crypto.randomUUID() if available, falls back to a compatible method.
+ */
+function generateId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Fallback for environments without crypto.randomUUID
+  // Uses timestamp + random hex to ensure uniqueness
+  const timestamp = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).substring(2, 15);
+  return `${timestamp}-${randomPart}`;
+}
+
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 export interface Toast {
@@ -103,18 +118,31 @@ export interface ToastProviderProps {
 
 export function ToastProvider({ children }: ToastProviderProps) {
   const [toasts, setToasts] = React.useState<Toast[]>([]);
+  const timeoutIdsRef = React.useRef<Set<NodeJS.Timeout>>(new Set());
 
   const addToast = React.useCallback((toast: Omit<Toast, 'id'>) => {
-    const id = crypto.randomUUID();
+    const id = generateId();
     const newToast = { ...toast, id };
     setToasts((prev) => [...prev, newToast]);
 
     const duration = toast.duration ?? 5000;
     if (duration > 0) {
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
+        timeoutIdsRef.current.delete(timeoutId);
       }, duration);
+      timeoutIdsRef.current.add(timeoutId);
     }
+  }, []);
+
+  // Cleanup all timeouts on unmount to prevent memory leaks
+  React.useEffect(() => {
+    return () => {
+      timeoutIdsRef.current.forEach((timeoutId) => {
+        clearTimeout(timeoutId);
+      });
+      timeoutIdsRef.current.clear();
+    };
   }, []);
 
   const removeToast = React.useCallback((id: string) => {

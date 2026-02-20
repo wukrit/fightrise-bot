@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "code-review"
 tags: [code-review, quality, bot]
@@ -42,14 +42,15 @@ Some handlers return detailed error messages while others return generic "An err
 
 ## Acceptance Criteria
 
-- [ ] Consistent error handling
-- [ ] Specific error messages
+- [x] Consistent error handling
+- [x] Specific error messages
 
 ## Work Log
 
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-18 | Created | Found during code review |
+| 2026-02-19 | Resolved | Made error messages specific and consistent in checkin.ts, scoreHandler.ts, and registration.ts |
 
 ## Resources
 

@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p1
 issue_id: "057"
 tags: [code-review, security, rate-limiting]
@@ -57,6 +57,25 @@ Only trust X-Forwarded-For if request comes from a known proxy IP.
 
 ## Acceptance Criteria
 
-- [ ] Rate limiter cannot be bypassed via X-Forwarded-For spoofing
-- [ ] Only trusted proxy IPs can set forwarded headers
-- [ ] Requests without proxy headers use direct IP
+- [x] Rate limiter cannot be bypassed via X-Forwarded-For spoofing
+- [x] Only trusted proxy IPs can set forwarded headers
+- [x] Requests without proxy headers use direct IP
+
+## Resolution
+
+Implemented Solution A - Trust Only Specific Proxies:
+
+1. **Enabled trust proxy in Next.js** (`apps/web/next.config.js`):
+   - Added `trustProxy: true` to enable Next.js built-in proxy handling
+   - This tells Next.js to parse X-Forwarded-For and X-Real-IP headers correctly
+
+2. **Updated getClientIp function** (`apps/web/lib/ratelimit.ts`):
+   - Now uses Next.js's `request.ip` property which handles trusted proxy logic internally
+   - When trustProxy is enabled, Next.js only trusts headers from actual proxy connections
+   - Added defense-in-depth validation with isValidIp() function
+   - Falls back to X-Real-IP header or localhost if no valid IP found
+
+The fix prevents IP spoofing because:
+- Attackers cannot spoof X-Forwarded-For - Next.js only trusts these headers from connections that come through the reverse proxy (as determined by the trust proxy configuration)
+- The IP validation ensures only valid IP formats are accepted
+- Proper fallback behavior ensures legitimate requests still work

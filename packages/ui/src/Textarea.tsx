@@ -1,4 +1,5 @@
 import React from 'react';
+import { tokens } from './tokens.js';
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
@@ -8,51 +9,51 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
 
 const baseStyles: React.CSSProperties = {
   width: '100%',
-  padding: '10px 14px',
+  padding: `${tokens.spacing.sm} ${tokens.spacing.sm + 2}`,
   fontSize: '15px',
-  border: '1px solid var(--color-border, #e5e5e5)',
-  borderRadius: '6px',
-  backgroundColor: 'var(--color-bg, #ffffff)',
-  color: 'var(--color-text, #1a1a1a)',
+  border: `1px solid ${tokens.colors.border}`,
+  borderRadius: tokens.borderRadius.md,
+  backgroundColor: tokens.colors.white,
+  color: tokens.colors.gray[900],
   outline: 'none',
   resize: 'vertical',
   minHeight: '100px',
   fontFamily: 'inherit',
-  transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+  transition: tokens.transitions.fast,
 };
 
 const focusStyles: React.CSSProperties = {
-  borderColor: '#3b82f6',
-  boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.15)',
+  borderColor: tokens.colors.primary,
+  boxShadow: `0 0 0 3px ${tokens.colors.primary}26`,
 };
 
 const errorStyles: React.CSSProperties = {
-  borderColor: '#ef4444',
+  borderColor: tokens.colors.danger,
 };
 
 const errorFocusStyles: React.CSSProperties = {
-  borderColor: '#ef4444',
-  boxShadow: '0 0 0 3px rgba(239, 68, 68, 0.15)',
+  borderColor: tokens.colors.danger,
+  boxShadow: `0 0 0 3px ${tokens.colors.danger}26`,
 };
 
 const labelStyles: React.CSSProperties = {
   display: 'block',
-  marginBottom: '6px',
-  fontSize: '14px',
-  fontWeight: 500,
-  color: 'var(--color-text, #1a1a1a)',
+  marginBottom: tokens.spacing.xs,
+  fontSize: tokens.typography.fontSize.sm,
+  fontWeight: tokens.typography.fontWeight.medium,
+  color: tokens.colors.gray[900],
 };
 
 const helperStyles: React.CSSProperties = {
   marginTop: '4px',
-  fontSize: '13px',
-  color: '#6b7280',
+  fontSize: tokens.typography.fontSize.sm,
+  color: tokens.colors.gray[500],
 };
 
 const errorTextStyles: React.CSSProperties = {
   marginTop: '4px',
-  fontSize: '13px',
-  color: '#ef4444',
+  fontSize: tokens.typography.fontSize.sm,
+  color: tokens.colors.danger,
 };
 
 export function Textarea({
@@ -62,8 +63,12 @@ export function Textarea({
   style,
   onFocus,
   onBlur,
+  id,
   ...props
 }: TextareaProps) {
+  const generatedId = React.useId();
+  const textareaId = id || generatedId;
+
   const [isFocused, setIsFocused] = React.useState(false);
 
   const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
@@ -85,8 +90,9 @@ export function Textarea({
 
   return (
     <div>
-      {label && <label style={labelStyles}>{label}</label>}
+      {label && <label style={labelStyles} htmlFor={textareaId}>{label}</label>}
       <textarea
+        id={textareaId}
         style={textareaStyles}
         onFocus={handleFocus}
         onBlur={handleBlur}

@@ -3,6 +3,7 @@ import { prisma, RegistrationSource, RegistrationStatus, TournamentAdmin, AdminR
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
+import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
 
 // Validation schema for admin registration
 const adminRegisterSchema = z.object({
@@ -18,6 +19,17 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ip = getClientIp(request);
+  const result = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.write);
+
+  const headers = createRateLimitHeaders(result);
+  if (!result.allowed) {
+    return new Response('Too Many Requests', {
+      status: 429,
+      headers,
+    });
+  }
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -120,7 +132,7 @@ export async function POST(
       },
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       registration: {
         id: registration.id,
@@ -128,11 +140,22 @@ export async function POST(
         status: registration.status,
       },
     });
+
+    // Add rate limit headers
+    for (const [key, value] of headers.entries()) {
+      response.headers.set(key, value);
+    }
+
+    return response;
   } catch (error: unknown) {
     console.error('Admin registration error:', error);
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
+    for (const [key, value] of headers.entries()) {
+      errorResponse.headers.set(key, value);
+    }
+    return errorResponse;
   }
 }

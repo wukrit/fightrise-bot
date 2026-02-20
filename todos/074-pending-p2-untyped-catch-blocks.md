@@ -53,7 +53,7 @@ Solution A - Add unknown type annotation.
 
 ## Acceptance Criteria
 
-- [ ] All catch blocks typed as unknown
+- [x] All catch blocks typed as unknown
 
 ## Work Log
 

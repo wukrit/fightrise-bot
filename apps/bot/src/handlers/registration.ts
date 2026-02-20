@@ -1,10 +1,28 @@
-import { ButtonInteraction, EmbedBuilder, Colors, StringSelectMenuInteraction } from 'discord.js';
+import { ButtonInteraction, EmbedBuilder, Colors, StringSelectMenuInteraction, PermissionFlagsBits } from 'discord.js';
 import { prisma, RegistrationStatus } from '@fightrise/database';
 import type { ButtonHandler } from './buttonHandlers.js';
 import { isValidCuid } from './validation.js';
+import { INTERACTION_PREFIX } from '@fightrise/shared';
+
+/**
+ * Verifies that the user has Discord Manage Server permissions.
+ * Returns false and sends an error reply if the user lacks permissions.
+ */
+async function verifyDiscordPermissions(
+  interaction: ButtonInteraction
+): Promise<boolean> {
+  const member = await interaction.guild?.members.fetch(interaction.user.id);
+  if (!member || !member.permissions.has(PermissionFlagsBits.ManageGuild)) {
+    await interaction.editReply({
+      content: 'You need Manage Server permissions to use admin commands.',
+    });
+    return false;
+  }
+  return true;
+}
 
 export const registrationHandler: ButtonHandler = {
-  prefix: 'reg',
+  prefix: INTERACTION_PREFIX.REGISTER,
 
   async execute(interaction: ButtonInteraction | StringSelectMenuInteraction, parts: string[]) {
     if (!interaction.isButton()) {
@@ -29,11 +47,15 @@ async function handleApprove(interaction: ButtonInteraction, registrationId: str
 
   // Validate registrationId format (CUID) before database query
   if (!isValidCuid(registrationId)) {
-    await interaction.editReply({ content: 'Invalid button.' });
+    await interaction.editReply({ content: `Invalid registration ID: "${registrationId}" is not a valid format.` });
     return;
   }
 
   try {
+    // Verify Discord guild permissions first
+    const hasDiscordPerms = await verifyDiscordPermissions(interaction);
+    if (!hasDiscordPerms) return;
+
     // Verify admin permissions
     const adminId = interaction.user.id;
     const registration = await prisma.registration.findUnique({
@@ -65,10 +87,25 @@ async function handleApprove(interaction: ButtonInteraction, registrationId: str
       return;
     }
 
-    // Update registration status
-    await prisma.registration.update({
-      where: { id: registrationId },
-      data: { status: RegistrationStatus.CONFIRMED },
+    // Use transaction to prevent race conditions between admin check and update
+    await prisma.$transaction(async (tx) => {
+      // Re-verify admin permissions within transaction to prevent race condition
+      const adminCheck = await tx.tournamentAdmin.findFirst({
+        where: {
+          user: { discordId: adminId },
+          tournamentId: registration.tournamentId,
+        },
+      });
+
+      if (!adminCheck) {
+        throw new Error('Not authorized: admin permissions changed during operation');
+      }
+
+      // Update registration status
+      await tx.registration.update({
+        where: { id: registrationId },
+        data: { status: RegistrationStatus.CONFIRMED },
+      });
     });
 
     // Send confirmation to admin
@@ -110,11 +147,15 @@ async function handleReject(interaction: ButtonInteraction, registrationId: stri
 
   // Validate registrationId format (CUID) before database query
   if (!isValidCuid(registrationId)) {
-    await interaction.editReply({ content: 'Invalid button.' });
+    await interaction.editReply({ content: `Invalid registration ID: "${registrationId}" is not a valid format.` });
     return;
   }
 
   try {
+    // Verify Discord guild permissions first
+    const hasDiscordPerms = await verifyDiscordPermissions(interaction);
+    if (!hasDiscordPerms) return;
+
     // Verify admin permissions
     const adminId = interaction.user.id;
     const registration = await prisma.registration.findUnique({
@@ -146,10 +187,25 @@ async function handleReject(interaction: ButtonInteraction, registrationId: stri
       return;
     }
 
-    // Update registration status
-    await prisma.registration.update({
-      where: { id: registrationId },
-      data: { status: RegistrationStatus.CANCELLED },
+    // Use transaction to prevent race conditions between admin check and update
+    await prisma.$transaction(async (tx) => {
+      // Re-verify admin permissions within transaction to prevent race condition
+      const adminCheck = await tx.tournamentAdmin.findFirst({
+        where: {
+          user: { discordId: adminId },
+          tournamentId: registration.tournamentId,
+        },
+      });
+
+      if (!adminCheck) {
+        throw new Error('Not authorized: admin permissions changed during operation');
+      }
+
+      // Update registration status
+      await tx.registration.update({
+        where: { id: registrationId },
+        data: { status: RegistrationStatus.CANCELLED },
+      });
     });
 
     // Send confirmation to admin
@@ -191,7 +247,7 @@ async function handleInfo(interaction: ButtonInteraction, registrationId: string
 
   // Validate registrationId format (CUID) before database query
   if (!isValidCuid(registrationId)) {
-    await interaction.editReply({ content: 'Invalid button.' });
+    await interaction.editReply({ content: `Invalid registration ID: "${registrationId}" is not a valid format.` });
     return;
   }
 

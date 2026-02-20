@@ -1,4 +1,5 @@
 import React from 'react';
+import { tokens } from './tokens.js';
 
 export interface DrawerProps {
   isOpen: boolean;
@@ -16,7 +17,7 @@ const overlayStyles: React.CSSProperties = {
   right: 0,
   bottom: 0,
   backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  zIndex: 1000,
+  zIndex: tokens.zIndex.modal,
   animation: 'fadeIn 0.2s ease',
 };
 
@@ -33,11 +34,11 @@ const getDrawerStyles = (side: 'left' | 'right', size: string): React.CSSPropert
   bottom: 0,
   width: size,
   maxWidth: '100vw',
-  backgroundColor: 'var(--color-bg, #ffffff)',
+  backgroundColor: tokens.colors.white,
   boxShadow: side === 'left'
-    ? '4px 0 6px -1px rgba(0, 0, 0, 0.1)'
-    : '-4px 0 6px -1px rgba(0, 0, 0, 0.1)',
-  zIndex: 1001,
+    ? tokens.shadows.md
+    : `-4px 0 6px -1px rgba(0, 0, 0, 0.1)`,
+  zIndex: tokens.zIndex.modal + 1,
   display: 'flex',
   flexDirection: 'column',
   animation: side === 'left' ? 'slideInLeft 0.2s ease' : 'slideInRight 0.2s ease',
@@ -47,42 +48,42 @@ const headerStyles: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  padding: '20px 24px',
-  borderBottom: '1px solid var(--color-border, #e5e5e5)',
+  padding: `${tokens.spacing.md} ${tokens.spacing.lg}`,
+  borderBottom: `1px solid ${tokens.colors.border}`,
   flexShrink: 0,
 };
 
 const titleStyles: React.CSSProperties = {
   margin: 0,
-  fontSize: '18px',
-  fontWeight: 600,
-  color: 'var(--color-text, #1a1a1a)',
+  fontSize: tokens.typography.fontSize.lg,
+  fontWeight: tokens.typography.fontWeight.semibold,
+  color: tokens.colors.gray[900],
 };
 
 const closeButtonStyles: React.CSSProperties = {
   background: 'none',
   border: 'none',
   cursor: 'pointer',
-  padding: '8px',
-  borderRadius: '6px',
-  color: '#6b7280',
+  padding: tokens.spacing.sm,
+  borderRadius: tokens.borderRadius.md,
+  color: tokens.colors.gray[500],
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  transition: 'background-color 0.15s ease',
+  transition: tokens.transitions.fast,
 };
 
 const contentStyles: React.CSSProperties = {
-  padding: '24px',
+  padding: tokens.spacing.lg,
   overflow: 'auto',
   flex: 1,
 };
 
 const footerStyles: React.CSSProperties = {
-  padding: '16px 24px',
-  borderTop: '1px solid var(--color-border, #e5e5e5)',
+  padding: `${tokens.spacing.md} ${tokens.spacing.lg}`,
+  borderTop: `1px solid ${tokens.colors.border}`,
   display: 'flex',
-  gap: '12px',
+  gap: tokens.spacing.sm,
   justifyContent: 'flex-end',
   flexShrink: 0,
 };
@@ -97,9 +98,19 @@ function CloseIcon() {
 }
 
 export function Drawer({ isOpen, onClose, title, children, side = 'right', size = 'md' }: DrawerProps) {
+  const drawerRef = React.useRef<HTMLDivElement>(null);
+  const previousActiveElement = React.useRef<HTMLElement | null>(null);
+
   React.useEffect(() => {
     if (isOpen) {
+      // Store the currently focused element to return focus later
+      previousActiveElement.current = document.activeElement as HTMLElement;
       document.body.style.overflow = 'hidden';
+
+      // Focus the drawer container
+      setTimeout(() => {
+        drawerRef.current?.focus();
+      }, 0);
     } else {
       document.body.style.overflow = '';
     }
@@ -108,24 +119,84 @@ export function Drawer({ isOpen, onClose, title, children, side = 'right', size 
     };
   }, [isOpen]);
 
+  // Escape key handler
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  // Focus trap
+  React.useEffect(() => {
+    if (!isOpen || !drawerRef.current) return;
+
+    const drawer = drawerRef.current;
+    const focusableElements = drawer.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+
+      if (e.shiftKey) {
+        // Shift + Tab
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        }
+      } else {
+        // Tab
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    };
+
+    drawer.addEventListener('keydown', handleTabKey);
+    return () => drawer.removeEventListener('keydown', handleTabKey);
+  }, [isOpen]);
+
+  const handleClose = () => {
+    onClose();
+    // Return focus to the trigger element
+    previousActiveElement.current?.focus();
+  };
+
   if (!isOpen) return null;
 
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
-      onClose();
+      handleClose();
     }
   };
 
   return (
     <>
       <div style={overlayStyles} onClick={handleOverlayClick} />
-      <div style={getDrawerStyles(side, sizeStyles[size])}>
+      <div
+        ref={drawerRef}
+        style={getDrawerStyles(side, sizeStyles[size])}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? 'drawer-title' : undefined}
+        tabIndex={-1}
+      >
         {title && (
           <div style={headerStyles}>
-            <h2 style={titleStyles}>{title}</h2>
+            <h2 id="drawer-title" style={titleStyles}>{title}</h2>
             <button
               style={closeButtonStyles}
-              onClick={onClose}
+              onClick={handleClose}
               aria-label="Close drawer"
             >
               <CloseIcon />

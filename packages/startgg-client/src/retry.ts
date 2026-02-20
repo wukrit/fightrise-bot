@@ -9,6 +9,15 @@ export interface RetryOptions extends RetryConfig {
 }
 
 function isRateLimitError(error: unknown): boolean {
+  // Check HTTP status code first (most reliable)
+  if (error && typeof error === 'object' && 'response' in error) {
+    const response = (error as { response?: { status?: number } }).response;
+    if (response && response.status === 429) {
+      return true;
+    }
+  }
+
+  // Fallback to message matching
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
     return (

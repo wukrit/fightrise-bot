@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "code-review"
 tags: [code-review, reliability, bot]

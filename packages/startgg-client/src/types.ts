@@ -1,4 +1,13 @@
 // Start.gg API Response Types
+import {
+  StartGGError as SharedStartGGError,
+  RateLimitError as SharedRateLimitError,
+  AuthError as SharedAuthError,
+  GraphQLError as SharedGraphQLError,
+} from '@fightrise/shared';
+
+// Re-export from shared package for backward compatibility
+export { SharedStartGGError as StartGGError, SharedRateLimitError as RateLimitError, SharedAuthError as AuthError, SharedGraphQLError as GraphQLError };
 
 // ============================================
 // Enums
@@ -6,18 +15,18 @@
 
 // Tournament states from Start.gg API
 export enum TournamentState {
-  CREATED = 1,
-  ACTIVE = 2,
-  COMPLETED = 3,
+  CREATED = 'CREATED',
+  ACTIVE = 'ACTIVE',
+  COMPLETED = 'COMPLETED',
 }
 
 // Set (Match) states from Start.gg API
 export enum SetState {
-  CREATED = 1,
-  ACTIVE = 2,
-  COMPLETED = 3,
-  READY = 6,
-  STARTED = 7,
+  CREATED = 'CREATED',
+  ACTIVE = 'ACTIVE',
+  COMPLETED = 'COMPLETED',
+  READY = 'READY',
+  STARTED = 'STARTED',
 }
 
 // Common types
@@ -152,39 +161,4 @@ export interface RetryConfig {
   maxRetries?: number;
   baseDelayMs?: number;
   maxDelayMs?: number;
-}
-
-// Error types
-export class StartGGError extends Error {
-  constructor(message: string, public readonly code?: string) {
-    super(message);
-    this.name = 'StartGGError';
-  }
-}
-
-export class RateLimitError extends StartGGError {
-  constructor(
-    message: string,
-    public readonly retryAfterMs?: number
-  ) {
-    super(message, 'RATE_LIMIT');
-    this.name = 'RateLimitError';
-  }
-}
-
-export class AuthError extends StartGGError {
-  constructor(message: string) {
-    super(message, 'AUTH_ERROR');
-    this.name = 'AuthError';
-  }
-}
-
-export class GraphQLError extends StartGGError {
-  constructor(
-    message: string,
-    public readonly errors: Array<{ message: string; path?: string[] }>
-  ) {
-    super(message, 'GRAPHQL_ERROR');
-    this.name = 'GraphQLError';
-  }
 }

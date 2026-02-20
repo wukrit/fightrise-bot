@@ -14,9 +14,7 @@ import {
 } from '@fightrise/shared';
 import type { ButtonHandler } from './buttonHandlers.js';
 import { reportScore, confirmResult } from '../services/matchService.js';
-
-// CUID format: starts with 'c', followed by 24 lowercase alphanumeric chars
-const CUID_REGEX = /^c[a-z0-9]{24}$/;
+import { isValidCuid } from './validation.js';
 
 /**
  * Handler for score reporting button interactions.
@@ -34,15 +32,15 @@ export const scoreHandler: ButtonHandler = {
     // Detailed: report:abc:select -> parts = ["abc", "select"]
     // Select menu value format: "1|2-1" means winnerSlot=1, score="2-1"
     if (parts.length < 1 || !parts[0]) {
-      await interaction.reply({ content: 'Invalid button format.', ephemeral: true });
+      await interaction.reply({ content: 'Invalid button format: missing match ID.', ephemeral: true });
       return;
     }
 
     const [matchId, winnerSlotOrScore, type] = parts;
 
     // Validate matchId format (CUID)
-    if (!CUID_REGEX.test(matchId)) {
-      await interaction.reply({ content: 'Invalid button.', ephemeral: true });
+    if (!isValidCuid(matchId)) {
+      await interaction.reply({ content: `Invalid match ID: "${matchId}" is not a valid format.`, ephemeral: true });
       return;
     }
 
@@ -53,7 +51,7 @@ export const scoreHandler: ButtonHandler = {
       // Quick win button (2-0/3-0 sweep)
       winnerSlot = parseInt(winnerSlotOrScore, 10);
       if (isNaN(winnerSlot) || winnerSlot < 1 || winnerSlot > 2) {
-        await interaction.reply({ content: 'Invalid button.', ephemeral: true });
+        await interaction.reply({ content: `Invalid winner slot: "${winnerSlotOrScore}" - must be 1 or 2.`, ephemeral: true });
         return;
       }
     } else if (winnerSlotOrScore.includes('|')) {
@@ -62,14 +60,14 @@ export const scoreHandler: ButtonHandler = {
       winnerSlot = parseInt(slot, 10);
       score = matchScore;
       if (isNaN(winnerSlot) || winnerSlot < 1 || winnerSlot > 2) {
-        await interaction.reply({ content: 'Invalid score selection.', ephemeral: true });
+        await interaction.reply({ content: `Invalid score selection: winner slot must be 1 or 2.`, ephemeral: true });
         return;
       }
     } else {
       // Fallback for legacy button format
       winnerSlot = parseInt(winnerSlotOrScore, 10);
       if (isNaN(winnerSlot) || winnerSlot < 1 || winnerSlot > 2) {
-        await interaction.reply({ content: 'Invalid button.', ephemeral: true });
+        await interaction.reply({ content: `Invalid winner slot: "${winnerSlotOrScore}" - must be 1 or 2.`, ephemeral: true });
         return;
       }
     }
@@ -135,15 +133,15 @@ export const confirmHandler: ButtonHandler = {
     }
 
     if (parts.length < 1 || !parts[0]) {
-      await interaction.reply({ content: 'Invalid button format.', ephemeral: true });
+      await interaction.reply({ content: 'Invalid button format: missing match ID.', ephemeral: true });
       return;
     }
 
     const [matchId] = parts;
 
     // Validate matchId format (CUID)
-    if (!CUID_REGEX.test(matchId)) {
-      await interaction.reply({ content: 'Invalid button.', ephemeral: true });
+    if (!isValidCuid(matchId)) {
+      await interaction.reply({ content: `Invalid match ID: "${matchId}" is not a valid format.`, ephemeral: true });
       return;
     }
 
@@ -182,15 +180,15 @@ export const disputeHandler: ButtonHandler = {
     }
 
     if (parts.length < 1 || !parts[0]) {
-      await interaction.reply({ content: 'Invalid button format.', ephemeral: true });
+      await interaction.reply({ content: 'Invalid button format: missing match ID.', ephemeral: true });
       return;
     }
 
     const [matchId] = parts;
 
     // Validate matchId format (CUID)
-    if (!CUID_REGEX.test(matchId)) {
-      await interaction.reply({ content: 'Invalid button.', ephemeral: true });
+    if (!isValidCuid(matchId)) {
+      await interaction.reply({ content: `Invalid match ID: "${matchId}" is not a valid format.`, ephemeral: true });
       return;
     }
 

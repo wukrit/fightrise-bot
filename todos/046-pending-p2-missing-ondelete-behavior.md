@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "code-review"
 tags: [code-review, database, integrity]
@@ -44,14 +44,15 @@ user            User?     @relation(fields: [userId], references: [id])
 
 ## Acceptance Criteria
 
-- [ ] Explicit onDelete on all optional relations
-- [ ] Consistent behavior
+- [x] Explicit onDelete on all optional relations
+- [x] Consistent behavior
 
 ## Work Log
 
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-18 | Created | Found during code review |
+| 2026-02-19 | Completed | Added onDelete to 8 relations: MatchPlayer.user (SetNull), GameResult.matchPlayer (Cascade), Dispute.initiator (Cascade), Dispute.resolvedBy (SetNull), Registration.user (SetNull), Registration.event (SetNull), TournamentAdmin.user (Cascade), AuditLog.user (Cascade) |
 
 ## Resources
 

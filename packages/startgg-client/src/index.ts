@@ -2,6 +2,13 @@ import { GraphQLClient, ClientError } from 'graphql-request';
 import { ResponseCache } from './cache.js';
 import { withRetry } from './retry.js';
 import {
+  GET_TOURNAMENT,
+  GET_EVENT_SETS,
+  GET_EVENT_ENTRANTS,
+  GET_TOURNAMENTS_BY_OWNER,
+} from './queries/index.js';
+import { REPORT_SET } from './mutations/index.js';
+import {
   StartGGClientConfig,
   GetTournamentResponse,
   GetEventSetsResponse,
@@ -12,6 +19,7 @@ import {
   Set,
   Entrant,
   Connection,
+  StartGGError,
   AuthError,
   GraphQLError as StartGGGraphQLError,
 } from './types.js';
@@ -33,6 +41,7 @@ export class StartGGClient {
       headers: {
         Authorization: `Bearer ${config.apiKey}`,
       },
+      timeout: config.timeout ?? 30000, // 30 second default to prevent indefinite hangs
     });
 
     this.cache = new ResponseCache(config.cache ?? { enabled: false });
@@ -92,6 +101,13 @@ export class StartGGClient {
 
   private handleError(error: unknown): never {
     if (error instanceof ClientError) {
+      // Check for timeout errors
+      if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
+        throw new StartGGError(
+          'Request to Start.gg timed out. Please try again later.'
+        );
+      }
+
       // Check for auth errors
       if (error.response.status === 401 || error.response.status === 403) {
         throw new AuthError(
@@ -106,8 +122,17 @@ export class StartGGClient {
           path: e.path?.map(String),
         }));
         throw new StartGGGraphQLError(
-          `GraphQL error: ${errors[0].message}`,
+          `GraphQL errors: ${errors.map((e) => e.message).join(', ')}`,
           errors
+        );
+      }
+    }
+
+    // Check for network errors (including timeouts)
+    if (error instanceof Error) {
+      if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
+        throw new StartGGError(
+          'Request to Start.gg timed out. Please try again later.'
         );
       }
     }
@@ -116,27 +141,8 @@ export class StartGGClient {
   }
 
   async getTournament(slug: string): Promise<Tournament | null> {
-    const query = `
-      query GetTournament($slug: String!) {
-        tournament(slug: $slug) {
-          id
-          name
-          slug
-          startAt
-          endAt
-          state
-          events {
-            id
-            name
-            numEntrants
-            state
-          }
-        }
-      }
-    `;
-
     const result = await this.request<GetTournamentResponse>(
-      query,
+      GET_TOURNAMENT,
       { slug },
       { cacheKey: 'getTournament' }
     );
@@ -149,47 +155,8 @@ export class StartGGClient {
     page = 1,
     perPage = 50
   ): Promise<Connection<Set> | null> {
-    const query = `
-      query GetEventSets($eventId: ID!, $page: Int!, $perPage: Int!) {
-        event(id: $eventId) {
-          sets(page: $page, perPage: $perPage, sortType: STANDARD) {
-            pageInfo {
-              total
-              totalPages
-            }
-            nodes {
-              id
-              state
-              fullRoundText
-              identifier
-              round
-              slots {
-                entrant {
-                  id
-                  name
-                  participants {
-                    user {
-                      id
-                      slug
-                    }
-                  }
-                }
-                standing {
-                  stats {
-                    score {
-                      value
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    `;
-
     const result = await this.request<GetEventSetsResponse>(
-      query,
+      GET_EVENT_SETS,
       { eventId, page, perPage },
       { cacheKey: 'getEventSets' }
     );
@@ -202,32 +169,8 @@ export class StartGGClient {
     page = 1,
     perPage = 50
   ): Promise<Connection<Entrant> | null> {
-    const query = `
-      query GetEventEntrants($eventId: ID!, $page: Int!, $perPage: Int!) {
-        event(id: $eventId) {
-          entrants(query: { page: $page, perPage: $perPage }) {
-            pageInfo {
-              total
-              totalPages
-            }
-            nodes {
-              id
-              name
-              participants {
-                user {
-                  id
-                  slug
-                  name
-                }
-              }
-            }
-          }
-        }
-      }
-    `;
-
     const result = await this.request<GetEventEntrantsResponse>(
-      query,
+      GET_EVENT_ENTRANTS,
       { eventId, page, perPage },
       { cacheKey: 'getEventEntrants' }
     );
@@ -239,35 +182,8 @@ export class StartGGClient {
     page = 1,
     perPage = 25
   ): Promise<Connection<Tournament> | null> {
-    const query = `
-      query GetTournamentsByOwner($page: Int!, $perPage: Int!) {
-        currentUser {
-          tournaments(query: { page: $page, perPage: $perPage }) {
-            pageInfo {
-              total
-              totalPages
-            }
-            nodes {
-              id
-              name
-              slug
-              startAt
-              endAt
-              state
-              events {
-                id
-                name
-                numEntrants
-                state
-              }
-            }
-          }
-        }
-      }
-    `;
-
     const result = await this.request<GetTournamentsByOwnerResponse>(
-      query,
+      GET_TOURNAMENTS_BY_OWNER,
       { page, perPage },
       { cacheKey: 'getTournamentsByOwner' }
     );
@@ -279,17 +195,8 @@ export class StartGGClient {
     setId: string,
     winnerId: string
   ): Promise<{ id: string; state: number } | null> {
-    const mutation = `
-      mutation ReportSet($setId: ID!, $winnerId: ID!) {
-        reportBracketSet(setId: $setId, winnerId: $winnerId) {
-          id
-          state
-        }
-      }
-    `;
-
     const result = await this.request<ReportSetResponse>(
-      mutation,
+      REPORT_SET,
       { setId, winnerId },
       { skipCache: true } // Mutations should never be cached
     );

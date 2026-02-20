@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
 
 // Discord snowflake regex: 17-19 digit numeric string
 const GUILD_ID_REGEX = /^\d{17,19}$/;
@@ -10,6 +11,16 @@ const MAX_PERMISSIONS = 0x1FFFFFFFFFFFFF;
 const MIN_STATE_LENGTH = 8;
 
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request);
+  const result = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.auth);
+
+  const headers = createRateLimitHeaders(result);
+  if (!result.allowed) {
+    return new Response('Too Many Requests', {
+      status: 429,
+      headers,
+    });
+  }
   const searchParams = request.nextUrl.searchParams;
   const guildId = searchParams.get('guild_id');
   const permissions = searchParams.get('permissions');
@@ -66,5 +77,12 @@ export async function GET(request: NextRequest) {
   console.log(`Bot added to guild: ${guildId}, permissions: ${permissions || 'not specified'}`);
 
   // Redirect to success page
-  return NextResponse.redirect(new URL('/auth/success?message=bot_installed', request.url));
+  const response = NextResponse.redirect(new URL('/auth/success?message=bot_installed', request.url));
+
+  // Add rate limit headers
+  for (const [key, value] of headers.entries()) {
+    response.headers.set(key, value);
+  }
+
+  return response;
 }

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@fightrise/database';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { MatchState } from '@prisma/client';
+import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
 
 /**
  * POST /api/matches/[id]/dispute
@@ -11,6 +13,17 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ip = getClientIp(request);
+  const result = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.write);
+
+  const headers = createRateLimitHeaders(result);
+  if (!result.allowed) {
+    return new Response('Too Many Requests', {
+      status: 429,
+      headers,
+    });
+  }
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -66,16 +79,27 @@ export async function POST(
     await prisma.match.update({
       where: { id },
       data: {
-        state: 'DISPUTED',
+        state: MatchState.DISPUTED,
       },
     });
 
-    return NextResponse.json({ success: true, message: 'Dispute filed' }, { status: 201 });
+    const response = NextResponse.json({ success: true, message: 'Dispute filed' }, { status: 201 });
+
+    // Add rate limit headers
+    for (const [key, value] of headers.entries()) {
+      response.headers.set(key, value);
+    }
+
+    return response;
   } catch (error) {
     console.error('Error creating dispute:', error);
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { error: 'Failed to create dispute' },
       { status: 500 }
     );
+    for (const [key, value] of headers.entries()) {
+      errorResponse.headers.set(key, value);
+    }
+    return errorResponse;
   }
 }

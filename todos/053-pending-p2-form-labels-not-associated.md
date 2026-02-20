@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "code-review"
 tags: [code-review, accessibility, ui]
@@ -47,14 +47,15 @@ Labels are visually present but not programmatically associated with inputs usin
 
 ## Acceptance Criteria
 
-- [ ] Labels clickable
-- [ ] Screen reader association works
+- [x] Labels clickable
+- [x] Screen reader association works
 
 ## Work Log
 
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-18 | Created | Found during code review |
+| 2026-02-19 | Fixed | Added htmlFor/id using React.useId() |
 
 ## Resources
 

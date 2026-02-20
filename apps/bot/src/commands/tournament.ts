@@ -12,6 +12,7 @@ import type { Command } from '../types.js';
 import { getTournamentService } from '../services/tournamentService.js';
 import { prisma, TournamentState, MatchState } from '@fightrise/database';
 import { requireGuild, requireGuildWithReply } from '../utils/guildValidation.js';
+import { logger } from '../lib/logger.js';
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -106,7 +107,7 @@ async function handleAutocomplete(interaction: AutocompleteInteraction): Promise
       }))
     );
   } catch (error) {
-    console.error('Autocomplete error:', error);
+    logger.error({ err: error }, 'Autocomplete error');
     await interaction.respond([]);
   }
 }
@@ -267,7 +268,7 @@ async function handleStatus(interaction: ChatInputCommandInteraction): Promise<v
       embeds: [embed],
     });
   } catch (error) {
-    console.error('Error fetching tournament status:', error);
+    logger.error({ err: error }, 'Error fetching tournament status');
     await interaction.editReply({
       content: 'Failed to fetch tournament status. Please try again.',
     });
@@ -278,17 +279,12 @@ async function handleSetup(interaction: ChatInputCommandInteraction): Promise<vo
   // Defer reply since API calls may take time
   await interaction.deferReply({ ephemeral: true });
 
+  const guildId = await requireGuildWithReply(interaction);
+  if (!guildId) return;
+
   const slug = interaction.options.getString('slug', true);
   const matchChannel = interaction.options.getChannel('match-channel', true);
-  const guildId = interaction.guildId;
   const userId = interaction.user.id;
-
-  if (!guildId) {
-    await interaction.editReply({
-      content: 'This command can only be used in a server.',
-    });
-    return;
-  }
 
   try {
     const tournamentService = getTournamentService();
@@ -363,7 +359,7 @@ async function handleSetup(interaction: ChatInputCommandInteraction): Promise<vo
       embeds: [embed],
     });
   } catch (error) {
-    console.error('Error in tournament setup:', error);
+    logger.error({ err: error }, 'Error in tournament setup');
     await interaction.editReply({
       content: 'Failed to connect to Start.gg.\n\nPlease try again in a few moments. If the problem persists, check the Start.gg status page.',
     });

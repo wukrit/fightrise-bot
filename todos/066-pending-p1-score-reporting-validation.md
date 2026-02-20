@@ -51,9 +51,9 @@ No Zod validation schema is applied to the request body.
 
 ## Acceptance Criteria
 
-- [ ] Zod schema validates winnerId as CUID
-- [ ] Scores validated as integers with reasonable bounds (0-99)
-- [ ] Invalid input returns 400 error
+- [x] Zod schema validates winnerId as CUID
+- [x] Scores validated as integers with reasonable bounds (0-99)
+- [x] Invalid input returns 400 error
 
 ## Work Log
 

@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "code-review"
 tags: [code-review, database, integrity]
@@ -57,6 +57,7 @@ ALTER TABLE "User" ADD CONSTRAINT "User_has_identity"
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-18 | Created | Found during code review |
+| 2026-02-19 | Completed | Added CHECK constraint via migration |
 
 ## Resources
 

@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "code-review"
 tags: [code-review, concurrency, database, web]
@@ -53,7 +53,7 @@ if (opponentPlayer?.reportedScore !== null ...) {
 
 - [x] Score reporting uses transaction
 - [x] Concurrent reports handled correctly
-- [ ] Tests verify race condition handling
+- [x] Tests verify race condition handling
 
 ## Work Log
 

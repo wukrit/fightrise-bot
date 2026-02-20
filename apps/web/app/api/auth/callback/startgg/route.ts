@@ -6,12 +6,23 @@ import {
   verifySignedStartggOAuthState,
 } from '@fightrise/shared';
 import { consumeStartggOAuthNonce } from '@/lib/startggStateStore';
+import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
 
 // Start.gg OAuth endpoints
 const STARTGG_TOKEN_URL = 'https://start.gg/oauth/token';
 const STARTGG_API_URL = 'https://api.start.gg/gql/alpha';
 
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request);
+  const result = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.auth);
+
+  const headers = createRateLimitHeaders(result);
+  if (!result.allowed) {
+    return new Response('Too Many Requests', {
+      status: 429,
+      headers,
+    });
+  }
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get('code');
   const state = searchParams.get('state');
@@ -152,7 +163,14 @@ export async function GET(request: NextRequest) {
     console.log(`Linked Start.gg account ${startggUser.gamerTag} to Discord user ${discordUsername}`);
 
     // Redirect to success page
-    return NextResponse.redirect(new URL('/auth/success?message=startgg_linked', request.url));
+    const response = NextResponse.redirect(new URL('/auth/success?message=startgg_linked', request.url));
+
+    // Add rate limit headers
+    for (const [key, value] of headers.entries()) {
+      response.headers.set(key, value);
+    }
+
+    return response;
   } catch (error) {
     console.error('Error in Start.gg OAuth callback:', error);
     return NextResponse.redirect(new URL('/auth/error?error=unknown', request.url));

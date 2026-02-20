@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "059"
 tags: [code-review, agent-native, button-interactions]
@@ -29,9 +29,18 @@ Update registration.ts to use `INTERACTION_PREFIX.REGISTER` and update admin.ts 
 
 **Effort:** Small
 
-## Recommended Action
+## Resolution
 
-<!-- To be filled during triage -->
+**Changes made:**
+1. `apps/bot/src/handlers/registration.ts`:
+   - Added import for `INTERACTION_PREFIX` from `@fightrise/shared`
+   - Changed handler prefix from hardcoded `'reg'` to `INTERACTION_PREFIX.REGISTER` (`'register'`)
+
+2. `apps/bot/src/commands/admin.ts`:
+   - Added import for `INTERACTION_PREFIX` from `@fightrise/shared`
+   - Updated button custom IDs from `reg-approve:`, `reg-reject:`, `reg-info:` to `register:approve:`, `register:reject:`, `register:info:`
+
+All registration button prefixes now use the consistent `register:` format matching the `INTERACTION_PREFIX.REGISTER` constant.
 
 ## Technical Details
 
@@ -41,6 +50,6 @@ Update registration.ts to use `INTERACTION_PREFIX.REGISTER` and update admin.ts 
 
 ## Acceptance Criteria
 
-- [ ] All registration button prefixes use consistent format
-- [ ] Matches INTERACTION_PREFIX constants
-- [ ] Agent developers can rely on constants
+- [x] All registration button prefixes use consistent format
+- [x] Matches INTERACTION_PREFIX constants
+- [x] Agent developers can rely on constants

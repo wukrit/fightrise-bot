@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p1
 issue_id: "code-review"
 tags: [code-review, accessibility, ui]
@@ -60,7 +60,16 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-18 | Created | Found during code review |
-| 2026-02-18 | Completed | Added focus trap and escape key handling to Modal and Drawer |
+| 2026-02-19 | Completed | Added focus trap and escape key handling to Modal and Drawer |
+
+## Resolution
+
+Implemented accessibility features for Modal and Drawer components:
+
+1. **Escape key handling** - Pressing Escape now closes both modal and drawer
+2. **Focus trap** - Tab key cycles within the dialog; Shift+Tab goes backwards
+3. **Focus management** - Focus moves to dialog on open, returns to trigger on close
+4. **ARIA attributes** - Added role="dialog", aria-modal="true", and aria-labelledby
 
 ## Resources
 

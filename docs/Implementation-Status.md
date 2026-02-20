@@ -5,7 +5,7 @@ title: "FightRise Implementation Status"
 
 # FightRise Implementation Status
 
-Last updated: January 2026
+Last updated: February 2026
 
 This document tracks the current implementation progress against the architecture plan.
 
@@ -36,13 +36,13 @@ This document tracks the current implementation progress against the architectur
 | Phase | Status | Completion |
 |-------|--------|------------|
 | Phase 1: Foundation | Complete | 100% |
-| Phase 2: Core Bot Features | In Progress | ~25% |
-| Phase 3: Registration & Account Linking | Not Started | 10% |
-| Phase 4: Web Portal | Minimal | 20% |
-| Phase 5: Polish & Advanced | Not Started | 0% |
-| Phase 6: Testing & Launch | In Progress | 50% |
+| Phase 2: Core Bot Features | Complete | 95% |
+| Phase 3: Registration & Account Linking | Complete | 90% |
+| Phase 4: Web Portal | Partial | 30% |
+| Phase 5: Polish & Advanced | Partial | 40% |
+| Phase 6: Testing & Launch | In Progress | 80% |
 
-**Estimated Overall Completion: ~35%**
+**Estimated Overall Completion: ~75%**
 
 ---
 
@@ -53,7 +53,7 @@ All foundational infrastructure is in place and working.
 | Task | Status | Notes |
 |------|--------|-------|
 | Turborepo monorepo setup | ✅ Complete | npm workspaces, turbo.json configured |
-| Prisma database schema | ✅ Complete | 10 models, proper relations, indexes |
+| Prisma database schema | ✅ Complete | 11 models, proper relations, indexes |
 | Discord bot initialization | ✅ Complete | discord.js v14, command/event loaders |
 | Start.gg API client | ✅ Complete | GraphQL client, caching, retry logic |
 | NextAuth Discord OAuth | ✅ Complete | Working authentication flow |
@@ -62,53 +62,57 @@ All foundational infrastructure is in place and working.
 
 ---
 
-## Phase 2: Core Bot Features - IN PROGRESS
+## Phase 2: Core Bot Features - COMPLETE
 
 ### Slash Commands
 
 | Command | Status | Details |
 |---------|--------|---------|
 | `/tournament setup` | ✅ Complete | Full implementation with validation, Start.gg sync, DB save |
-| `/tournament status` | ⚠️ Stubbed | Command registered, returns placeholder |
-| `/checkin` | ⚠️ Stubbed | Command registered, returns placeholder |
-| `/register` | ⚠️ Stubbed | Command registered, returns placeholder |
-| `/report` | ⚠️ Stubbed | Command registered, returns placeholder |
-| `/my-matches` | ⚠️ Stubbed | Command registered, returns placeholder |
-| `/link-startgg` | ⚠️ Stubbed | Command registered, returns placeholder |
+| `/tournament status` | ✅ Complete | Tournament status display |
+| `/checkin` | ✅ Complete | Full check-in flow with button interactions |
+| `/register` | ✅ Complete | Registration flow with Start.gg sync |
+| `/report` | ✅ Complete | Score reporting with confirmation |
+| `/my-matches` | ✅ Complete | List user's upcoming matches |
+| `/link-startgg` | ✅ Complete | Link Start.gg account via OAuth |
+| `/unlink-startgg` | ✅ Complete | Unlink Start.gg account |
 
 ### Services & Infrastructure
 
 | Component | Status | Details |
 |-----------|--------|---------|
 | TournamentService | ✅ Complete | Setup flow, slug normalization, admin validation |
-| MatchService | ❌ Not Started | Thread creation, check-in handling |
-| SyncService | ❌ Not Started | Start.gg polling, state synchronization |
-| BullMQ Job Queue | ⚠️ Partial | Package installed, no workers implemented |
+| MatchService | ✅ Complete | Thread creation, check-in handling, match state management |
+| PollingService | ✅ Complete | BullMQ-based tournament polling with dynamic intervals |
+| RegistrationSyncService | ✅ Complete | Start.gg registration sync |
+| AuditService | ✅ Complete | Admin action tracking |
+| DqService | ✅ Complete | Disqualification handling |
+| BullMQ Job Queue | ✅ Complete | Workers for polling and state sync |
 
 ### Button Interactions
 
 | Interaction | Status | Details |
 |-------------|--------|---------|
-| Check-in buttons | ❌ Not Started | No handler implemented |
-| Score reporting buttons | ❌ Not Started | No handler implemented |
-| Confirmation buttons | ❌ Not Started | No handler implemented |
-| interactionCreate handler | ⚠️ Partial | Only handles slash commands |
+| Check-in buttons | ✅ Complete | Full handler with state updates |
+| Score reporting buttons | ✅ Complete | Winner selection, confirmation flow |
+| Confirmation buttons | ✅ Complete | Loser confirmation auto-submits to Start.gg |
+| interactionCreate handler | ✅ Complete | Routes slash commands and buttons |
 
 ---
 
-## Phase 3: Registration & Account Linking - MINIMAL
+## Phase 3: Registration & Account Linking - COMPLETE
 
 | Feature | Status | Details |
 |---------|--------|---------|
-| Discord registration | ⚠️ Stubbed | Command exists, no logic |
-| Start.gg account linking | ⚠️ Stubbed | Command exists, no OAuth flow |
-| Start.gg OAuth provider | ❌ Not Started | Not configured in NextAuth |
-| Manual registration | ❌ Not Started | No admin UI or API |
-| Registration approval | ❌ Not Started | No workflow implemented |
+| Discord registration | ✅ Complete | Full registration flow |
+| Start.gg account linking | ✅ Complete | OAuth flow with token storage |
+| Start.gg OAuth provider | ⚠️ Partial | Provider configured, needs testing |
+| Manual registration | ✅ Complete | Admin can add registrations |
+| Registration approval | ✅ Complete | Automatic via Start.gg sync |
 
 ---
 
-## Phase 4: Web Portal - MINIMAL
+## Phase 4: Web Portal - PARTIAL
 
 ### Authentication - COMPLETE
 
@@ -119,16 +123,17 @@ All foundational infrastructure is in place and working.
 | Session management | ✅ Complete | Type-safe session augmentation |
 | Auth middleware | ✅ Complete | Protected routes configured |
 | Auth components | ✅ Complete | SignIn, SignOut, UserMenu |
+| Token encryption | ✅ Complete | AES-256 encryption for OAuth tokens |
 
-### Pages - NOT STARTED
+### Pages - PARTIAL
 
 | Page | Status | Details |
 |------|--------|---------|
-| Home page (`/`) | ⚠️ Minimal | Placeholder content only |
-| Dashboard | ❌ Not Started | No implementation |
+| Home page (`/`) | ⚠️ Partial | Basic landing page |
+| Dashboard | ⚠️ Partial | User dashboard with tournaments |
 | Tournament list | ❌ Not Started | No implementation |
 | Tournament detail | ❌ Not Started | No implementation |
-| User settings | ❌ Not Started | No implementation |
+| User settings | ⚠️ Partial | Basic account settings |
 | Admin pages | ❌ Not Started | No implementation |
 
 ### UI Components (`packages/ui`)
@@ -146,12 +151,12 @@ All foundational infrastructure is in place and working.
 
 ---
 
-## Phase 5: Polish & Advanced - NOT STARTED
+## Phase 5: Polish & Advanced - PARTIAL
 
 | Feature | Status |
 |---------|--------|
-| Match dispute system | ❌ Not Started |
-| DQ handling | ❌ Not Started |
+| Match dispute system | ⚠️ Partial |
+| DQ handling | ✅ Complete |
 | Bracket visualization | ❌ Not Started |
 | Notification preferences | ❌ Not Started |
 | Mobile-friendly portal | ❌ Not Started |
@@ -193,7 +198,7 @@ All foundational infrastructure is in place and working.
 
 ## Database Schema Status
 
-All 8 models are implemented and migrated:
+All 11 models are implemented and migrated:
 
 | Model | Fields | Relations | Indexes |
 |-------|--------|-----------|---------|
@@ -202,9 +207,12 @@ All 8 models are implemented and migrated:
 | Event | ✅ | ✅ | ✅ |
 | Match | ✅ | ✅ | ✅ |
 | MatchPlayer | ✅ | ✅ | ✅ |
+| GameResult | ✅ | ✅ | ✅ |
+| Dispute | ✅ | ✅ | ✅ |
 | Registration | ✅ | ✅ | ✅ |
 | TournamentAdmin | ✅ | ✅ | ✅ |
 | GuildConfig | ✅ | ✅ | ✅ |
+| AuditLog | ✅ | ✅ | ✅ |
 
 ---
 
@@ -259,21 +267,20 @@ All 8 models are implemented and migrated:
 
 ### Critical (Blocking Features)
 
-1. **No button interaction handler** - interactionCreate only handles slash commands
-2. **No BullMQ workers** - Polling service not implemented
-3. **No Start.gg OAuth provider** - Cannot verify tournament admin via OAuth
-4. **OAuth token encryption** - startggToken stored as plain text in User model (violates OWASP standards, requires AES-256 encryption)
+1. **Web portal pages incomplete** - Tournament list/detail pages not started
+2. **No admin web UI** - Admin operations only via Discord
 
 ### Important (Quality of Life)
 
-1. **No audit logging** - Score reports and admin actions not tracked
-2. **Minimal web UI** - No functional pages beyond auth
+1. **Limited UI components** - Forms, tables, cards not implemented
+2. **No bracket visualization** - Can't view brackets in portal
+3. **No mobile optimization** - Portal not mobile-friendly
 
 ### Nice to Have
 
-1. **Inline styles** - UI components use inline styles, not CSS modules/Tailwind
-2. **Limited error messages** - Could be more user-friendly
-3. **No i18n** - English only
+1. **No i18n** - English only
+2. **Notification preferences** - Not configurable
+3. **Limited error messages** - Could be more user-friendly
 
 ---
 
@@ -281,67 +288,44 @@ All 8 models are implemented and migrated:
 
 Based on the architecture plan and current state, these are the recommended next steps:
 
-### High Priority (Unblocks Core Flow)
+### High Priority (Web Portal)
 
-1. **Button interaction handler** (`apps/bot/src/events/interactionCreate.ts`)
-   - Add button/select menu handling
-   - Route to appropriate handlers
-
-2. **Match creation service** (`apps/bot/src/services/matchService.ts`)
-   - Thread creation
-   - Check-in message with buttons
-   - Player notification
-
-3. **BullMQ polling worker** (`apps/bot/src/workers/pollWorker.ts`)
-   - Tournament state sync
-   - Match state detection
-   - Dynamic poll intervals
-
-4. **Check-in handler** (`apps/bot/src/handlers/checkinHandler.ts`)
-   - Button press validation
-   - State updates
-   - All-checked-in detection
-
-5. **Score reporting handler** (`apps/bot/src/handlers/reportHandler.ts`)
-   - Winner selection
-   - Confirmation flow
-   - Start.gg API sync
+1. **Tournament list page** - Display user's tournaments
+2. **Tournament detail page** - Show matches, standings, bracket
+3. **Admin web UI** - Tournament management in browser
 
 ### Medium Priority
 
-6. **Tournament status command** - Display active matches, standings
-7. **My-matches command** - List user's upcoming matches
-8. **Web dashboard** - Tournament list and basic management
-9. **Start.gg OAuth provider** - Full account linking flow
+4. **UI component library** - Forms, tables, cards, modals
+5. **Start.gg OAuth testing** - Full OAuth flow verification
+6. **Mobile responsive design** - Portal on mobile devices
 
 ### Lower Priority
 
-10. **Registration command** - Full flow with approval
-11. **Dispute system** - Admin intervention workflow
-12. **DQ handling** - Timeout and manual DQ
-13. **Expanded UI components** - Forms, tables, cards
+7. **Bracket visualization** - View brackets in portal
+8. **Notification preferences** - User-configurable notifications
+9. **i18n support** - Multi-language support
+10. **Dispute web UI** - Handle disputes in portal
 
 ---
 
 ## Architecture Alignment
 
-The implemented code follows the architecture plan with these notes:
+The implemented code follows the architecture plan:
 
 ### Matches Architecture
 
-- ✅ Database schema matches plan
+- ✅ Database schema matches plan (11 models)
 - ✅ Start.gg client matches planned queries
 - ✅ Bot structure matches planned layout
-- ⚠️ Service layer partially implemented
-- ❌ Polling/job system not implemented
-- ❌ Button interactions not implemented
+- ✅ All 6 services implemented
+- ✅ Polling/job system implemented
+- ✅ Button interactions implemented
 
 ### Deviations from Plan
 
-1. **No web portal pages** - Plan shows dashboard, settings, admin pages
-2. **No match threads yet** - Core feature, but not implemented
-3. **Polling not started** - BullMQ installed but unused
-4. **OAuth tokens unencrypted** - Plan notes this as a gap
+1. **Web portal pages partial** - Auth done, basic dashboard, but no tournament views
+2. **No bracket visualization** - Not implemented yet
 
 ---
 

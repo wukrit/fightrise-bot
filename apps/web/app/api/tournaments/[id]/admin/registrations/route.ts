@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma, AdminRole } from '@fightrise/database';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
 
 /**
  * GET /api/tournaments/[id]/admin/registrations
@@ -11,6 +12,17 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const ip = getClientIp(request);
+  const result = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.admin);
+
+  const headers = createRateLimitHeaders(result);
+  if (!result.allowed) {
+    return new Response('Too Many Requests', {
+      status: 429,
+      headers,
+    });
+  }
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -79,7 +91,7 @@ export async function GET(
       orderBy: { createdAt: 'desc' },
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       registrations: registrations.map((r) => ({
         id: r.id,
         user: r.user,
@@ -88,11 +100,22 @@ export async function GET(
         createdAt: r.createdAt,
       })),
     });
+
+    // Add rate limit headers
+    for (const [key, value] of headers.entries()) {
+      response.headers.set(key, value);
+    }
+
+    return response;
   } catch (error: unknown) {
     console.error('Admin registrations error:', error);
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
+    for (const [key, value] of headers.entries()) {
+      errorResponse.headers.set(key, value);
+    }
+    return errorResponse;
   }
 }

@@ -1,5 +1,6 @@
 import { Redis } from 'ioredis';
 import { randomUUID } from 'crypto';
+import { createRateLimitResponse } from './api-response';
 
 let redis: Redis | null = null;
 
@@ -49,8 +50,12 @@ export const RATE_LIMIT_CONFIGS = {
   auth: { limit: 5, windowMs: 60000 },
   // Stricter limit for health check (10 per second)
   health: { limit: 10, windowMs: 1000 },
-  // General API limit (100 per minute)
-  api: { limit: 100, windowMs: 60000 },
+  // General API read limit (60 per minute)
+  read: { limit: 60, windowMs: 60000 },
+  // Write operations (30 per minute) - more restrictive
+  write: { limit: 30, windowMs: 60000 },
+  // Admin operations (20 per minute)
+  admin: { limit: 20, windowMs: 60000 },
 } as const;
 
 /**
@@ -172,25 +177,23 @@ export function getConnectionIpFromRequest(request: Request): string | undefined
 }
 
 /**
- * Get client IP from request headers
- * Validates X-Forwarded-For to prevent IP spoofing attacks
- * Only trusts X-Forwarded-For if request comes from a trusted proxy
+ * Get client IP from request.
+ *
+ * Security: rely on Next.js-provided request.ip when trustProxy is enabled.
+ * For fallback, only use runtime connection metadata passed by the caller.
+ * Do not trust direct x-real-ip header values from untrusted clients.
  */
 export function getClientIp(request: Request, connectionIp?: string): string {
-  // If we have a direct connection IP and it's from a trusted proxy, we can trust X-Forwarded-For
-  const isFromTrustedProxy = connectionIp && TRUSTED_PROXIES.includes(connectionIp);
+  // In Next.js with trustProxy enabled, request.ip automatically handles
+  // X-Forwarded-For validation and returns the correct client IP
+  // We still validate the format as a defense-in-depth measure
+  const ip = (request as Request & { ip?: string }).ip;
 
-  const forwardedFor = request.headers.get('x-forwarded-for');
-  if (forwardedFor && isFromTrustedProxy) {
-    // Only trust X-Forwarded-For from trusted proxies
-    // Take the first IP (original client) and validate it's a valid IP format
-    const clientIp = forwardedFor.split(',')[0].trim();
-    if (isValidIp(clientIp)) {
-      return clientIp;
-    }
+  if (ip && isValidIp(ip)) {
+    return ip;
   }
 
-  // Fallback to direct connection IP only (never trust x-real-ip from untrusted clients)
+  // Fallback to direct connection IP only.
   return connectionIp ?? '127.0.0.1';
 }
 
@@ -240,10 +243,7 @@ export async function withRateLimit(
   const headers = createRateLimitHeaders(result);
 
   if (!result.allowed) {
-    return new Response('Too Many Requests', {
-      status: 429,
-      headers,
-    });
+    return createRateLimitResponse(result);
   }
 
   const response = await handler();
