@@ -50,6 +50,12 @@ vi.mock('@fightrise/database', () => ({
     DISPUTED: 'DISPUTED',
     DQ: 'DQ',
   },
+  StartggSyncStatus: {
+    NOT_SYNCED: 'NOT_SYNCED',
+    PENDING: 'PENDING',
+    SYNCED: 'SYNCED',
+    FAILED: 'FAILED',
+  },
   RegistrationSource: {
     STARTGG: 'STARTGG',
     DISCORD: 'DISCORD',
