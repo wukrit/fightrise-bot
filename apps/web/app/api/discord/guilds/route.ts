@@ -17,15 +17,8 @@ export async function GET() {
 
     // Fetch guild configs from database
     const guildConfigs = await prisma.guildConfig.findMany({
-      where: {
-        discordGuildId: {
-          not: null,
-        },
-      },
       select: {
         discordGuildId: true,
-        guildName: true,
-        channels: true,
       },
     });
 
@@ -34,29 +27,12 @@ export async function GET() {
       .filter((config) => config.discordGuildId)
       .map((config) => ({
         id: config.discordGuildId,
-        name: config.guildName || 'Unknown Server',
+        name: 'Unknown Server',
       }));
-
-    // Get unique channels from all guilds
-    const channelsSet = new Map<string, string>();
-    guildConfigs.forEach((config) => {
-      if (config.channels) {
-        Object.entries(config.channels).forEach(([id, channel]) => {
-          if (!channelsSet.has(id)) {
-            channelsSet.set(id, typeof channel === 'string' ? channel : channel.name || 'unknown');
-          }
-        });
-      }
-    });
-
-    const channels = Array.from(channelsSet.entries()).map(([id, name]) => ({
-      id,
-      name,
-    }));
 
     return NextResponse.json({
       guilds,
-      channels: channels.length > 0 ? channels : [{ id: '1', name: 'general' }, { id: '2', name: 'tournaments' }],
+      channels: [{ id: '1', name: 'general' }, { id: '2', name: 'tournaments' }],
     });
   } catch (error) {
     console.error('Error fetching Discord data:', error);
