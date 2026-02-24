@@ -1,4 +1,5 @@
 import React from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
 import { tokens } from './tokens.js';
 
 export interface DrawerProps {
@@ -12,13 +13,10 @@ export interface DrawerProps {
 
 const overlayStyles: React.CSSProperties = {
   position: 'fixed',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
+  inset: 0,
   backgroundColor: 'rgba(0, 0, 0, 0.5)',
   zIndex: tokens.zIndex.modal,
-  animation: 'fadeIn 0.2s ease',
+  animation: 'fadeIn 200ms ease',
 };
 
 const sizeStyles: Record<string, string> = {
@@ -41,7 +39,7 @@ const getDrawerStyles = (side: 'left' | 'right', size: string): React.CSSPropert
   zIndex: tokens.zIndex.modal + 1,
   display: 'flex',
   flexDirection: 'column',
-  animation: side === 'left' ? 'slideInLeft 0.2s ease' : 'slideInRight 0.2s ease',
+  animation: side === 'left' ? 'slideInLeft 200ms ease' : 'slideInRight 200ms ease',
 });
 
 const headerStyles: React.CSSProperties = {
@@ -98,114 +96,32 @@ function CloseIcon() {
 }
 
 export function Drawer({ isOpen, onClose, title, children, side = 'right', size = 'md' }: DrawerProps) {
-  const drawerRef = React.useRef<HTMLDivElement>(null);
-  const previousActiveElement = React.useRef<HTMLElement | null>(null);
-
-  React.useEffect(() => {
-    if (isOpen) {
-      // Store the currently focused element to return focus later
-      previousActiveElement.current = document.activeElement as HTMLElement;
-      document.body.style.overflow = 'hidden';
-
-      // Focus the drawer container
-      setTimeout(() => {
-        drawerRef.current?.focus();
-      }, 0);
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
-
-  // Escape key handler
-  React.useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  // Focus trap
-  React.useEffect(() => {
-    if (!isOpen || !drawerRef.current) return;
-
-    const drawer = drawerRef.current;
-    const focusableElements = drawer.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    const firstElement = focusableElements[0];
-    const lastElement = focusableElements[focusableElements.length - 1];
-
-    const handleTabKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return;
-
-      if (e.shiftKey) {
-        // Shift + Tab
-        if (document.activeElement === firstElement) {
-          e.preventDefault();
-          lastElement?.focus();
-        }
-      } else {
-        // Tab
-        if (document.activeElement === lastElement) {
-          e.preventDefault();
-          firstElement?.focus();
-        }
-      }
-    };
-
-    drawer.addEventListener('keydown', handleTabKey);
-    return () => drawer.removeEventListener('keydown', handleTabKey);
-  }, [isOpen]);
-
-  const handleClose = () => {
-    onClose();
-    // Return focus to the trigger element
-    previousActiveElement.current?.focus();
-  };
-
-  if (!isOpen) return null;
-
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      handleClose();
-    }
-  };
-
   return (
-    <>
-      <div style={overlayStyles} onClick={handleOverlayClick} />
-      <div
-        ref={drawerRef}
-        style={getDrawerStyles(side, sizeStyles[size])}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={title ? 'drawer-title' : undefined}
-        tabIndex={-1}
-      >
-        {title && (
-          <div style={headerStyles}>
-            <h2 id="drawer-title" style={titleStyles}>{title}</h2>
-            <button
-              style={closeButtonStyles}
-              onClick={handleClose}
-              aria-label="Close drawer"
-            >
-              <CloseIcon />
-            </button>
-          </div>
-        )}
-        <div style={contentStyles}>{children}</div>
-      </div>
-    </>
+    <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay style={overlayStyles} />
+        <Dialog.Content
+          style={getDrawerStyles(side, sizeStyles[size])}
+          className="drawer-content"
+        >
+          {title && (
+            <div style={headerStyles}>
+              <Dialog.Title style={titleStyles}>{title}</Dialog.Title>
+              <Dialog.Close asChild>
+                <button
+                  style={closeButtonStyles}
+                  onClick={onClose}
+                  aria-label="Close drawer"
+                >
+                  <CloseIcon />
+                </button>
+              </Dialog.Close>
+            </div>
+          )}
+          <div style={contentStyles}>{children}</div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 
