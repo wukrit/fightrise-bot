@@ -17,6 +17,7 @@ import {
   ReportSetResponse,
   Tournament,
   Set,
+  SetState,
   Entrant,
   Connection,
   StartGGError,
@@ -41,7 +42,6 @@ export class StartGGClient {
       headers: {
         Authorization: `Bearer ${config.apiKey}`,
       },
-      timeout: config.timeout ?? 30000, // 30 second default to prevent indefinite hangs
     });
 
     this.cache = new ResponseCache(config.cache ?? { enabled: false });
@@ -194,7 +194,7 @@ export class StartGGClient {
   async reportSet(
     setId: string,
     winnerId: string
-  ): Promise<{ id: string; state: number } | null> {
+  ): Promise<{ id: string; state: SetState } | null> {
     const result = await this.request<ReportSetResponse>(
       REPORT_SET,
       { setId, winnerId },
