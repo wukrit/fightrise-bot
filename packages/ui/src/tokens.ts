@@ -118,6 +118,74 @@ export const colorsDark = {
   border: '#4b5563',
 } as const;
 
+// CSS Variables for Radix UI integration
+// These provide CSS variable names that work with Radix data-state attributes
+export const cssVariables = {
+  // Colors
+  '--color-primary': colors.primary,
+  '--color-primary-hover': colors.primaryHover,
+  '--color-secondary': colors.secondary,
+  '--color-secondary-hover': colors.secondaryHover,
+  '--color-danger': colors.danger,
+  '--color-danger-hover': colors.dangerHover,
+  '--color-discord': colors.discord,
+  '--color-discord-hover': colors.discordHover,
+  '--color-success': colors.success,
+  '--color-warning': colors.warning,
+  '--color-error': colors.error,
+  '--color-white': colors.white,
+  '--color-black': colors.black,
+  '--color-border': colors.border,
+  '--color-border-hover': colors.borderHover,
+
+  // Gray scale
+  '--color-gray-50': grayScale[50],
+  '--color-gray-100': grayScale[100],
+  '--color-gray-200': grayScale[200],
+  '--color-gray-300': grayScale[300],
+  '--color-gray-400': grayScale[400],
+  '--color-gray-500': grayScale[500],
+  '--color-gray-600': grayScale[600],
+  '--color-gray-700': grayScale[700],
+  '--color-gray-800': grayScale[800],
+  '--color-gray-900': grayScale[900],
+
+  // Spacing
+  '--spacing-xs': spacing.xs,
+  '--spacing-sm': spacing.sm,
+  '--spacing-md': spacing.md,
+  '--spacing-lg': spacing.lg,
+  '--spacing-xl': spacing.xl,
+  '--spacing-2xl': spacing['2xl'],
+
+  // Border radius
+  '--radius-none': borderRadius.none,
+  '--radius-sm': borderRadius.sm,
+  '--radius-md': borderRadius.md,
+  '--radius-lg': borderRadius.lg,
+  '--radius-xl': borderRadius.xl,
+  '--radius-full': borderRadius.full,
+
+  // Shadows
+  '--shadow-sm': shadows.sm,
+  '--shadow-md': shadows.md,
+  '--shadow-lg': shadows.lg,
+
+  // Transitions
+  '--transition-fast': transitions.fast,
+  '--transition-normal': transitions.normal,
+  '--transition-slow': transitions.slow,
+
+  // Z-index
+  '--z-dropdown': zIndex.dropdown,
+  '--z-sticky': zIndex.sticky,
+  '--z-modal': zIndex.modal,
+  '--z-popover': zIndex.popover,
+  '--z-tooltip': zIndex.tooltip,
+} as const;
+
+export type CssVariables = typeof cssVariables;
+
 // Combined tokens export for easy importing
 export const tokens = {
   colors,
@@ -128,6 +196,7 @@ export const tokens = {
   transitions,
   zIndex,
   colorsDark,
+  cssVariables,
 } as const;
 
 export type Colors = typeof colors;
