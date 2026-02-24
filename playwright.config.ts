@@ -67,12 +67,16 @@ export default defineConfig({
     ? undefined
     : {
         // Use production mode in CI (already built), dev mode locally
-        command: 'npm run start --prefix apps/web',
+        // Pass NODE_ENV=test to enable auth middleware bypass for E2E tests
+        command: 'NODE_ENV=test npm run start --prefix apps/web',
         url: 'http://localhost:3000',
         reuseExistingServer: false,
         timeout: 120 * 1000, // 2 minutes for Next.js to start
         // Capture stdout/stderr for debugging
         stdout: 'pipe',
         stderr: 'pipe',
+        env: {
+          NODE_ENV: 'test',
+        },
       },
 });

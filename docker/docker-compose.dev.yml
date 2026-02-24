@@ -116,6 +116,7 @@ services:
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
       DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
       PORT: 4000
+      NODE_ENV: ${NODE_ENV:-development}
     ports:
       - "4000:4000"
     volumes:
