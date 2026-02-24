@@ -15,10 +15,9 @@ test.describe('Authentication', () => {
     test('should allow access to protected route on localhost (middleware bypasses auth for E2E)', async ({
       page,
     }) => {
-      // The middleware intentionally bypasses auth when X-E2E-Auth-Bypass header is set
+      // The middleware intentionally bypasses auth for test/development environments
       // See apps/web/middleware.ts - this allows E2E tests to work without OAuth
-      // Set the bypass header for Edge Runtime middleware
-      await page.setExtraHTTPHeaders({ 'X-E2E-Auth-Bypass': 'true' });
+      // NODE_ENV=test is set in playwright.config.ts
       await page.goto('/dashboard');
 
       // Page should load (middleware allows it)
