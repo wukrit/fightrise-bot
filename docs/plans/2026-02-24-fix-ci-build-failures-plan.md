@@ -1,3 +1,7 @@
+---
+status: completed
+---
+
 # CI Build Failures Fix Plan
 
 ## Overview
