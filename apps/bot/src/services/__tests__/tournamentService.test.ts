@@ -40,6 +40,11 @@ vi.mock('@fightrise/database', () => ({
     COMPLETED: 'COMPLETED',
     CANCELLED: 'CANCELLED',
   },
+  EventState: {
+    CREATED: 'CREATED',
+    ACTIVE: 'ACTIVE',
+    COMPLETED: 'COMPLETED',
+  },
   AdminRole: {
     OWNER: 'OWNER',
     ADMIN: 'ADMIN',
