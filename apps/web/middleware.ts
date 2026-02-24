@@ -27,17 +27,9 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl;
 
-        // Skip auth check in test or development environments only
-        // Also skip for E2E tests when NEXT_PUBLIC_E2E_AUTH_BYPASS is set
-        // NEXT_PUBLIC_ prefix makes it available in Edge Runtime at build time
-        // SECURITY: No hostname/port-based bypass in production
-        if (
-          process.env.NODE_ENV === 'test' ||
-          process.env.NODE_ENV === 'development' ||
-          process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS === 'true'
-        ) {
-          return true;
-        }
+        // Note: Environment variable bypass for E2E tests is not reliable
+        // in Edge Runtime middleware. Tests should mock sessions instead.
+        // See: https://nextjs.org/docs/app/building-your-application/routing/middleware
 
         // Always allow public routes
         // Note: '/' requires exact match, other routes use prefix matching

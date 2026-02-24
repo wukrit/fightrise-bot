@@ -125,7 +125,6 @@ jobs:
           STARTGG_API_KEY: 'test-api-key'
           NEXTAUTH_SECRET: 'test-nextauth-secret'
           NEXTAUTH_URL: 'http://localhost:3000'
-          NEXT_PUBLIC_E2E_AUTH_BYPASS: 'true'
 
       - name: Push database schema
         run: npx prisma db push --skip-generate
