@@ -28,12 +28,14 @@ export default withAuth(
         const { pathname } = req.nextUrl;
 
         // Skip auth check in test or development environments only
-        // Also skip for E2E tests when E2E_AUTH_BYPASS is set
+        // Also skip for E2E tests when X-E2E-Auth-Bypass header is set
+        // This header is set by Playwright tests to bypass auth in Edge Runtime
         // SECURITY: No hostname/port-based bypass in production
+        const e2eBypassHeader = req.headers.get('X-E2E-Auth-Bypass');
         if (
           process.env.NODE_ENV === 'test' ||
           process.env.NODE_ENV === 'development' ||
-          process.env.E2E_AUTH_BYPASS === 'true'
+          e2eBypassHeader === 'true'
         ) {
           return true;
         }

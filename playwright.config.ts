@@ -75,7 +75,6 @@ export default defineConfig({
     ? undefined
     : {
         // Use production mode in CI (already built), dev mode locally
-        // Set E2E_AUTH_BYPASS to allow auth middleware bypass for E2E tests
         command: process.env.CI
           ? 'npm run start --prefix apps/web'
           : 'cd apps/web && npx next dev -p 3000',
@@ -86,7 +85,6 @@ export default defineConfig({
         stdout: 'pipe',
         stderr: 'pipe',
         env: {
-          E2E_AUTH_BYPASS: 'true',
           NODE_ENV: 'test',
           NEXTAUTH_SECRET: 'test-secret-for-e2e-tests-do-not-use-in-production',
           NEXTAUTH_URL: 'http://localhost:3000',

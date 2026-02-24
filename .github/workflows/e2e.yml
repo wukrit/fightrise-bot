@@ -125,7 +125,6 @@ jobs:
           STARTGG_API_KEY: 'test-api-key'
           NEXTAUTH_SECRET: 'test-nextauth-secret'
           NEXTAUTH_URL: 'http://localhost:3000'
-          E2E_AUTH_BYPASS: 'true'
 
       - name: Push database schema
         run: npx prisma db push --skip-generate
@@ -139,7 +138,6 @@ jobs:
       - name: Run Playwright tests
         run: npm run test:e2e -- --project=chromium
         env:
-          E2E_AUTH_BYPASS: 'true'
           DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
           DISCORD_TOKEN: 'test-token'
           DISCORD_CLIENT_ID: 'test-client-id'
