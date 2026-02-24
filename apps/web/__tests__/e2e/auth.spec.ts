@@ -4,13 +4,13 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { mockAuthEndpoints, mockUnauthenticatedState } from './utils/auth';
+import { setupAuthenticatedState, mockUnauthenticatedState } from './utils/auth';
 
 test.describe('Authentication', () => {
   test.describe('Authenticated User', () => {
     test.beforeEach(async ({ page }) => {
-      // Mock a valid authenticated session
-      await mockAuthEndpoints(page);
+      // Set session cookie for middleware AND mock API endpoints for client-side
+      await setupAuthenticatedState(page);
     });
 
     test('should access protected route with mocked session', async ({ page }) => {
