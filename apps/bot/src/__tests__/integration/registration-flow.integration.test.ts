@@ -36,8 +36,33 @@ vi.mock('@fightrise/database', async () => {
   return {
     prisma: mockPrisma,
     TournamentState: {
+      CREATED: 'CREATED',
       REGISTRATION_OPEN: 'REGISTRATION_OPEN',
+      REGISTRATION_CLOSED: 'REGISTRATION_CLOSED',
       IN_PROGRESS: 'IN_PROGRESS',
+      COMPLETED: 'COMPLETED',
+      CANCELLED: 'CANCELLED',
+    },
+    MatchState: {
+      NOT_STARTED: 'NOT_STARTED',
+      CALLED: 'CALLED',
+      CHECKED_IN: 'CHECKED_IN',
+      IN_PROGRESS: 'IN_PROGRESS',
+      PENDING_CONFIRMATION: 'PENDING_CONFIRMATION',
+      COMPLETED: 'COMPLETED',
+      DISPUTED: 'DISPUTED',
+      DQ: 'DQ',
+    },
+    EventState: {
+      CREATED: 'CREATED',
+      ACTIVE: 'ACTIVE',
+      COMPLETED: 'COMPLETED',
+    },
+    StartggSyncStatus: {
+      NOT_SYNCED: 'NOT_SYNCED',
+      PENDING: 'PENDING',
+      SYNCED: 'SYNCED',
+      FAILED: 'FAILED',
     },
     RegistrationSource: {
       DISCORD: 'DISCORD',
