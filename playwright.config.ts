@@ -38,29 +38,37 @@ export default defineConfig({
   },
 
   // Configure projects for major browsers
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-    // Mobile viewports
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
-    },
-  ],
+  // Use --project=chromium (or CI environment variable) to run specific browsers
+  projects: process.env.CI
+    ? [
+        {
+          name: 'chromium',
+          use: { ...devices['Desktop Chrome'] },
+        },
+      ]
+    : [
+        {
+          name: 'chromium',
+          use: { ...devices['Desktop Chrome'] },
+        },
+        {
+          name: 'firefox',
+          use: { ...devices['Desktop Firefox'] },
+        },
+        {
+          name: 'webkit',
+          use: { ...devices['Desktop Safari'] },
+        },
+        // Mobile viewports
+        {
+          name: 'Mobile Chrome',
+          use: { ...devices['Pixel 5'] },
+        },
+        {
+          name: 'Mobile Safari',
+          use: { ...devices['iPhone 12'] },
+        },
+      ],
 
   // Run local dev server before starting the tests
   webServer: process.env.USE_EXISTING_SERVER
@@ -79,6 +87,13 @@ export default defineConfig({
         stderr: 'pipe',
         env: {
           E2E_AUTH_BYPASS: 'true',
+          NODE_ENV: 'test',
+          NEXTAUTH_SECRET: 'test-secret-for-e2e-tests-do-not-use-in-production',
+          NEXTAUTH_URL: 'http://localhost:3000',
+          DISCORD_CLIENT_ID: 'dummy-client-id',
+          DISCORD_CLIENT_SECRET: 'dummy-client-secret',
+          DATABASE_URL: 'postgresql://fightrise:devpassword@localhost:5432/fightrise',
+          REDIS_URL: 'redis://localhost:6379',
         },
       },
 });
