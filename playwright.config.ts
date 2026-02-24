@@ -66,14 +66,17 @@ export default defineConfig({
   webServer: process.env.USE_EXISTING_SERVER
     ? undefined
     : {
-        // Use development mode to enable auth middleware bypass
-        // (NODE_ENV must be 'development' or 'test' for auth bypass)
-        command: 'npx next dev -p 3000',
+        // Use production mode in CI (already built), but set E2E_AUTH_BYPASS
+        // to allow auth middleware bypass for E2E tests
+        command: 'npm run start --prefix apps/web',
         url: 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000, // 2 minutes for Next.js to start
         // Capture stdout/stderr for debugging
         stdout: 'pipe',
         stderr: 'pipe',
+        env: {
+          E2E_AUTH_BYPASS: 'true',
+        },
       },
 });

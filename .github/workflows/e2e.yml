@@ -138,7 +138,7 @@ jobs:
       - name: Run Playwright tests
         run: npm run test:e2e -- --project=chromium
         env:
-          NODE_ENV: test
+          E2E_AUTH_BYPASS: 'true'
           DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
           DISCORD_TOKEN: 'test-token'
           DISCORD_CLIENT_ID: 'test-client-id'

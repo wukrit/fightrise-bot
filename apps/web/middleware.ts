@@ -28,8 +28,13 @@ export default withAuth(
         const { pathname } = req.nextUrl;
 
         // Skip auth check in test or development environments only
+        // Also skip for E2E tests when E2E_AUTH_BYPASS is set
         // SECURITY: No hostname/port-based bypass in production
-        if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
+        if (
+          process.env.NODE_ENV === 'test' ||
+          process.env.NODE_ENV === 'development' ||
+          process.env.E2E_AUTH_BYPASS === 'true'
+        ) {
           return true;
         }
 
