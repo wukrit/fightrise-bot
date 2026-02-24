@@ -20,6 +20,13 @@ export default defineConfig({
       '**/__tests__/e2e/**',
       '**/__tests__/smoke/**',
     ],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      reportsDirectory: 'coverage',
+      include: ['lib/**/*.ts', 'lib/**/*.tsx', 'app/**/*.ts', 'app/**/*.tsx'],
+      exclude: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx', '**/__tests__/**', '**/*.d.ts'],
+    },
   },
   resolve: {
     alias: {

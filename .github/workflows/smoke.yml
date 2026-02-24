@@ -33,12 +33,40 @@ concurrency:
 
 env:
   NODE_VERSION: '20'
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
 
 jobs:
   discord-api:
     name: Discord API Smoke Tests
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'schedule' || github.event.inputs.run_discord == 'true' }}
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,6 +85,20 @@ jobs:
 
       - name: Build packages
         run: npm run build
+        env:
+          DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
+          DISCORD_TOKEN: 'test-token'
+          DISCORD_CLIENT_ID: 'test-client-id'
+          DISCORD_CLIENT_SECRET: 'test-client-secret'
+          STARTGG_API_KEY: 'test-api-key'
+          NEXTAUTH_SECRET: 'test-nextauth-secret'
+          NEXTAUTH_URL: 'http://localhost:3000'
+
+      - name: Push database schema
+        run: npx prisma db push --skip-generate
+        working-directory: packages/database
+        env:
+          DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
 
       - name: Run Discord API smoke tests
         run: npm run test:smoke -- --filter=@fightrise/bot
@@ -65,6 +107,7 @@ jobs:
           SMOKE_DISCORD_GUILD_ID: ${{ secrets.SMOKE_DISCORD_GUILD_ID }}
           SMOKE_DISCORD_CHANNEL_ID: ${{ secrets.SMOKE_DISCORD_CHANNEL_ID }}
           DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
+          REDIS_URL: 'redis://localhost:6379'
 
       - name: Report Discord API status
         if: failure()
@@ -91,6 +134,22 @@ jobs:
     name: Start.gg API Smoke Tests
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'schedule' || github.event.inputs.run_startgg == 'true' }}
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -109,12 +168,27 @@ jobs:
 
       - name: Build packages
         run: npm run build
+        env:
+          DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
+          DISCORD_TOKEN: 'test-token'
+          DISCORD_CLIENT_ID: 'test-client-id'
+          DISCORD_CLIENT_SECRET: 'test-client-secret'
+          STARTGG_API_KEY: 'test-api-key'
+          NEXTAUTH_SECRET: 'test-nextauth-secret'
+          NEXTAUTH_URL: 'http://localhost:3000'
+
+      - name: Push database schema
+        run: npx prisma db push --skip-generate
+        working-directory: packages/database
+        env:
+          DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
 
       - name: Run Start.gg API smoke tests
         run: npm run test:smoke -- --filter=@fightrise/startgg-client
         env:
           SMOKE_STARTGG_API_KEY: ${{ secrets.SMOKE_STARTGG_API_KEY }}
           SMOKE_STARTGG_TOURNAMENT_SLUG: ${{ vars.SMOKE_STARTGG_TOURNAMENT_SLUG }}
+          DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
 
       - name: Report Start.gg API status
         if: failure()
@@ -141,6 +215,32 @@ jobs:
     name: OAuth Flow Smoke Tests
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'schedule' || github.event.inputs.run_oauth == 'true' }}
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -166,8 +266,22 @@ jobs:
           NEXTAUTH_SECRET: 'test-nextauth-secret'
           NEXTAUTH_URL: 'http://localhost:3000'
 
+      - name: Push database schema
+        run: npx prisma db push --skip-generate
+        working-directory: packages/database
+        env:
+          DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
 
       - name: Run OAuth smoke tests
         run: npx playwright test apps/web/__tests__/smoke/ --project=chromium
