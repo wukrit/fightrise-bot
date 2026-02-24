@@ -48,6 +48,11 @@ vi.mock('@fightrise/database', async () => {
       DISPUTED: 'DISPUTED',
       DQ: 'DQ',
     },
+    EventState: {
+      CREATED: 'CREATED',
+      ACTIVE: 'ACTIVE',
+      COMPLETED: 'COMPLETED',
+    },
     StartggSyncStatus: {
       NOT_SYNCED: 'NOT_SYNCED',
       PENDING: 'PENDING',
