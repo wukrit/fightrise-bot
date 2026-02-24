@@ -194,7 +194,7 @@ export class StartGGClient {
   async reportSet(
     setId: string,
     winnerId: string
-  ): Promise<{ id: string; state: SetState } | null> {
+  ): Promise<{ id: string; state: number } | null> {
     const result = await this.request<ReportSetResponse>(
       REPORT_SET,
       { setId, winnerId },
