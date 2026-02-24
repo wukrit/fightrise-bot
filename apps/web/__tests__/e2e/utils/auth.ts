@@ -222,7 +222,7 @@ export function createAuthTestContext(page: Page): AuthTestContext {
  */
 export async function generateNextAuthToken(
   session: MockSession,
-  secret = 'test-secret-for-e2e-tests-do-not-use-in-production'
+  secret = 'test-nextauth-secret'
 ): Promise<string> {
   const encoder = new TextEncoder();
   const secretKey = encoder.encode(secret);
@@ -265,7 +265,7 @@ export async function generateNextAuthToken(
 export async function setSessionCookie(
   page: Page,
   session: MockSession = createMockSession(),
-  secret = 'test-secret-for-e2e-tests-do-not-use-in-production'
+  secret = 'test-nextauth-secret'
 ): Promise<void> {
   const token = await generateNextAuthToken(session, secret);
 

@@ -6,6 +6,8 @@ import DiscordProvider from 'next-auth/providers/discord';
 import crypto from 'crypto';
 import { getToken } from 'next-auth/jwt';
 import type { GetServerSidePropsContext } from 'next';
+import type { JWT } from 'next-auth/jwt';
+import jwt from 'jsonwebtoken';
 
 // Note: We intentionally don't use an adapter here because:
 // 1. We're using JWT sessions (not database sessions)
@@ -142,6 +144,24 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
+  // Custom JWT encoding for E2E tests - use plain HS256 signing instead of JWE encryption
+  ...(process.env.E2E_AUTH_BYPASS === 'true' && {
+    jwt: {
+      encode: async ({ token, secret }) => {
+        // Use plain HS256 signing for E2E tests instead of JWE encryption
+        return jwt.sign(token as jwt.JwtPayload, secret, { algorithm: 'HS256' });
+      },
+      decode: async ({ token, secret }): Promise<JWT | null> => {
+        // Use plain HS256 verification for E2E tests instead of JWE decryption
+        if (!token) return null;
+        try {
+          return jwt.verify(token, secret, { algorithms: ['HS256'] }) as JWT;
+        } catch {
+          return null;
+        }
+      },
+    },
+  }),
   // Cookie configuration for running behind reverse proxy (Cloudflare Tunnel)
   useSecureCookies,
   cookies: {
