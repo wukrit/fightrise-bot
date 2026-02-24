@@ -69,6 +69,17 @@ vi.mock('@fightrise/database', () => ({
   },
 }));
 
+// Mock guild validation utilities
+vi.mock('../utils/guildValidation.js', () => ({
+  requireGuild: vi.fn((interaction) => interaction.guildId),
+  requireGuildWithReply: vi.fn(async (interaction) => {
+    if (!interaction.guildId) {
+      return null;
+    }
+    return interaction.guildId;
+  }),
+}));
+
 // Helper to create a mock interaction
 function createMockInteraction(options: {
   commandName?: string;
