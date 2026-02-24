@@ -23,7 +23,3 @@ jobs:
         with:
           # Fail on high severity vulnerabilities
           fail-on-severity: high
-          # Allow known vulnerabilities in development dependencies
-          allow-dependencies-licenses: false
-          # Show a summary of the review
-          summary: true

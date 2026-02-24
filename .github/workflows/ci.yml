@@ -155,7 +155,7 @@ jobs:
           DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
 
       - name: Run unit tests
-        run: npm run test -- --coverage
+        run: npm run test
         env:
           DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
           DISCORD_TOKEN: 'test-token'
@@ -164,15 +164,6 @@ jobs:
           STARTGG_API_KEY: 'test-api-key'
           NEXTAUTH_SECRET: 'test-nextauth-secret'
           NEXTAUTH_URL: 'http://localhost:3000'
-
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-reports
-          path: |
-            **/coverage
-            **/.nycrc_out
-          retention-days: 7
 
   integration-test:
     name: Integration Tests
