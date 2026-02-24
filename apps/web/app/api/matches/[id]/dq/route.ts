@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma, MatchState, AuditAction, AuditSource, AdminRole } from '@fightrise/database';
 import { getServerSession } from 'next-auth';
