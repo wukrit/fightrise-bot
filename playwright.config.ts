@@ -70,7 +70,7 @@ export default defineConfig({
         // Set E2E_AUTH_BYPASS to allow auth middleware bypass for E2E tests
         command: process.env.CI
           ? 'npm run start --prefix apps/web'
-          : 'npx next dev -p 3000',
+          : 'cd apps/web && npx next dev -p 3000',
         url: 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000, // 2 minutes for Next.js to start
