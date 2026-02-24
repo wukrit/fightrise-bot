@@ -6,7 +6,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { mockAuthEndpoints } from './utils/auth';
+import { setupAuthenticatedState } from './utils/auth';
 
 // Test match IDs
 const MATCH_ID = 'match-123';
@@ -142,11 +142,11 @@ test.describe('Match Reporting', () => {
       // Override fetch to return mock data
       const originalFetch = window.fetch;
       window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = typeof input === 'string' ? input : input.url;
+        const url = typeof input === 'string' ? input : input.toString();
         const urlObj = new URL(url, 'http://localhost:4000'); // Use base URL
         const pathname = urlObj.pathname;
 
-        // Match API endpoint - check for /api/matches/<id>
+        // Match API endpoint - check for /api/matches/
         if (pathname.startsWith('/api/matches/')) {
           const matchId = pathname.split('/api/matches/')[1]?.split('?')[0];
 
@@ -178,8 +178,8 @@ test.describe('Match Reporting', () => {
       };
     });
 
-    // Mock authentication endpoints
-    await mockAuthEndpoints(page);
+    // Set session cookie for middleware AND mock API endpoints for client-side
+    await setupAuthenticatedState(page);
   });
 
   test.describe('View Match Details', () => {

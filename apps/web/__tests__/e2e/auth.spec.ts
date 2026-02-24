@@ -4,32 +4,29 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { mockUnauthenticatedState } from './utils/auth';
+import { setupAuthenticatedState, mockUnauthenticatedState } from './utils/auth';
 
 test.describe('Authentication', () => {
+  test.describe('Authenticated User', () => {
+    test.beforeEach(async ({ page }) => {
+      // Set session cookie for middleware AND mock API endpoints for client-side
+      await setupAuthenticatedState(page);
+    });
+
+    test('should access protected route with mocked session', async ({ page }) => {
+      await page.goto('/dashboard');
+
+      // Page should load with mocked session
+      await expect(page).toHaveURL(/\/dashboard/);
+
+      // Page should be visible
+      await expect(page.locator('body')).toBeVisible();
+    });
+  });
+
   test.describe('Unauthenticated User', () => {
     test.beforeEach(async ({ page }) => {
       await mockUnauthenticatedState(page);
-    });
-
-    test('should allow access to protected route on localhost (middleware bypasses auth for E2E)', async ({
-      page,
-    }) => {
-      // The middleware intentionally bypasses auth for localhost/test environments
-      // See apps/web/middleware.ts - this allows E2E tests to work without OAuth
-      await page.goto('/dashboard');
-
-      // Page should load (middleware allows it)
-      await expect(page).toHaveURL(/\/dashboard/);
-
-      // Session should be empty (unauthenticated)
-      await page.waitForLoadState('networkidle');
-      const session = await page.evaluate(() => {
-        // @ts-ignore - NextAuth exposes session via window
-        return window.__NEXT_DATA__?.props?.pageProps?.session ?? null;
-      });
-      // Session will be null/undefined since we mocked unauthenticated state
-      expect(session).toBeNull();
     });
 
     test('should show sign in page with Discord provider', async ({ page }) => {
@@ -38,6 +35,16 @@ test.describe('Authentication', () => {
       // Should have Discord sign in option
       const discordButton = page.getByRole('button', { name: /discord/i });
       await expect(discordButton).toBeVisible();
+    });
+
+    test('should redirect to sign in when accessing protected route without session', async ({
+      page,
+    }) => {
+      // Try to access protected route without authentication
+      await page.goto('/dashboard');
+
+      // Should be redirected to sign in page
+      await expect(page).toHaveURL(/\/auth\/signin/);
     });
   });
 });
