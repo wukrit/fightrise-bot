@@ -13,20 +13,20 @@ export { SharedStartGGError as StartGGError, SharedRateLimitError as RateLimitEr
 // Enums
 // ============================================
 
-// Tournament states from Start.gg API
+// Tournament states from Start.gg API (using number values as returned by the API)
 export enum TournamentState {
-  CREATED = 'CREATED',
-  ACTIVE = 'ACTIVE',
-  COMPLETED = 'COMPLETED',
+  CREATED = 1,
+  ACTIVE = 2,
+  COMPLETED = 3,
 }
 
-// Set (Match) states from Start.gg API
+// Set (Match) states from Start.gg API (using number values as returned by the API)
 export enum SetState {
-  CREATED = 'CREATED',
-  ACTIVE = 'ACTIVE',
-  COMPLETED = 'COMPLETED',
-  READY = 'READY',
-  STARTED = 'STARTED',
+  CREATED = 1,
+  ACTIVE = 2,
+  COMPLETED = 3,
+  READY = 6,
+  STARTED = 7,
 }
 
 // Common types

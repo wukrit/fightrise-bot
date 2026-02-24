@@ -12,6 +12,7 @@
     "test:smoke": "dotenv -e ../../.env -- vitest run --config vitest.smoke.config.ts"
   },
   "dependencies": {
+    "@fightrise/shared": "*",
     "graphql": "^16.8.0",
     "graphql-request": "^6.1.0"
   },
