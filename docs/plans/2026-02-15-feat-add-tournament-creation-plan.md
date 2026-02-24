@@ -1,8 +1,9 @@
 ---
 title: Add tournament creation from web portal
 type: feat
-status: active
+status: completed
 date: 2026-02-15
+notes: Done via Discord commands instead of web portal
 ---
 
 # Add Tournament Creation from Web Portal

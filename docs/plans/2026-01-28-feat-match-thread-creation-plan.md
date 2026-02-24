@@ -1,6 +1,7 @@
 ---
 title: Implement Automatic Match Thread Creation
 type: feat
+status: completed
 date: 2026-01-28
 issue: "#10"
 revised: 2026-01-28

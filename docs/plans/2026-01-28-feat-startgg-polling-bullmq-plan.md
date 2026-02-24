@@ -1,6 +1,7 @@
 ---
 title: "Implement Start.gg polling service with BullMQ"
 type: feat
+status: completed
 date: 2026-01-28
 issue: 9
 labels: [bot, api, feature]

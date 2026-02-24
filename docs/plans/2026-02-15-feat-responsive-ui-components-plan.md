@@ -1,7 +1,7 @@
 ---
 title: Implement responsive UI with shared component library
 type: feat
-status: active
+status: pending
 date: 2026-02-15
 ---
 

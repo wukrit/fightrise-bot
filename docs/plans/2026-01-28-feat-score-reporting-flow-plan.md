@@ -1,6 +1,7 @@
 ---
 title: "feat: Implement Score Reporting Flow"
 type: feat
+status: completed
 date: 2026-01-28
 issue: 12
 ---

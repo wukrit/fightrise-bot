@@ -1,8 +1,9 @@
 ---
 title: Load test polling system
 type: feat
-status: completed
+status: superseded
 date: 2026-02-17
+notes: Not a current priority - superseded by other work
 ---
 
 # Load Test Polling System
