@@ -144,12 +144,10 @@ export function Select({
   const generatedId = React.useId();
   const selectId = id || generatedId;
 
-  const getTriggerStyle = (isFocused: boolean, customStyle?: React.CSSProperties): React.CSSProperties => {
+  const getTriggerStyle = (customStyle?: React.CSSProperties): React.CSSProperties => {
     let style = { ...triggerStyles };
     if (error) {
       Object.assign(style, triggerErrorStyles);
-    } else if (isFocused) {
-      Object.assign(style, triggerFocusStyles);
     }
     if (disabled) {
       Object.assign(style, triggerDisabledStyles);
@@ -172,7 +170,7 @@ export function Select({
       <SelectPrimitive.Root value={value} onValueChange={handleValueChange} disabled={disabled}>
         <SelectPrimitive.Trigger
           id={selectId}
-          style={getTriggerStyle(false, style)}
+          style={getTriggerStyle(style)}
         >
           <SelectPrimitive.Value placeholder={placeholder} />
           <SelectPrimitive.Icon>

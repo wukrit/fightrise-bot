@@ -39,8 +39,8 @@ const positionStyles: Record<string, React.CSSProperties> = {
 const contentStyles: React.CSSProperties = {
   position: 'absolute',
   padding: '6px 10px',
-  backgroundColor: '#1a1a1a',
-  color: '#ffffff',
+  backgroundColor: tokens.colors.gray[800],
+  color: tokens.colors.white,
   fontSize: '12px',
   borderRadius: '4px',
   whiteSpace: 'nowrap',
@@ -50,7 +50,7 @@ const contentStyles: React.CSSProperties = {
 };
 
 const arrowStyles: React.CSSProperties = {
-  fill: '#1a1a1a',
+  fill: tokens.colors.gray[800],
 };
 
 export function Tooltip({ content, children, position = 'top', delay = 300 }: TooltipProps) {

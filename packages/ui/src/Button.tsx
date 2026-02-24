@@ -56,10 +56,6 @@ const baseStyles: React.CSSProperties = {
   outline: 'none',
 };
 
-const focusStyles: React.CSSProperties = {
-  boxShadow: `0 0 0 3px ${tokens.colors.primary}40`,
-};
-
 export function Button({
   children,
   variant = 'primary',
@@ -72,18 +68,7 @@ export function Button({
   onBlur,
   ...props
 }: ButtonProps) {
-  const [isFocused, setIsFocused] = React.useState(false);
   const Comp = asChild ? Slot : 'button';
-
-  const handleFocus = (e: React.FocusEvent<HTMLButtonElement>) => {
-    setIsFocused(true);
-    onFocus?.(e);
-  };
-
-  const handleBlur = (e: React.FocusEvent<HTMLButtonElement>) => {
-    setIsFocused(false);
-    onBlur?.(e);
-  };
 
   const isDisabled = disabled || loading;
 
@@ -92,7 +77,6 @@ export function Button({
     ...variantStyles[variant],
     ...sizeStyles[size],
     ...(isDisabled ? { opacity: 0.6, cursor: 'not-allowed' } : {}),
-    ...(isFocused ? focusStyles : {}),
     ...style,
   };
 
@@ -100,8 +84,8 @@ export function Button({
     <Comp
       style={combinedStyles}
       disabled={isDisabled && !asChild}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
+      onFocus={onFocus}
+      onBlur={onBlur}
       {...props}
     >
       {loading && !asChild && (
