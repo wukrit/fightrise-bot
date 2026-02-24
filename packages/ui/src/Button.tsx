@@ -1,10 +1,12 @@
 import React from 'react';
+import { Slot } from '@radix-ui/react-slot';
 import { tokens } from './tokens.js';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'discord';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
+  asChild?: boolean;
 }
 
 const variantStyles: Record<string, React.CSSProperties> = {
@@ -65,11 +67,13 @@ export function Button({
   style,
   disabled,
   loading,
+  asChild = false,
   onFocus,
   onBlur,
   ...props
 }: ButtonProps) {
   const [isFocused, setIsFocused] = React.useState(false);
+  const Comp = asChild ? Slot : 'button';
 
   const handleFocus = (e: React.FocusEvent<HTMLButtonElement>) => {
     setIsFocused(true);
@@ -93,19 +97,19 @@ export function Button({
   };
 
   return (
-    <button
+    <Comp
       style={combinedStyles}
-      disabled={isDisabled}
+      disabled={isDisabled && !asChild}
       onFocus={handleFocus}
       onBlur={handleBlur}
       {...props}
     >
-      {loading && (
+      {loading && !asChild && (
         <span style={{ display: 'inline-block', width: tokens.spacing.md, height: tokens.spacing.md, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </span>
       )}
       {children}
-    </button>
+    </Comp>
   );
 }
