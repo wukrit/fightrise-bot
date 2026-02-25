@@ -23,10 +23,6 @@ on:
         type: boolean
         default: true
 
-  # Scheduled nightly run to detect API changes
-  schedule:
-    - cron: '0 6 * * *'  # Daily at 6 AM UTC
-
 concurrency:
   group: smoke-tests
   cancel-in-progress: false  # Don't cancel running smoke tests
@@ -40,7 +36,7 @@ jobs:
   discord-api:
     name: Discord API Smoke Tests
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'schedule' || github.event.inputs.run_discord == 'true' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_discord != 'false' }}
     timeout-minutes: 30
     services:
       postgres:
@@ -133,7 +129,7 @@ jobs:
   startgg-api:
     name: Start.gg API Smoke Tests
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'schedule' || github.event.inputs.run_startgg == 'true' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_startgg != 'false' }}
     timeout-minutes: 30
     services:
       postgres:
@@ -214,7 +210,7 @@ jobs:
   oauth-flow:
     name: OAuth Flow Smoke Tests
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'schedule' || github.event.inputs.run_oauth == 'true' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_oauth != 'false' }}
     services:
       postgres:
         image: postgres:15-alpine
