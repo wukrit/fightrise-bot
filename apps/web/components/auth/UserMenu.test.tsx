@@ -1,6 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { SessionProvider } from 'next-auth/react';
+
+// Mock next/image to avoid hostname validation errors in tests
+vi.mock('next/image', () => ({
+  default: ({ src, alt, ...props }: { src: string; alt: string }) => (
+    <img src={src} alt={alt} {...props} />
+  ),
+}));
+
 import { UserMenu } from './UserMenu';
 
 // Mock next-auth/react
