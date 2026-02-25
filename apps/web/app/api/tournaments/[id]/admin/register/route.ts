@@ -1,8 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma, RegistrationSource, RegistrationStatus, TournamentAdmin, AdminRole } from '@fightrise/database';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { prisma, RegistrationSource, RegistrationStatus } from '@fightrise/database';
+import { requireTournamentAdmin } from '@/lib/tournament-admin';
 import { z } from 'zod';
 import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
 
@@ -32,15 +31,6 @@ export async function POST(
   }
 
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.discordId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     const { id: tournamentId } = await params;
     const body = await request.json();
 
@@ -55,6 +45,14 @@ export async function POST(
 
     const { discordId, discordUsername } = validationResult.data;
 
+    // Check authorization using helper
+    const authResult = await requireTournamentAdmin(request, tournamentId);
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+
+    const { userId: adminUserId } = authResult;
+
     // Find the tournament
     const tournament = await prisma.tournament.findUnique({
       where: { id: tournamentId },
@@ -64,33 +62,6 @@ export async function POST(
       return NextResponse.json(
         { error: 'Tournament not found' },
         { status: 404 }
-      );
-    }
-
-    // Check if user is admin
-    const user = await prisma.user.findUnique({
-      where: { discordId: session.user.discordId },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    const adminCheck = await prisma.tournamentAdmin.findFirst({
-      where: {
-        userId: user.id,
-        tournamentId,
-        role: { in: [AdminRole.OWNER, AdminRole.ADMIN, AdminRole.MODERATOR] },
-      },
-    });
-
-    if (!adminCheck) {
-      return NextResponse.json(
-        { error: 'Only tournament admins can register players' },
-        { status: 403 }
       );
     }
 

@@ -1,8 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma, AdminRole, RegistrationStatus, RegistrationSource, AuditAction, AuditSource } from '@fightrise/database';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { prisma, RegistrationStatus, RegistrationSource, AuditAction, AuditSource } from '@fightrise/database';
+import { requireTournamentAdmin } from '@/lib/tournament-admin';
 import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
 import { z } from 'zod';
 
@@ -39,16 +38,13 @@ export async function GET(
   }
 
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.discordId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     const { id: tournamentId } = await params;
+
+    // Check authorization using helper
+    const authResult = await requireTournamentAdmin(request, tournamentId);
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
 
     // Find the tournament
     const tournament = await prisma.tournament.findUnique({
@@ -59,33 +55,6 @@ export async function GET(
       return NextResponse.json(
         { error: 'Tournament not found' },
         { status: 404 }
-      );
-    }
-
-    // Check if user is admin
-    const user = await prisma.user.findUnique({
-      where: { discordId: session.user.discordId },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    const adminCheck = await prisma.tournamentAdmin.findFirst({
-      where: {
-        userId: user.id,
-        tournamentId,
-        role: { in: [AdminRole.OWNER, AdminRole.ADMIN, AdminRole.MODERATOR] },
-      },
-    });
-
-    if (!adminCheck) {
-      return NextResponse.json(
-        { error: 'Only tournament admins can view registrations' },
-        { status: 403 }
       );
     }
 
@@ -182,15 +151,6 @@ export async function POST(
   }
 
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.discordId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     const { id: tournamentId } = await params;
     const body = await request.json();
 
@@ -205,6 +165,14 @@ export async function POST(
 
     const { discordUsername, displayName } = validationResult.data;
 
+    // Check authorization using helper
+    const authResult = await requireTournamentAdmin(request, tournamentId);
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+
+    const { userId: adminUserId } = authResult;
+
     // Find the tournament
     const tournament = await prisma.tournament.findUnique({
       where: { id: tournamentId },
@@ -214,33 +182,6 @@ export async function POST(
       return NextResponse.json(
         { error: 'Tournament not found' },
         { status: 404 }
-      );
-    }
-
-    // Check if user is admin
-    const adminUser = await prisma.user.findUnique({
-      where: { discordId: session.user.discordId },
-    });
-
-    if (!adminUser) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    const adminCheck = await prisma.tournamentAdmin.findFirst({
-      where: {
-        userId: adminUser.id,
-        tournamentId,
-        role: { in: [AdminRole.OWNER, AdminRole.ADMIN, AdminRole.MODERATOR] },
-      },
-    });
-
-    if (!adminCheck) {
-      return NextResponse.json(
-        { error: 'Only tournament admins can create registrations' },
-        { status: 403 }
       );
     }
 
@@ -293,7 +234,7 @@ export async function POST(
           action: AuditAction.REGISTRATION_MANUAL_ADD,
           entityType: 'Registration',
           entityId: newRegistration.id,
-          userId: adminUser.id,
+          userId: adminUserId,
           after: {
             userId: player.id,
             tournamentId,
