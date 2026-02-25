@@ -40,6 +40,7 @@ Implement full registration CRUD with admin UI and audit logging. This phase add
 
 ### Task 1.1: Admin Registration CRUD API
 **Type:** api
+**Requirements:** API-02, API-03, API-04
 **Verification:** `npm run docker:test:integration`
 
 1. **Extend existing registrations route** (`apps/web/app/api/tournaments/[id]/admin/registrations/route.ts`)
@@ -63,6 +64,7 @@ npm run docker:test:integration
 
 ### Task 1.2: Admin Audit Logs API
 **Type:** api
+**Requirements:** API-07, AUDIT-01, AUDIT-02, AUDIT-03
 **Verification:** `npm run docker:test:integration`
 
 1. **Create audit logs route** (`apps/web/app/api/tournaments/[id]/admin/audit/route.ts`)
@@ -82,6 +84,7 @@ npm run docker:test:integration
 
 ### Task 2.1: Registrations Admin Page
 **Type:** ui
+**Requirements:** REG-01, REG-02, REG-03, REG-04, REG-05, REG-06, DASH-03
 **Verification:** `npm run docker:test:e2e`
 
 1. **Create registrations page** (`apps/web/app/tournaments/[id]/admin/registrations/page.tsx`)
@@ -110,6 +113,7 @@ npm run docker:test:e2e
 
 ### Task 2.2: Audit Log Viewer Page
 **Type:** ui
+**Requirements:** AUDIT-01, AUDIT-02, AUDIT-03
 **Verification:** Manual verification
 
 1. **Create audit logs page** (`apps/web/app/tournaments/[id]/admin/audit/page.tsx`)
