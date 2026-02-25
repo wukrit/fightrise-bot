@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma, AdminRole, RegistrationStatus, AuditAction, AuditSource } from '@fightrise/database';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
+import { prisma, RegistrationStatus, AuditAction, AuditSource } from '@fightrise/database';
+import { requireTournamentAdmin } from '@/lib/tournament-admin';
+import { withRateLimit, applyRateLimitHeaders } from '@/lib/admin-rate-limit';
 import { z } from 'zod';
 
 // Validation schema for PATCH action
@@ -20,29 +19,22 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; registrationId: string }> }
 ) {
-  const ip = getClientIp(request);
-  const result = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.write);
-
-  const headers = createRateLimitHeaders(result);
-  if (!result.allowed) {
-    return new Response('Too Many Requests', {
-      status: 429,
-      headers,
-    });
+  const rateLimitResult = await withRateLimit(request, 'write');
+  if (!rateLimitResult || rateLimitResult.response) {
+    return rateLimitResult?.response || new Response('Rate limit error', { status: 500 });
   }
 
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.discordId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     const { id: tournamentId, registrationId } = await params;
     const body = await request.json();
+
+    // Check authorization using helper
+    const authResult = await requireTournamentAdmin(request, tournamentId);
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+
+    const adminUserId = authResult.userId;
 
     // Validate input
     const validationResult = updateRegistrationSchema.safeParse(body);
@@ -64,33 +56,6 @@ export async function PATCH(
       return NextResponse.json(
         { error: 'Tournament not found' },
         { status: 404 }
-      );
-    }
-
-    // Check if user is admin
-    const adminUser = await prisma.user.findUnique({
-      where: { discordId: session.user.discordId },
-    });
-
-    if (!adminUser) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    const adminCheck = await prisma.tournamentAdmin.findFirst({
-      where: {
-        userId: adminUser.id,
-        tournamentId,
-        role: { in: [AdminRole.OWNER, AdminRole.ADMIN, AdminRole.MODERATOR] },
-      },
-    });
-
-    if (!adminCheck) {
-      return NextResponse.json(
-        { error: 'Only tournament admins can update registrations' },
-        { status: 403 }
       );
     }
 
@@ -150,7 +115,7 @@ export async function PATCH(
           action: auditAction,
           entityType: 'Registration',
           entityId: registrationId,
-          userId: adminUser.id,
+          userId: adminUserId,
           before: {
             status: registration.status,
           },
@@ -178,21 +143,13 @@ export async function PATCH(
     });
 
     // Add rate limit headers
-    for (const [key, value] of headers.entries()) {
-      response.headers.set(key, value);
-    }
-
-    return response;
+    return applyRateLimitHeaders(response, rateLimitResult.headers);
   } catch (error: unknown) {
     console.error('Admin registration update error:', error);
-    const errorResponse = NextResponse.json(
+    return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
-    for (const [key, value] of headers.entries()) {
-      errorResponse.headers.set(key, value);
-    }
-    return errorResponse;
   }
 }
 
@@ -204,28 +161,21 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; registrationId: string }> }
 ) {
-  const ip = getClientIp(request);
-  const result = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.write);
-
-  const headers = createRateLimitHeaders(result);
-  if (!result.allowed) {
-    return new Response('Too Many Requests', {
-      status: 429,
-      headers,
-    });
+  const rateLimitResult = await withRateLimit(request, 'write');
+  if (!rateLimitResult || rateLimitResult.response) {
+    return rateLimitResult?.response || new Response('Rate limit error', { status: 500 });
   }
 
   try {
-    const session = await getServerSession(authOptions);
+    const { id: tournamentId, registrationId } = await params;
 
-    if (!session?.user?.discordId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    // Check authorization using helper
+    const authResult = await requireTournamentAdmin(request, tournamentId);
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
-    const { id: tournamentId, registrationId } = await params;
+    const adminUserId = authResult.userId;
 
     // Find the tournament
     const tournament = await prisma.tournament.findUnique({
@@ -236,33 +186,6 @@ export async function DELETE(
       return NextResponse.json(
         { error: 'Tournament not found' },
         { status: 404 }
-      );
-    }
-
-    // Check if user is admin
-    const adminUser = await prisma.user.findUnique({
-      where: { discordId: session.user.discordId },
-    });
-
-    if (!adminUser) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    const adminCheck = await prisma.tournamentAdmin.findFirst({
-      where: {
-        userId: adminUser.id,
-        tournamentId,
-        role: { in: [AdminRole.OWNER, AdminRole.ADMIN, AdminRole.MODERATOR] },
-      },
-    });
-
-    if (!adminCheck) {
-      return NextResponse.json(
-        { error: 'Only tournament admins can delete registrations' },
-        { status: 403 }
       );
     }
 
@@ -307,7 +230,7 @@ export async function DELETE(
           action: AuditAction.REGISTRATION_MANUAL_REMOVE,
           entityType: 'Registration',
           entityId: registrationId,
-          userId: adminUser.id,
+          userId: adminUserId,
           before: registrationData,
           source: AuditSource.WEB,
         },
@@ -320,20 +243,12 @@ export async function DELETE(
     });
 
     // Add rate limit headers
-    for (const [key, value] of headers.entries()) {
-      response.headers.set(key, value);
-    }
-
-    return response;
+    return applyRateLimitHeaders(response, rateLimitResult.headers);
   } catch (error: unknown) {
     console.error('Admin registration delete error:', error);
-    const errorResponse = NextResponse.json(
+    return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
-    for (const [key, value] of headers.entries()) {
-      errorResponse.headers.set(key, value);
-    }
-    return errorResponse;
   }
 }

@@ -10,32 +10,39 @@ export interface TournamentAdminCheck {
 }
 
 /**
+ * Checks if the user is authenticated via NextAuth
+ */
+async function getAuthenticatedUser() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.discordId) {
+    return null;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { discordId: session.user.discordId },
+  });
+
+  return user;
+}
+
+/**
  * Verifies the user is an admin for a tournament.
  * Returns 401 if not authenticated, 403 if not admin, or the admin info on success.
+ *
+ * This is the main authorization helper - use this in API routes.
  */
 export async function requireTournamentAdmin(
   request: NextRequest,
   tournamentId: string
 ): Promise<TournamentAdminCheck | NextResponse<{ error: string }>> {
   // Check authentication
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.discordId) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
-  }
-
-  // Find user by discordId
-  const user = await prisma.user.findUnique({
-    where: { discordId: session.user.discordId },
-  });
+  const user = await getAuthenticatedUser();
 
   if (!user) {
     return NextResponse.json(
-      { error: 'User not found' },
-      { status: 404 }
+      { error: 'Unauthorized' },
+      { status: 401 }
     );
   }
 
@@ -63,30 +70,51 @@ export async function requireTournamentAdmin(
 }
 
 /**
- * Require tournament admin for pages (uses params directly)
+ * Checks if the user is a tournament admin (without returning NextResponse).
+ * Returns null if not authorized.
+ */
+export async function checkTournamentAdmin(
+  tournamentId: string
+): Promise<TournamentAdminCheck | null> {
+  const user = await getAuthenticatedUser();
+
+  if (!user) {
+    return null;
+  }
+
+  const adminCheck = await prisma.tournamentAdmin.findFirst({
+    where: {
+      userId: user.id,
+      tournamentId,
+      role: { in: [AdminRole.OWNER, AdminRole.ADMIN, AdminRole.MODERATOR] },
+    },
+  });
+
+  if (!adminCheck) {
+    return null;
+  }
+
+  return {
+    userId: user.id,
+    role: adminCheck.role,
+    isAdmin: true,
+  };
+}
+
+/**
+ * Require tournament admin for pages (uses params directly).
+ * Kept for backward compatibility with existing page components.
  */
 export async function requireTournamentAdminById(
   tournamentId: string
 ): Promise<TournamentAdminCheck | NextResponse<{ error: string }>> {
   // Check authentication
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.discordId) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
-  }
-
-  // Find user by discordId
-  const user = await prisma.user.findUnique({
-    where: { discordId: session.user.discordId },
-  });
+  const user = await getAuthenticatedUser();
 
   if (!user) {
     return NextResponse.json(
-      { error: 'User not found' },
-      { status: 404 }
+      { error: 'Unauthorized' },
+      { status: 401 }
     );
   }
 

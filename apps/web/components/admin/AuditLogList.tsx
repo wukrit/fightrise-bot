@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
-
-type AuditAction = 'REGISTRATION_APPROVED' | 'REGISTRATION_REJECTED' | 'REGISTRATION_MANUAL_ADD' | 'REGISTRATION_MANUAL_REMOVE';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { AuditAction } from '@fightrise/database';
+import { formatDate } from '@/lib/date-utils';
 
 interface AuditUser {
   id: string;
@@ -52,15 +51,6 @@ function ActionBadge({ action }: { action: string }) {
       {config.label}
     </span>
   );
-}
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
 }
 
 export function AuditLogList({ initialLogs, initialPagination, tournamentId }: AuditLogListProps) {

@@ -1,9 +1,8 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma, AdminRole, AuditAction } from '@fightrise/database';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
+import { prisma, AuditAction } from '@fightrise/database';
+import { requireTournamentAdmin } from '@/lib/tournament-admin';
+import { withRateLimit, applyRateLimitHeaders } from '@/lib/admin-rate-limit';
 import { z } from 'zod';
 
 // Registration-related audit actions to filter by
@@ -30,28 +29,19 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const ip = getClientIp(request);
-  const result = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.admin);
-
-  const headers = createRateLimitHeaders(result);
-  if (!result.allowed) {
-    return new Response('Too Many Requests', {
-      status: 429,
-      headers,
-    });
+  const rateLimitResult = await withRateLimit(request, 'admin');
+  if (!rateLimitResult || rateLimitResult.response) {
+    return rateLimitResult?.response || new Response('Rate limit error', { status: 500 });
   }
 
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.discordId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     const { id: tournamentId } = await params;
+
+    // Check authorization using helper
+    const authResult = await requireTournamentAdmin(request, tournamentId);
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
 
     // Find the tournament
     const tournament = await prisma.tournament.findUnique({
@@ -62,33 +52,6 @@ export async function GET(
       return NextResponse.json(
         { error: 'Tournament not found' },
         { status: 404 }
-      );
-    }
-
-    // Check if user is admin
-    const user = await prisma.user.findUnique({
-      where: { discordId: session.user.discordId },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    const adminCheck = await prisma.tournamentAdmin.findFirst({
-      where: {
-        userId: user.id,
-        tournamentId,
-        role: { in: [AdminRole.OWNER, AdminRole.ADMIN, AdminRole.MODERATOR] },
-      },
-    });
-
-    if (!adminCheck) {
-      return NextResponse.json(
-        { error: 'Only tournament admins can view audit logs' },
-        { status: 403 }
       );
     }
 
@@ -175,20 +138,12 @@ export async function GET(
     });
 
     // Add rate limit headers
-    for (const [key, value] of headers.entries()) {
-      response.headers.set(key, value);
-    }
-
-    return response;
+    return applyRateLimitHeaders(response, rateLimitResult.headers);
   } catch (error: unknown) {
     console.error('Admin audit logs error:', error);
-    const errorResponse = NextResponse.json(
+    return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
-    for (const [key, value] of headers.entries()) {
-      errorResponse.headers.set(key, value);
-    }
-    return errorResponse;
   }
 }

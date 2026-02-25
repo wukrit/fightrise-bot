@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import * as Dialog from '@radix-ui/react-dialog';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Modal, ModalFooter } from '@fightrise/ui';
+import { Registration, RegistrationStatus, RegistrationSource } from '@fightrise/database';
+import { formatDate } from '@/lib/date-utils';
 
-type RegistrationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'DQ';
-type RegistrationSource = 'STARTGG' | 'DISCORD' | 'MANUAL';
+type RegistrationStatusEnum = RegistrationStatus;
+type RegistrationSourceEnum = RegistrationSource;
 
 interface RegistrationData {
   id: string;
@@ -16,8 +18,8 @@ interface RegistrationData {
     startggId: string | null;
     startggGamerTag: string | null;
   } | null;
-  status: RegistrationStatus;
-  source: RegistrationSource;
+  status: RegistrationStatusEnum;
+  source: RegistrationSourceEnum;
   createdAt: string;
 }
 
@@ -37,8 +39,8 @@ interface RegistrationsTableProps {
   loading?: boolean;
 }
 
-function StatusBadge({ status }: { status: RegistrationStatus }) {
-  const statusConfig: Record<RegistrationStatus, { label: string; className: string }> = {
+function StatusBadge({ status }: { status: RegistrationStatusEnum }) {
+  const statusConfig: Record<RegistrationStatusEnum, { label: string; className: string }> = {
     PENDING: { label: 'Pending', className: 'bg-amber-900/50 text-amber-400 border-amber-700/50' },
     CONFIRMED: { label: 'Confirmed', className: 'bg-emerald-900/50 text-emerald-400 border-emerald-700/50' },
     CANCELLED: { label: 'Cancelled', className: 'bg-zinc-800 text-zinc-400 border-zinc-700' },
@@ -53,8 +55,8 @@ function StatusBadge({ status }: { status: RegistrationStatus }) {
   );
 }
 
-function SourceBadge({ source }: { source: RegistrationSource }) {
-  const sourceConfig: Record<RegistrationSource, { label: string; className: string }> = {
+function SourceBadge({ source }: { source: RegistrationSourceEnum }) {
+  const sourceConfig: Record<RegistrationSourceEnum, { label: string; className: string }> = {
     STARTGG: { label: 'Start.gg', className: 'text-blue-400 bg-blue-900/20' },
     DISCORD: { label: 'Discord', className: 'text-indigo-400 bg-indigo-900/20' },
     MANUAL: { label: 'Manual', className: 'text-zinc-400 bg-zinc-800' },
@@ -68,44 +70,12 @@ function SourceBadge({ source }: { source: RegistrationSource }) {
   );
 }
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
+function ModalContent({ children }: { children: React.ReactNode }) {
+  return <div className="space-y-4">{children}</div>;
 }
 
-// Modal component using Radix directly
-function Modal({ isOpen, onClose, title, children }: { isOpen: boolean; onClose: () => void; title?: string; children: React.ReactNode }) {
-  return (
-    <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50 animate-fade-in" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-md z-50 animate-slide-up">
-          {title && (
-            <div className="flex items-center justify-between mb-4">
-              <Dialog.Title className="text-lg font-semibold text-zinc-100">{title}</Dialog.Title>
-              <Dialog.Close asChild>
-                <button onClick={onClose} className="text-zinc-400 hover:text-zinc-200" aria-label="Close">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </Dialog.Close>
-            </div>
-          )}
-          {children}
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-  );
-}
-
-function ModalFooter({ children }: { children: React.ReactNode }) {
-  return <div className="flex justify-end gap-2 mt-6">{children}</div>;
+function ModalActions({ children }: { children: React.ReactNode }) {
+  return <ModalFooter>{children}</ModalFooter>;
 }
 
 export function RegistrationsTable({
@@ -311,53 +281,57 @@ export function RegistrationsTable({
 
       {/* Reject Modal */}
       <Modal isOpen={rejectModalOpen} onClose={() => setRejectModalOpen(false)} title="Reject Registration">
-        <p className="text-sm text-zinc-400 mb-4">
-          Please provide a reason for rejecting this registration.
-        </p>
-        <textarea
-          value={rejectReason}
-          onChange={(e) => setRejectReason(e.target.value)}
-          placeholder="Reason for rejection..."
-          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-600 resize-none"
-          rows={4}
-        />
-        <ModalFooter>
-          <button
-            onClick={() => setRejectModalOpen(false)}
-            className="px-4 py-2 text-sm font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleReject}
-            disabled={!rejectReason.trim() || actionLoading !== null}
-            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
-          >
-            Reject
-          </button>
-        </ModalFooter>
+        <ModalContent>
+          <p className="text-sm text-zinc-400">
+            Please provide a reason for rejecting this registration.
+          </p>
+          <textarea
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="Reason for rejection..."
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-600 resize-none"
+            rows={4}
+          />
+          <ModalActions>
+            <button
+              onClick={() => setRejectModalOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleReject}
+              disabled={!rejectReason.trim() || actionLoading !== null}
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
+            >
+              Reject
+            </button>
+          </ModalActions>
+        </ModalContent>
       </Modal>
 
       {/* Remove Modal */}
       <Modal isOpen={removeModalOpen} onClose={() => setRemoveModalOpen(false)} title="Remove Registration">
-        <p className="text-sm text-zinc-400">
-          Are you sure you want to remove this registration? This action cannot be undone.
-        </p>
-        <ModalFooter>
-          <button
-            onClick={() => setRemoveModalOpen(false)}
-            className="px-4 py-2 text-sm font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleRemove}
-            disabled={actionLoading !== null}
-            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
-          >
-            Remove
-          </button>
-        </ModalFooter>
+        <ModalContent>
+          <p className="text-sm text-zinc-400">
+            Are you sure you want to remove this registration? This action cannot be undone.
+          </p>
+          <ModalActions>
+            <button
+              onClick={() => setRemoveModalOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleRemove}
+              disabled={actionLoading !== null}
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
+            >
+              Remove
+            </button>
+          </ModalActions>
+        </ModalContent>
       </Modal>
     </div>
   );
@@ -405,7 +379,7 @@ export function ManualAddModal({ isOpen, onClose, onSubmit }: ManualAddModalProp
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Add Manual Registration">
-      <div className="space-y-4">
+      <ModalContent>
         <div>
           <label className="block text-sm font-medium text-zinc-300 mb-1">
             Discord Username *
@@ -431,22 +405,22 @@ export function ManualAddModal({ isOpen, onClose, onSubmit }: ManualAddModalProp
           />
         </div>
         {error && <p className="text-sm text-red-400">{error}</p>}
-      </div>
-      <ModalFooter>
-        <button
-          onClick={handleClose}
-          className="px-4 py-2 text-sm font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSubmit}
-          disabled={loading}
-          className="px-4 py-2 text-sm font-medium text-white bg-zinc-100 hover:bg-zinc-200 text-zinc-900 rounded-lg transition-colors disabled:opacity-50"
-        >
-          {loading ? 'Adding...' : 'Add Registration'}
-        </button>
-      </ModalFooter>
+        <ModalActions>
+          <button
+            onClick={handleClose}
+            className="px-4 py-2 text-sm font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="px-4 py-2 text-sm font-medium text-white bg-zinc-100 hover:bg-zinc-200 text-zinc-900 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Adding...' : 'Add Registration'}
+          </button>
+        </ModalActions>
+      </ModalContent>
     </Modal>
   );
 }

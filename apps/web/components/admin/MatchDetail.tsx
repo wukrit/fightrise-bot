@@ -1,9 +1,10 @@
 'use client';
 
 import * as Tooltip from '@radix-ui/react-tooltip';
+import { MatchState } from '@fightrise/database';
+import { getRelativeTime } from '@/lib/date-utils';
 
-type MatchState = 'NOT_STARTED' | 'CALLED' | 'CHECKED_IN' | 'IN_PROGRESS' | 'PENDING_CONFIRMATION' | 'COMPLETED' | 'DISPUTED' | 'DQ';
-
+// Local type matching the API response shape
 interface User {
   id: string;
   discordId: string | null;
@@ -42,21 +43,6 @@ interface Match {
 interface MatchDetailProps {
   match: Match;
   onDqPlayer: (player: MatchPlayer) => void;
-}
-
-// Simple relative time function
-function getRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-  return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
 }
 
 function CheckInIcon({ isCheckedIn, checkedInAt, matchState }: { isCheckedIn: boolean; checkedInAt: string | null; matchState: MatchState }) {

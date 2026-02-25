@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma, RegistrationStatus, RegistrationSource, AuditAction, AuditSource } from '@fightrise/database';
 import { requireTournamentAdmin } from '@/lib/tournament-admin';
-import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
+import { withRateLimit, applyRateLimitHeaders } from '@/lib/admin-rate-limit';
 import { z } from 'zod';
 
 // Validation schema for creating manual registration
@@ -26,15 +26,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const ip = getClientIp(request);
-  const result = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.admin);
-
-  const headers = createRateLimitHeaders(result);
-  if (!result.allowed) {
-    return new Response('Too Many Requests', {
-      status: 429,
-      headers,
-    });
+  const rateLimitResult = await withRateLimit(request, 'admin');
+  if (!rateLimitResult || rateLimitResult.response) {
+    return rateLimitResult?.response || new Response('Rate limit error', { status: 500 });
   }
 
   try {
@@ -113,21 +107,13 @@ export async function GET(
     });
 
     // Add rate limit headers
-    for (const [key, value] of headers.entries()) {
-      response.headers.set(key, value);
-    }
-
-    return response;
+    return applyRateLimitHeaders(response, rateLimitResult.headers);
   } catch (error: unknown) {
     console.error('Admin registrations error:', error);
-    const errorResponse = NextResponse.json(
+    return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
-    for (const [key, value] of headers.entries()) {
-      errorResponse.headers.set(key, value);
-    }
-    return errorResponse;
   }
 }
 
@@ -139,15 +125,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const ip = getClientIp(request);
-  const result = await checkRateLimit(ip, RATE_LIMIT_CONFIGS.write);
-
-  const headers = createRateLimitHeaders(result);
-  if (!result.allowed) {
-    return new Response('Too Many Requests', {
-      status: 429,
-      headers,
-    });
+  const rateLimitResult = await withRateLimit(request, 'write');
+  if (!rateLimitResult || rateLimitResult.response) {
+    return rateLimitResult?.response || new Response('Rate limit error', { status: 500 });
   }
 
   try {
@@ -276,20 +256,12 @@ export async function POST(
     }, { status: 201 });
 
     // Add rate limit headers
-    for (const [key, value] of headers.entries()) {
-      response.headers.set(key, value);
-    }
-
-    return response;
+    return applyRateLimitHeaders(response, rateLimitResult.headers);
   } catch (error: unknown) {
     console.error('Admin registration create error:', error);
-    const errorResponse = NextResponse.json(
+    return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
-    for (const [key, value] of headers.entries()) {
-      errorResponse.headers.set(key, value);
-    }
-    return errorResponse;
   }
 }

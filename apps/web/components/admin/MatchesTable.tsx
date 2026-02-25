@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { MatchDetail } from './MatchDetail';
 import { DQModal } from './DQModal';
+import { MatchState } from '@fightrise/database';
 
-type MatchState = 'NOT_STARTED' | 'CALLED' | 'CHECKED_IN' | 'IN_PROGRESS' | 'PENDING_CONFIRMATION' | 'COMPLETED' | 'DISPUTED' | 'DQ';
-
+// Local type matching the API response shape
 interface User {
   id: string;
   discordId: string | null;
@@ -41,16 +41,14 @@ interface Match {
   players: MatchPlayer[];
 }
 
-interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
 interface MatchesTableProps {
   matches: Match[];
-  pagination: Pagination;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
   loading: boolean;
   tournamentId: string;
   onDqPlayer: (matchId: string, playerId: string, reason?: string) => Promise<{ success: boolean; error?: string }>;
@@ -71,7 +69,7 @@ function getStateConfig(state: MatchState): { label: string; className: string }
   return config[state];
 }
 
-function formatScore(players: MatchPlayer[]): string {
+function formatScore(players: Match['players']): string {
   const winner = players.find((p) => p.isWinner === true);
   const loser = players.find((p) => p.isWinner === false);
 
@@ -84,7 +82,7 @@ function formatScore(players: MatchPlayer[]): string {
   return `${winnerScore}-${loserScore}`;
 }
 
-function getCheckInSummary(players: MatchPlayer[]): string {
+function getCheckInSummary(players: Match['players']): string {
   const checkedIn = players.filter((p) => p.isCheckedIn).length;
   return `${checkedIn}/${players.length} checked in`;
 }
@@ -100,7 +98,7 @@ export function MatchesTable({
   const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
   const [dqModalOpen, setDqModalOpen] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
-  const [selectedPlayer, setSelectedPlayer] = useState<MatchPlayer | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState<Match['players'][0] | null>(null);
   const [dqLoading, setDqLoading] = useState(false);
   const [dqError, setDqError] = useState('');
 
@@ -108,7 +106,7 @@ export function MatchesTable({
     setExpandedMatch((prev) => (prev === matchId ? null : matchId));
   };
 
-  const openDqModal = (match: Match, player: MatchPlayer) => {
+  const openDqModal = (match: Match, player: Match['players'][0]) => {
     setSelectedMatch(match);
     setSelectedPlayer(player);
     setDqError('');
