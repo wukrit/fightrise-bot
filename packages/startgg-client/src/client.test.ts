@@ -226,6 +226,85 @@ describe('StartGGClient', () => {
     });
   });
 
+  describe('dqEntrant', () => {
+    it('should DQ an entrant by reporting set with opponent as winner', async () => {
+      const mockResult = { id: '123', state: 3 };
+
+      mockRequest.mockResolvedValueOnce({ reportBracketSet: mockResult });
+
+      const result = await client.dqEntrant('123', '456');
+
+      expect(result).toEqual(mockResult);
+      expect(mockRequest).toHaveBeenCalledWith(
+        expect.stringContaining('DqEntrant'),
+        { setId: '123', winnerId: '456' }
+      );
+    });
+
+    it('should return null when DQ mutation returns null', async () => {
+      mockRequest.mockResolvedValueOnce({ reportBracketSet: null });
+
+      const result = await client.dqEntrant('123', '456');
+
+      expect(result).toBeNull();
+    });
+
+    it('should not cache DQ mutations', async () => {
+      const clientWithCache = new StartGGClient({
+        apiKey: 'test',
+        cache: { enabled: true },
+      });
+
+      const { GraphQLClient } = await import('graphql-request');
+      const cachedMockRequest = (
+        GraphQLClient as unknown as ReturnType<typeof vi.fn>
+      ).mock.results[1].value.request;
+
+      cachedMockRequest.mockResolvedValue({ reportBracketSet: { id: '1', state: 3 } });
+
+      await clientWithCache.dqEntrant('1', '2');
+      await clientWithCache.dqEntrant('1', '2');
+
+      expect(cachedMockRequest).toHaveBeenCalledTimes(2);
+    });
+
+    it('should invalidate event sets cache after DQ', async () => {
+      const clientWithCache = new StartGGClient({
+        apiKey: 'test',
+        cache: { enabled: true },
+      });
+
+      const { GraphQLClient } = await import('graphql-request');
+      const cachedMockRequest = (
+        GraphQLClient as unknown as ReturnType<typeof vi.fn>
+      ).mock.results[1].value.request;
+
+      cachedMockRequest.mockResolvedValue({ reportBracketSet: { id: '1', state: 3 } });
+
+      // First, populate cache with getEventSets
+      cachedMockRequest.mockResolvedValueOnce({
+        event: { sets: { pageInfo: { total: 1 }, nodes: [] } },
+      });
+      await clientWithCache.getEventSets('event-1');
+
+      // Verify cache is populated (1 call)
+      expect(cachedMockRequest).toHaveBeenCalledTimes(1);
+
+      // Then DQ - this should invalidate cache
+      cachedMockRequest.mockResolvedValueOnce({ reportBracketSet: { id: '1', state: 3 } });
+      await clientWithCache.dqEntrant('1', '2');
+
+      // Next getEventSets should not use cache (2 more calls: one for getEventSets and one for dqEntrant)
+      cachedMockRequest.mockResolvedValueOnce({
+        event: { sets: { pageInfo: { total: 1 }, nodes: [] } },
+      });
+      await clientWithCache.getEventSets('event-1');
+
+      // Should have called the mock again (total: 3 calls = 1 initial + 1 dq + 1 after dq)
+      expect(cachedMockRequest).toHaveBeenCalledTimes(3);
+    });
+  });
+
   describe('caching', () => {
     it('should cache responses when enabled', async () => {
       const clientWithCache = new StartGGClient({
