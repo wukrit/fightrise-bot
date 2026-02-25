@@ -1,4 +1,5 @@
 // Shared UI components for FightRise web portal
+'use client';
 
 export { Button } from './Button.js';
 export type { ButtonProps } from './Button.js';

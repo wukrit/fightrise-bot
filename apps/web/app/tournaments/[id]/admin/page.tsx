@@ -38,9 +38,17 @@ async function getTournamentData(tournamentId: string) {
     },
   });
 
+  // Get recent audit logs related to this tournament's registrations
+  const registrationIds = await prisma.registration.findMany({
+    where: { tournamentId },
+    select: { id: true },
+  });
+  const regIds = registrationIds.map(r => r.id);
+
   const recentAuditLogs = await prisma.auditLog.findMany({
     where: {
-      tournamentId,
+      entityType: 'Registration',
+      entityId: { in: regIds },
     },
     orderBy: {
       createdAt: 'desc',
