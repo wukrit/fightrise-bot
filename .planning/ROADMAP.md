@@ -60,7 +60,7 @@
 8. Audit log supports filtering by action type (registration created, updated, deleted)
 9. Dashboard shows recent admin actions
 
-**Plans:** TBD
+**Plans:** 1/1 plans executed
 
 ---
 
@@ -91,7 +91,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Authorization | 0/1 | Not started | - |
-| 2. Registration Management | 0/1 | Not started | - |
+| 2. Registration Management | 1/1 | Wave 2 (UI) pending | API done |
 | 3. Match Management | 0/1 | Not started | - |
 
 ---
