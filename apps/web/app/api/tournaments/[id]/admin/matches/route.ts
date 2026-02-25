@@ -90,21 +90,26 @@ export async function GET(
     }
 
     // Build where clause for filtering
+    // Note: For filtering by player name in a relation, we use 'some' operator
+    // which checks if ANY related player matches the criteria
+    // Using type assertion to fix TypeScript inference issue with QueryMode
+    const playerNameFilter = playerName
+      ? {
+          some: {
+            OR: [
+              { playerName: { contains: playerName, mode: 'insensitive' as const } },
+              { user: { discordUsername: { contains: playerName, mode: 'insensitive' as const } } },
+              { user: { startggGamerTag: { contains: playerName, mode: 'insensitive' as const } } },
+            ],
+          },
+        }
+      : undefined;
+
     const where: {
       eventId: { in: string[] };
       state?: MatchState;
       round?: number;
-      players?: {
-        OR: Array<{
-          playerName?: { contains: string; mode: 'insensitive' };
-          user?: {
-            OR: Array<{
-              discordUsername?: { contains: string; mode: 'insensitive' };
-              startggGamerTag?: { contains: string; mode: 'insensitive' };
-            }>;
-          };
-        }>;
-      };
+      players?: typeof playerNameFilter;
     } = { eventId: { in: eventIds } };
 
     if (state) {
@@ -116,19 +121,7 @@ export async function GET(
     }
 
     if (playerName) {
-      where.players = {
-        OR: [
-          { playerName: { contains: playerName, mode: 'insensitive' } },
-          {
-            user: {
-              OR: [
-                { discordUsername: { contains: playerName, mode: 'insensitive' } },
-                { startggGamerTag: { contains: playerName, mode: 'insensitive' } },
-              ],
-            },
-          },
-        ],
-      };
+      where.players = playerNameFilter;
     }
 
     // Get total count for pagination
