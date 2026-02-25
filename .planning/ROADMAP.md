@@ -13,7 +13,7 @@
 
 - [ ] **Phase 1: Foundation & Authorization** - Unified admin permission model and basic dashboard
 - [ ] **Phase 2: Registration Management** - Full registration CRUD with audit logging
-- [ ] **Phase 3: Match Management** - Match list, details, and disqualification handling
+- [x] **Phase 3: Match Management** - Match list, details, and disqualification handling (completed 2026-02-25)
 
 ---
 
@@ -82,7 +82,7 @@
 6. DQ action creates audit log entry automatically
 7. DQ syncs to Start.gg via GraphQL mutation
 
-**Plans:** 2/2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 03-01-PLAN.md — Match Management API (matches list + DQ endpoint)
@@ -96,7 +96,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Foundation & Authorization | 1/1 | Complete | Auth + Dashboard |
 | 2. Registration Management | 2/2 | Complete | API + UI |
-| 3. Match Management | 2/2 | In progress | API + UI |
+| 3. Match Management | 2/2 | Complete   | 2026-02-25 |
 
 ---
 

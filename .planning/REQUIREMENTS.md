@@ -39,14 +39,14 @@
 
 ### Admin UI - Matches
 
-- [ ] **MATCH-01**: Admin can view all matches in a table with filters (round, state)
-- [ ] **MATCH-02**: Admin can view match details (players, scores)
-- [ ] **MATCH-03**: Admin can view check-in status for matches
+- [x] **MATCH-01**: Admin can view all matches in a table with filters (round, state)
+- [x] **MATCH-02**: Admin can view match details (players, scores)
+- [x] **MATCH-03**: Admin can view check-in status for matches
 
 ### Admin UI - Disqualification
 
-- [ ] **DQ-01**: Admin can disqualify a player from a match
-- [ ] **DQ-02**: DQ form requires reason input
+- [x] **DQ-01**: Admin can disqualify a player from a match
+- [x] **DQ-02**: DQ form requires reason input
 - [ ] **DQ-03**: DQ action creates audit log entry
 - [ ] **DQ-04**: DQ syncs to Start.gg via API
 
@@ -104,11 +104,11 @@
 | REG-04 | Phase 2 | Pending |
 | REG-05 | Phase 2 | Pending |
 | REG-06 | Phase 2 | Pending |
-| MATCH-01 | Phase 3 | Pending |
-| MATCH-02 | Phase 3 | Pending |
-| MATCH-03 | Phase 3 | Pending |
-| DQ-01 | Phase 3 | Pending |
-| DQ-02 | Phase 3 | Pending |
+| MATCH-01 | Phase 3 | Complete |
+| MATCH-02 | Phase 3 | Complete |
+| MATCH-03 | Phase 3 | Complete |
+| DQ-01 | Phase 3 | Complete |
+| DQ-02 | Phase 3 | Complete |
 | DQ-03 | Phase 3 | Pending |
 | DQ-04 | Phase 3 | Pending |
 | AUDIT-01 | Phase 2 | Pending |
