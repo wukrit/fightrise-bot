@@ -103,11 +103,16 @@ packages/
 │       ├── validation.ts         # Zod schemas
 │       └── errors.ts             # Custom error classes
 │
-└── ui/                          # Shared React components
+└── ui/                          # Shared React components (Radix UI)
     └── src/
-        ├── Button.tsx            # Button component
+        ├── Button.tsx            # Button component (Radix Slot)
+        ├── Modal.tsx             # Modal (Radix Dialog)
+        ├── Drawer.tsx           # Drawer (Radix Dialog)
+        ├── Select.tsx           # Select (Radix Select)
+        ├── Tooltip.tsx          # Tooltip (Radix Tooltip)
         ├── DiscordIcon.tsx       # Discord icon
-        └── UserAvatar.tsx        # User avatar component
+        ├── UserAvatar.tsx        # User avatar component
+        └── tokens.ts             # Design tokens
 ```
 
 ### What's Built vs Planned
@@ -317,6 +322,25 @@ When working on frontend features in `apps/web/`:
 - If a needed component doesn't exist, add it to `packages/ui/` rather than creating app-specific components
 - Avoid inline styles - use the shared styling system from `packages/ui/`
 - Exception: One-off components that are truly page-specific and won't be reused
+
+### Use Radix UI Primitives
+The UI package uses [Radix UI](https://www.radix-ui.com/) for accessible component primitives:
+
+| Component | Radix Primitive | Location |
+|-----------|-----------------|----------|
+| Modal | `@radix-ui/react-dialog` | `packages/ui/src/Modal.tsx` |
+| Drawer | `@radix-ui/react-dialog` | `packages/ui/src/Drawer.tsx` |
+| Select | `@radix-ui/react-select` | `packages/ui/src/Select.tsx` |
+| Tooltip | `@radix-ui/react-tooltip` | `packages/ui/src/Tooltip.tsx` |
+| Button (polymorphic) | `@radix-ui/react-slot` | `packages/ui/src/Button.tsx` |
+
+**When adding new UI components:**
+1. Check if Radix has a primitive: https://www.radix-ui.com/docs/primitives
+2. Wrap the primitive in a custom component to maintain the API
+3. Use `<Primitive.Portal>` for Dialog, Popover, Tooltip
+4. Leverage `data-state` attributes for styling
+
+See `docs/RADIX_UI_BEST_PRACTICES.md` for detailed guidelines.
 
 ### Use the /frontend-design Skill
 - **Always** use `/frontend-design` when creating or modifying UI components, pages, or layouts
