@@ -143,6 +143,13 @@ export interface ReportSetResponse {
   } | null;
 }
 
+export interface DqEntrantResponse {
+  reportBracketSet: {
+    id: string;
+    state: SetState;
+  } | null;
+}
+
 // Client configuration
 export interface StartGGClientConfig {
   apiKey: string;

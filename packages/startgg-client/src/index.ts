@@ -7,7 +7,7 @@ import {
   GET_EVENT_ENTRANTS,
   GET_TOURNAMENTS_BY_OWNER,
 } from './queries/index.js';
-import { REPORT_SET } from './mutations/index.js';
+import { REPORT_SET, DQ_ENTRANT } from './mutations/index.js';
 import {
   StartGGClientConfig,
   GetTournamentResponse,
@@ -15,6 +15,7 @@ import {
   GetEventEntrantsResponse,
   GetTournamentsByOwnerResponse,
   ReportSetResponse,
+  DqEntrantResponse,
   Tournament,
   Set,
   SetState,
@@ -197,6 +198,29 @@ export class StartGGClient {
   ): Promise<{ id: string; state: number } | null> {
     const result = await this.request<ReportSetResponse>(
       REPORT_SET,
+      { setId, winnerId },
+      { skipCache: true } // Mutations should never be cached
+    );
+
+    // Invalidate related caches after mutation
+    this.cache.invalidate('getEventSets');
+
+    return result.reportBracketSet;
+  }
+
+  /**
+   * Disqualify an entrant from a set by reporting the match with the opponent as winner.
+   * Start.gg doesn't have a dedicated DQ mutation, so we use reportBracketSet.
+   *
+   * @param setId - The Start.gg set ID
+   * @param winnerId - The entrant ID of the player who wins by default (opponent)
+   */
+  async dqEntrant(
+    setId: string,
+    winnerId: string
+  ): Promise<{ id: string; state: number } | null> {
+    const result = await this.request<DqEntrantResponse>(
+      DQ_ENTRANT,
       { setId, winnerId },
       { skipCache: true } // Mutations should never be cached
     );
