@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma, MatchState, AuditAction, AuditSource } from '@fightrise/database';
 import { requireTournamentAdmin } from '@/lib/tournament-admin';
 import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
+import { StartGGClient, StartGGError } from '@fightrise/startgg-client';
 import { z } from 'zod';
 
 // Validation schema for DQ request
@@ -192,14 +193,34 @@ export async function POST(
       throw error;
     }
 
-    // TODO: Sync to Start.gg once mutation is implemented
-    // For now, log that Start.gg sync is pending
-    console.log(`[DQ] Database updated for player ${dqPlayer.playerName} in match ${match.identifier}`);
-    console.log(`[DQ] Start.gg sync pending - requires dqEntrant mutation`);
+    // Sync to Start.gg (don't fail the whole DQ if this fails)
+    let startggSyncSuccess = false;
+    try {
+      const apiKey = process.env.STARTGG_API_KEY;
+      if (apiKey && opponent.startggEntrantId) {
+        const startggClient = new StartGGClient({ apiKey });
+        const result = await startggClient.dqEntrant(
+          match.startggSetId,
+          opponent.startggEntrantId
+        );
+        startggSyncSuccess = result !== null;
+        console.log(`[DQ] Start.gg sync result:`, result);
+      } else {
+        console.log(`[DQ] Skipping Start.gg sync - no API key or entrant ID`);
+      }
+    } catch (error) {
+      // Log but don't fail the whole DQ
+      if (error instanceof StartGGError) {
+        console.error(`[DQ] Start.gg sync failed: ${error.message}`);
+      } else {
+        console.error(`[DQ] Start.gg sync error:`, error);
+      }
+    }
 
     const response = NextResponse.json({
       success: true,
       message: `${dqPlayer.playerName} has been disqualified. ${opponent.playerName} wins by default.`,
+      startggSynced: startggSyncSuccess,
     });
 
     // Add rate limit headers
