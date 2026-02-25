@@ -104,8 +104,10 @@ export async function GET(
 
     // Build where clause for filtering
     // Only allow registration-related actions for security
+    // Filter by tournamentId through the Registration entity
     const where: Record<string, unknown> = {
       action: { in: REGISTRATION_ACTIONS },
+      entityType: 'Registration',
     };
 
     // If specific action filter is provided, verify it's a valid registration action
@@ -119,6 +121,17 @@ export async function GET(
     if (action) {
       where.action = action;
     }
+
+    // Filter audit logs by tournament - use Prisma's some for nested filtering
+    // This filters to only show registrations belonging to this tournament
+    where.entityId = {
+      in: await prisma.registration
+        .findMany({
+          where: { tournamentId },
+          select: { id: true },
+        })
+        .then((regs) => regs.map((r) => r.id)),
+    };
 
     // Get total count for pagination
     const total = await prisma.auditLog.count({ where });

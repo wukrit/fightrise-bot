@@ -116,6 +116,14 @@ export async function PATCH(
       );
     }
 
+    // Verify registration belongs to this tournament (IDOR protection)
+    if (registration.tournamentId !== tournamentId) {
+      return NextResponse.json(
+        { error: 'Registration not found' },
+        { status: 404 }
+      );
+    }
+
     // Validate action
     if (action === 'reject' && !reason) {
       return NextResponse.json(
@@ -264,6 +272,14 @@ export async function DELETE(
     });
 
     if (!registration) {
+      return NextResponse.json(
+        { error: 'Registration not found' },
+        { status: 404 }
+      );
+    }
+
+    // Verify registration belongs to this tournament (IDOR protection)
+    if (registration.tournamentId !== tournamentId) {
       return NextResponse.json(
         { error: 'Registration not found' },
         { status: 404 }

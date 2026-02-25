@@ -111,6 +111,22 @@ export async function POST(
       );
     }
 
+    // Verify the player is registered for this tournament (IDOR protection)
+    const playerRegistration = await prisma.registration.findFirst({
+      where: {
+        userId: dqPlayer.userId,
+        tournamentId,
+        status: { in: ['CONFIRMED', 'PENDING'] },
+      },
+    });
+
+    if (!playerRegistration) {
+      return NextResponse.json(
+        { error: 'Player is not registered for this tournament' },
+        { status: 403 }
+      );
+    }
+
     // Find the opponent
     const opponent = match.players.find((p) => p.id !== dqPlayerId);
     if (!opponent) {
