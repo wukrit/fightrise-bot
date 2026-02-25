@@ -1,4 +1,6 @@
 import React from 'react';
+import * as TooltipPrimitive from '@radix-ui/react-tooltip';
+import { tokens } from './tokens.js';
 
 export interface TooltipProps {
   content: React.ReactNode;
@@ -6,26 +8,6 @@ export interface TooltipProps {
   position?: 'top' | 'bottom' | 'left' | 'right';
   delay?: number;
 }
-
-const tooltipContainerStyles: React.CSSProperties = {
-  position: 'relative',
-  display: 'inline-flex',
-};
-
-const tooltipBase: React.CSSProperties = {
-  position: 'absolute',
-  padding: '6px 10px',
-  backgroundColor: '#1a1a1a',
-  color: '#ffffff',
-  fontSize: '12px',
-  borderRadius: '4px',
-  whiteSpace: 'nowrap',
-  zIndex: 1000,
-  opacity: 0,
-  visibility: 'hidden',
-  transition: 'opacity 0.15s ease, visibility 0.15s ease',
-  pointerEvents: 'none',
-};
 
 const positionStyles: Record<string, React.CSSProperties> = {
   top: {
@@ -54,42 +36,41 @@ const positionStyles: Record<string, React.CSSProperties> = {
   },
 };
 
+const contentStyles: React.CSSProperties = {
+  position: 'absolute',
+  padding: '6px 10px',
+  backgroundColor: tokens.colors.gray[800],
+  color: tokens.colors.white,
+  fontSize: '12px',
+  borderRadius: '4px',
+  whiteSpace: 'nowrap',
+  zIndex: tokens.zIndex.tooltip,
+  animation: 'fadeIn 150ms ease',
+  boxShadow: tokens.shadows.md,
+};
+
+const arrowStyles: React.CSSProperties = {
+  fill: tokens.colors.gray[800],
+};
+
 export function Tooltip({ content, children, position = 'top', delay = 300 }: TooltipProps) {
-  const [isVisible, setIsVisible] = React.useState(false);
-  const timeoutRef = React.useRef<NodeJS.Timeout>();
-
-  const showTooltip = () => {
-    timeoutRef.current = setTimeout(() => {
-      setIsVisible(true);
-    }, delay);
-  };
-
-  const hideTooltip = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    setIsVisible(false);
-  };
-
   return (
-    <div
-      style={tooltipContainerStyles}
-      onMouseEnter={showTooltip}
-      onMouseLeave={hideTooltip}
-      onFocus={showTooltip}
-      onBlur={hideTooltip}
-    >
-      {children}
-      <div
-        style={{
-          ...tooltipBase,
-          ...positionStyles[position],
-          ...(isVisible ? { opacity: 1, visibility: 'visible' } : {}),
-        }}
-        role="tooltip"
-      >
-        {content}
-      </div>
-    </div>
+    <TooltipPrimitive.Provider delayDuration={delay}>
+      <TooltipPrimitive.Root>
+        <TooltipPrimitive.Trigger asChild>
+          {children}
+        </TooltipPrimitive.Trigger>
+        <TooltipPrimitive.Portal>
+          <TooltipPrimitive.Content
+            side={position}
+            sideOffset={8}
+            style={contentStyles}
+          >
+            {content}
+            <TooltipPrimitive.Arrow style={arrowStyles} />
+          </TooltipPrimitive.Content>
+        </TooltipPrimitive.Portal>
+      </TooltipPrimitive.Root>
+    </TooltipPrimitive.Provider>
   );
 }

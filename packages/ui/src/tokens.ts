@@ -108,16 +108,6 @@ export const zIndex = {
   tooltip: 1050,
 } as const;
 
-// Dark mode variants
-export const colorsDark = {
-  ...colors,
-  background: '#1f2937',
-  surface: '#374151',
-  text: '#f9fafb',
-  textMuted: '#9ca3af',
-  border: '#4b5563',
-} as const;
-
 // Combined tokens export for easy importing
 export const tokens = {
   colors,
@@ -127,7 +117,6 @@ export const tokens = {
   shadows,
   transitions,
   zIndex,
-  colorsDark,
 } as const;
 
 export type Colors = typeof colors;
