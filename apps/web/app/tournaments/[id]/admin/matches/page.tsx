@@ -177,7 +177,7 @@ export default async function AdminMatchesPage({
   // Authorization check
   const auth = await requireTournamentAdminById(tournamentId);
   if (auth instanceof Response) {
-    return auth;
+    return notFound();
   }
 
   const [data, tournamentName, availableRounds] = await Promise.all([

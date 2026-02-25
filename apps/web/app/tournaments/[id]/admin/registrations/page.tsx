@@ -81,7 +81,7 @@ export default async function AdminRegistrationsPage({
   // Authorization check
   const auth = await requireTournamentAdminById(tournamentId);
   if (auth instanceof Response) {
-    return auth;
+    return notFound();
   }
 
   const [data, tournamentName] = await Promise.all([
