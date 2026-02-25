@@ -82,7 +82,11 @@
 6. DQ action creates audit log entry automatically
 7. DQ syncs to Start.gg via GraphQL mutation
 
-**Plans:** TBD
+**Plans:** 2/2 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Match Management API (matches list + DQ endpoint)
+- [ ] 03-02-PLAN.md — Match Management UI (expandable table + DQ modal)
 
 ---
 
@@ -92,7 +96,7 @@
 |-------|----------------|--------|-----------|
 | 1. Foundation & Authorization | 1/1 | Complete | Auth + Dashboard |
 | 2. Registration Management | 2/2 | Complete | API + UI |
-| 3. Match Management | 0/1 | Not started | - |
+| 3. Match Management | 2/2 | In progress | API + UI |
 
 ---
 
