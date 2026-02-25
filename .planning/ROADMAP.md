@@ -91,7 +91,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Authorization | 0/1 | Not started | - |
-| 2. Registration Management | 1/1 | Wave 2 (UI) pending | API done |
+| 2. Registration Management | 2/2 | Complete | API + UI |
 | 3. Match Management | 0/1 | Not started | - |
 
 ---

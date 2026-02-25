@@ -13,9 +13,9 @@
 | Attribute | Value |
 |-----------|-------|
 | **Phase** | 02-registration-management |
-| **Plan** | 01 (API) - Completed |
-| **Status** | Wave 2 (UI) pending |
-| **Progress** | [#####---] 33% |
+| **Plan** | 02 (UI) - Completed |
+| **Status** | Phase 2 complete |
+| **Progress** | [########-] 67% |
 
 ---
 
@@ -77,12 +77,14 @@
 
 ## Session Continuity
 
-**Last session:** Completed phase 02-registration-management plan 01 (API endpoints)
+**Last session:** Completed phase 02-registration-management plan 02 (UI pages)
 **Completed tasks:**
-- Admin Registration CRUD API (POST, GET with filtering/pagination, PATCH approve/reject, DELETE)
-- Admin Audit Logs API (GET with filtering, pagination)
+- Registrations admin page with table, filters, and actions
+- Manual registration modal for walk-in players
+- Reject/Remove modals for registration management
+- Audit log viewer page with action filtering
 
-**Next action:** Execute phase 02-registration-management plan 02 (UI pages) - see 02-PLAN-UI.md
+**Next action:** Execute phase 03-match-management
 
 ---
 
