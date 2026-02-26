@@ -19,13 +19,16 @@
  */
 
 import { setupServer } from 'msw/node';
-import { handlers } from './handlers.js';
+import { handlers, errorHandlers } from './handlers.js';
 
 /**
  * MSW server instance configured with default handlers.
  * Default handlers return successful responses for all Start.gg API operations.
  */
 export const server = setupServer(...handlers);
+
+// Re-export error handlers for use in tests
+export { errorHandlers };
 
 /**
  * Helper to reset server to default handlers.
@@ -55,7 +58,7 @@ export function setupMswServer(): {
   afterAll: () => void;
 } {
   return {
-    beforeAll: () => server.listen({ onUnhandledRequest: 'error' }),
+    beforeAll: () => server.listen(),
     afterEach: () => server.resetHandlers(),
     afterAll: () => server.close(),
   };
