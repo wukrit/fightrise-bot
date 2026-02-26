@@ -32,7 +32,7 @@
   5. Bot service tests achieve 80%+ code coverage
 
 **Plans**:
-- [ ] 05-01-PLAN.md — Handler tests (scoreHandler, checkinHandler)
+- [x] 05-01-PLAN.md — Handler tests (scoreHandler, checkinHandler) [COMPLETE]
 - [ ] 05-02-PLAN.md — dqService tests
 - [ ] 05-03-PLAN.md — Analysis, documentation, and coverage verification
 
@@ -101,7 +101,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 5. Bot Services Unit Tests | 0/1 | Not started | - |
+| 5. Bot Services Unit Tests | 1/3 | In Progress|  |
 | 6. Web API + Start.gg Integration | 0/1 | Not started | - |
 | 7. Database Model Integration | 0/1 | Not started | - |
 | 8. E2E Page Tests | 0/1 | Not started | - |
