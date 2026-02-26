@@ -1,37 +1,53 @@
 /**
  * Integration tests for match score reporting API endpoint.
- * Tests race condition handling in concurrent score reports.
- *
- * These tests verify that the transaction with state guards properly
- * prevents race conditions when multiple players report simultaneously.
+ * Uses PostgreSQL test database with mocked database client.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { NextRequest } from 'next/server';
+import { PrismaClient } from '@prisma/client';
 
-// Mock the database - including $transaction
-const mockMatchUpdateMany = vi.fn();
-const mockMatchPlayerUpdate = vi.fn();
-const mockMatchFindUnique = vi.fn();
-const mockTransaction = vi.fn();
+// Test database URL - connects to existing docker-compose postgres
+const TEST_DATABASE_URL = 'postgresql://fightrise:devpassword@postgres:5432/fightrise_test';
 
+// Create test prisma client
+const testPrisma = new PrismaClient({
+  datasources: { db: { url: TEST_DATABASE_URL } },
+});
+
+// Mock auth and rate limiting
+const mockSession = {
+  user: {
+    discordId: 'test-discord-123',
+    id: 'test-user-123',
+  },
+};
+
+vi.mock('next-auth', () => ({
+  getServerSession: vi.fn(() => Promise.resolve(mockSession)),
+}));
+
+vi.mock('@/lib/ratelimit', () => ({
+  checkRateLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: 100, reset: Date.now() + 60000 }),
+  getClientIp: vi.fn().mockReturnValue('127.0.0.1'),
+  createRateLimitHeaders: vi.fn().mockReturnValue(new Headers()),
+  RATE_LIMIT_CONFIGS: {
+    read: { limit: 100, window: 60 },
+    write: { limit: 50, window: 60 },
+  },
+}));
+
+// Mock the database package to use test database
 vi.mock('@fightrise/database', async () => {
-  const mockPrisma = {
-    match: {
-      findUnique: vi.fn(),
-      updateMany: vi.fn(),
-    },
-    matchPlayer: {
-      update: vi.fn(),
-    },
-    user: {
-      findUnique: vi.fn(),
-    },
-    $transaction: vi.fn((callback) => callback(mockPrisma)),
-  };
+  const { PrismaClient } = await import('@prisma/client');
+
+  const testPrisma = new PrismaClient({
+    datasources: { db: { url: TEST_DATABASE_URL } },
+  });
 
   return {
-    prisma: mockPrisma,
+    prisma: testPrisma,
+    default: testPrisma,
     MatchState: {
       NOT_STARTED: 'NOT_STARTED',
       CALLED: 'CALLED',
@@ -40,213 +56,192 @@ vi.mock('@fightrise/database', async () => {
       PENDING_CONFIRMATION: 'PENDING_CONFIRMATION',
       COMPLETED: 'COMPLETED',
       DISPUTED: 'DISPUTED',
+      DQ: 'DQ',
+    },
+    AuditAction: {
+      PLAYER_DQ: 'PLAYER_DQ',
+    },
+    AuditSource: {
+      API: 'API',
+    },
+    AdminRole: {
+      OWNER: 'OWNER',
+      ADMIN: 'ADMIN',
+      MODERATOR: 'MODERATOR',
     },
   };
 });
 
-const { prisma, MatchState } = await import('@fightrise/database');
+async function clearTestDatabase(client: PrismaClient) {
+  const tablesToClear = ['MatchPlayer', 'Match', 'Registration', 'Event', 'TournamentAdmin', 'Tournament', 'GuildConfig', 'User'];
+  for (const table of tablesToClear) {
+    try {
+      await client.$executeRawUnsafe(`TRUNCATE TABLE "${table}" CASCADE`);
+    } catch {
+      // Table might not exist
+    }
+  }
+}
 
-describe('Score Reporting Race Condition Handling', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+// Helper to create test data with proper session user
+async function createTestData(client: PrismaClient) {
+  // User with discordId matching the mock session
+  const user1 = await client.user.create({
+    data: {
+      discordId: 'test-discord-123',
+      id: 'test-user-123',
+      discordUsername: 'TestUser1',
+      displayName: 'Test User 1',
+    },
+  });
+  const user2 = await client.user.create({
+    data: {
+      discordId: 'test-discord-456',
+      id: 'test-user-456',
+      discordUsername: 'TestUser2',
+      displayName: 'Test User 2',
+    },
+  });
+  const tournament = await client.tournament.create({
+    data: {
+      startggId: 'test-tournament-1',
+      startggSlug: 'test/tournament-1',
+      name: 'Test Tournament',
+      state: 'IN_PROGRESS',
+      discordGuildId: 'test-guild',
+    },
+  });
+  const event = await client.event.create({
+    data: {
+      tournamentId: tournament.id,
+      startggId: 'test-event-1',
+      name: 'Test Event',
+    },
+  });
+  const match = await client.match.create({
+    data: {
+      eventId: event.id,
+      startggSetId: 'test-set-1',
+      identifier: 'A1',
+      roundText: 'Winners Round 1',
+      round: 1,
+      state: 'IN_PROGRESS',
+    },
+  });
+  const player1 = await client.matchPlayer.create({
+    data: {
+      matchId: match.id,
+      userId: user1.id,
+      playerName: 'Player 1',
+    },
+  });
+  const player2 = await client.matchPlayer.create({
+    data: {
+      matchId: match.id,
+      userId: user2.id,
+      playerName: 'Player 2',
+    },
   });
 
-  describe('Transaction Atomicity', () => {
-    it('should wrap score reporting in transaction', async () => {
-      // Setup mock to simulate first player reporting
-      const mockTx = {
-        match: {
-          findUnique: vi.fn().mockResolvedValue({
-            id: 'match-123',
-            state: 'IN_PROGRESS',
-            players: [
-              { id: 'player-1', userId: 'user-1', reportedScore: null, isWinner: null },
-              { id: 'player-2', userId: 'user-2', reportedScore: null, isWinner: null },
-            ],
-          }),
-          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-        },
-        matchPlayer: {
-          update: vi.fn().mockResolvedValue({ id: 'player-1', isWinner: true, reportedScore: 2 }),
-        },
-      };
+  return { user1, user2, tournament, event, match, player1, player2 };
+}
 
-      // Verify $transaction is available
-      expect(prisma.$transaction).toBeDefined();
-
-      // The implementation uses $transaction - verify structure
-      const transactionFn = prisma.$transaction;
-      expect(typeof transactionFn).toBe('function');
-    });
-
-    it('should use state guards to prevent concurrent updates', async () => {
-      // Simulate what happens when two requests come in:
-      // 1. First request: updateMany returns { count: 1 } - succeeds
-      // 2. Second request: updateMany returns { count: 0 } - fails with INVALID_STATE
-
-      const validStates = [
-        MatchState.CALLED,
-        MatchState.CHECKED_IN,
-        MatchState.IN_PROGRESS,
-        MatchState.PENDING_CONFIRMATION,
-      ];
-
-      // First request - should succeed
-      const firstUpdateResult = { count: 1 };
-      expect(firstUpdateResult.count).toBeGreaterThan(0);
-
-      // Second request (concurrent) - should fail because state already changed
-      const secondUpdateResult = { count: 0 };
-      expect(secondUpdateResult.count).toBe(0);
-    });
-
-    it('should handle INVALID_STATE error when race condition detected', async () => {
-      // When updateMany returns count: 0, the code throws INVALID_STATE error
-      const matchUpdateResult = { count: 0 };
-
-      if (matchUpdateResult.count === 0) {
-        // Check if already completed
-        const currentMatch = { state: MatchState.COMPLETED };
-        if (currentMatch.state === MatchState.COMPLETED) {
-          expect(true).toBe(true); // Would throw MATCH_COMPLETED
-        } else {
-          expect(true).toBe(true); // Would throw INVALID_STATE
-        }
-      }
-    });
-
-    it('should handle MATCH_COMPLETED error when match already finished', async () => {
-      // When updateMany returns count: 0 because match is already COMPLETED
-      const matchUpdateResult = { count: 0 };
-
-      if (matchUpdateResult.count === 0) {
-        const currentMatch = { state: MatchState.COMPLETED };
-        if (currentMatch.state === MatchState.COMPLETED) {
-          // This is the expected path for MATCH_COMPLETED
-          expect(currentMatch.state).toBe('COMPLETED');
-        }
-      }
-    });
+describe('POST /api/matches/[id]/report - Integration Tests', () => {
+  beforeAll(async () => {
+    // Ensure database is connected
+    await testPrisma.$connect();
   });
 
-  describe('Concurrent Score Reports', () => {
-    it('should correctly identify both players reporting with matching scores', async () => {
-      // Simulate both players having reported
-      const players = [
-        { id: 'player-1', userId: 'user-1', reportedScore: 2, isWinner: true },
-        { id: 'player-2', userId: 'user-2', reportedScore: 1, isWinner: false },
-      ];
-
-      const currentUserId = 'user-1';
-      const opponentPlayer = players.find((p) => p.userId !== currentUserId);
-
-      // Both have reported
-      expect(opponentPlayer?.reportedScore).not.toBeNull();
-      expect(opponentPlayer?.reportedScore).not.toBeUndefined();
-
-      // Both agree on winner (userWon === opponentWon)
-      const userWon = true;
-      const opponentWon = opponentPlayer?.isWinner;
-
-      // userWon=true, opponentWon=false - they disagree!
-      // This would result in a DISPUTED state per the code logic
-      expect(userWon).not.toBe(opponentWon); // They disagree = match disputes
-    });
-
-    it('should correctly identify score discrepancy', async () => {
-      // Simulate players reporting different winners - both claim they won
-      const players = [
-        { id: 'player-1', userId: 'user-1', reportedScore: 2, isWinner: true },
-        { id: 'player-2', userId: 'user-2', reportedScore: 2, isWinner: true }, // Both claim win = discrepancy
-      ];
-
-      const currentUserId = 'user-1';
-      const opponentPlayer = players.find((p) => p.userId !== currentUserId);
-
-      const userWon = true;
-      const opponentWon = opponentPlayer?.isWinner;
-
-      // Both claim they won with same score - this is a discrepancy (disputed)
-      expect(userWon).toBe(true);
-      expect(opponentWon).toBe(true);
-      expect(userWon).toBe(opponentWon); // Both true = would complete - but score discrepancy is different logic
-    });
+  afterAll(async () => {
+    await testPrisma.$disconnect();
   });
 
-  describe('State Transitions', () => {
-    it('should transition from IN_PROGRESS to PENDING_CONFIRMATION on first report', async () => {
-      const validStates = [
-        MatchState.CALLED,
-        MatchState.CHECKED_IN,
-        MatchState.IN_PROGRESS,
-        MatchState.PENDING_CONFIRMATION,
-      ];
-
-      // Starting state
-      const startState = MatchState.IN_PROGRESS;
-      expect(validStates).toContain(startState);
-
-      // After first player reports - should be PENDING_CONFIRMATION
-      const newState = MatchState.PENDING_CONFIRMATION;
-      expect(validStates).toContain(newState);
-    });
-
-    it('should transition from PENDING_CONFIRMATION to COMPLETED when both agree', async () => {
-      // When both players report matching scores
-      const currentState = MatchState.PENDING_CONFIRMATION;
-      expect(currentState).toBe('PENDING_CONFIRMATION');
-
-      // After confirmation - COMPLETED
-      const newState = MatchState.COMPLETED;
-      expect(newState).toBe('COMPLETED');
-    });
-
-    it('should transition from PENDING_CONFIRMATION to DISPUTED on mismatch', async () => {
-      // When players disagree
-      const currentState = MatchState.PENDING_CONFIRMATION;
-      expect(currentState).toBe('PENDING_CONFIRMATION');
-
-      // After detecting discrepancy - DISPUTED
-      const newState = MatchState.DISPUTED;
-      expect(newState).toBe('DISPUTED');
-    });
+  beforeEach(async () => {
+    await clearTestDatabase(testPrisma);
   });
 
-  describe('Race Condition Prevention', () => {
-    it('should use atomic updateMany for state transitions', async () => {
-      // The key to race condition prevention is using updateMany with a state guard
-      // This ensures only one request can transition the state
+  it('should report score successfully', async () => {
+    const { match, player1 } = await createTestData(testPrisma);
 
-      // Simulate the atomic update pattern
-      const updateMany = vi.fn();
-
-      // First request - succeeds
-      updateMany.mockResolvedValueOnce({ count: 1 });
-      const result1 = await updateMany({
-        where: { id: 'match-123', state: MatchState.IN_PROGRESS },
-        data: { state: MatchState.PENDING_CONFIRMATION },
-      });
-      expect(result1.count).toBe(1);
-
-      // Second request (concurrent) - fails because state changed
-      updateMany.mockResolvedValueOnce({ count: 0 });
-      const result2 = await updateMany({
-        where: { id: 'match-123', state: MatchState.IN_PROGRESS }, // Wrong state now!
-        data: { state: MatchState.PENDING_CONFIRMATION },
-      });
-      expect(result2.count).toBe(0); // Race condition prevented!
+    const { POST: reportScore } = await import('./route');
+    const request = new NextRequest('http://localhost/api/matches/' + match.id + '/report', {
+      method: 'POST',
+      body: JSON.stringify({
+        winnerId: player1.id,
+        player1Score: 2,
+        player2Score: 1,
+      }),
+      headers: { 'Content-Type': 'application/json' },
     });
 
-    it('should not allow double completion of match', async () => {
-      // Once match is COMPLETED, subsequent updates should fail
+    const response = await reportScore(request, { params: Promise.resolve({ id: match.id }) });
 
-      // First completion - succeeds
-      const firstCompletion = { count: 1 };
-      expect(firstCompletion.count).toBe(1);
+    expect(response.status).toBe(200);
 
-      // Second completion attempt - should be prevented by state guard
-      const secondCompletion = { count: 0 }; // Match no longer in PENDING_CONFIRMATION
-      expect(secondCompletion.count).toBe(0);
+    // Verify match state changed to PENDING_CONFIRMATION
+    const updatedMatch = await testPrisma.match.findUnique({ where: { id: match.id } });
+    expect(updatedMatch?.state).toBe('PENDING_CONFIRMATION');
+  });
+
+  it('should return 404 for non-existent match', async () => {
+    const { POST: reportScore } = await import('./route');
+    const request = new NextRequest('http://localhost/api/matches/non-existent-match/report', {
+      method: 'POST',
+      body: JSON.stringify({
+        winnerId: 'player-1',
+        player1Score: 2,
+        player2Score: 1,
+      }),
+      headers: { 'Content-Type': 'application/json' },
     });
+
+    const response = await reportScore(request, { params: Promise.resolve({ id: 'non-existent-match' }) });
+
+    expect(response.status).toBe(404);
+  });
+
+  it('should return 400 for invalid score', async () => {
+    const { match, player1 } = await createTestData(testPrisma);
+
+    const { POST: reportScore } = await import('./route');
+    const request = new NextRequest('http://localhost/api/matches/' + match.id + '/report', {
+      method: 'POST',
+      body: JSON.stringify({
+        winnerId: player1.id,
+        player1Score: -1, // Invalid negative score
+        player2Score: 1,
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const response = await reportScore(request, { params: Promise.resolve({ id: match.id }) });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('should return 400 for completed match (race condition prevention)', async () => {
+    const { match } = await createTestData(testPrisma);
+
+    // Update match to completed state
+    await testPrisma.match.update({
+      where: { id: match.id },
+      data: { state: 'COMPLETED' },
+    });
+
+    const { POST: reportScore } = await import('./route');
+    const request = new NextRequest('http://localhost/api/matches/' + match.id + '/report', {
+      method: 'POST',
+      body: JSON.stringify({
+        winnerId: 'any-player-id',
+        player1Score: 2,
+        player2Score: 1,
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const response = await reportScore(request, { params: Promise.resolve({ id: match.id }) });
+
+    // Match is already completed - should return 400
+    expect(response.status).toBe(400);
   });
 });
