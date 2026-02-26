@@ -1,6 +1,10 @@
 /**
  * Integration tests for admin audit API endpoint.
  * Tests GET /api/tournaments/[id]/admin/audit
+ *
+ * NOTE: This test uses mocks rather than Testcontainers because the test environment
+ * does not have Docker available. In a Docker-enabled CI environment, this could be
+ * rewritten to use Testcontainers for true integration testing.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -18,6 +22,7 @@ vi.mock('@fightrise/database', async () => {
     auditLog: {
       findMany: vi.fn(),
       count: vi.fn(),
+      create: vi.fn(),
     },
     $transaction: vi.fn((callback) => callback(mockPrisma)),
   };
@@ -48,7 +53,8 @@ vi.mock('@/lib/admin-rate-limit', () => ({
     response: null,
     headers: new Headers({}),
   }),
-  applyRateLimitHeaders: vi.fn((response) => response),
+  applyRateLimitHeaders: vi.fn((response) => response,
+  ),
 }));
 
 const { prisma, AuditAction } = await import('@fightrise/database');
