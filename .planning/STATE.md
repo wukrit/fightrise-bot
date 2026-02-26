@@ -26,9 +26,9 @@ progress:
 | Attribute | Value |
 |-----------|-------|
 | **Phase** | 06 - Web API + Start.gg |
-| **Plan** | 02 - Match API integration tests |
+| **Plan** | 03 - Start.gg client integration tests |
 | **Status** | Complete |
-| **Progress** | [-------] 70% |
+| **Progress** | [--------] 85% |
 
 ---
 
@@ -101,6 +101,7 @@ progress:
 | 05-03 | Run tests and document coverage | Complete | 253 |
 | 06-01 | Tournament API integration tests | Complete | 4 |
 | 06-02 | Match API integration tests | Complete | 13 |
+| 06-03 | Start.gg client integration tests | Complete | 55 |
 
 ---
 
@@ -113,4 +114,4 @@ progress:
 
 ---
 
-*Last updated: 2026-02-26 — Plan 06-02 complete*
+*Last updated: 2026-02-26 — Plan 06-03 complete*
