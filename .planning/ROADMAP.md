@@ -33,8 +33,10 @@
 
 **Plans**:
 - [x] 05-01-PLAN.md — Handler tests (scoreHandler, checkinHandler) [COMPLETE]
-- [ ] 05-02-PLAN.md — dqService tests
-- [ ] 05-03-PLAN.md — Analysis, documentation, and coverage verification
+- [x] 05-02-PLAN.md — tournamentService and dqService tests [COMPLETE]
+- [x] 05-03-PLAN.md — Run tests and document coverage [COMPLETE]
+- [ ] 05-04-PLAN.md — pollingService tests
+- [ ] 05-05-PLAN.md — registrationSyncService tests
 
 ---
 
@@ -101,7 +103,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 5. Bot Services Unit Tests | 1/3 | In Progress|  |
+| 5. Bot Services Unit Tests | 3/5 | In Progress| 3 plans |
 | 6. Web API + Start.gg Integration | 0/1 | Not started | - |
 | 7. Database Model Integration | 0/1 | Not started | - |
 | 8. E2E Page Tests | 0/1 | Not started | - |
