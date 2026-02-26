@@ -14,6 +14,7 @@
 - [ ] **Phase 1: Foundation & Authorization** - Unified admin permission model and basic dashboard
 - [ ] **Phase 2: Registration Management** - Full registration CRUD with audit logging
 - [x] **Phase 3: Match Management** - Match list, details, and disqualification handling (completed 2026-02-25)
+- [ ] **Phase 4: Fix Audit Page Tournament Filtering** - Close integration gap from audit
 
 ---
 
@@ -90,6 +91,26 @@ Plans:
 
 ---
 
+### Phase 4: Fix Audit Page Tournament Filtering
+
+**Goal:** Fix server-side audit page to filter by tournament ID, closing the data isolation security gap.
+
+**Depends on:** Phase 3
+
+**Requirements:** AUDIT-01, AUDIT-02, AUDIT-03 (already satisfied, fixing integration gap)
+
+**Gap Closure:** Closes integration gap AUDIT-PAGE-FILTER and flow gap AUDIT-E2E from v1.0 audit
+
+**Success Criteria** (what must be TRUE):
+
+1. Server-side audit page filters audit logs by tournamentId parameter
+2. No audit logs from other tournaments are exposed to admins
+3. Server-side filtering matches the API route filtering behavior
+
+**Plans:** 0/1 plans
+
+---
+
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
@@ -97,6 +118,7 @@ Plans:
 | 1. Foundation & Authorization | 1/1 | Complete | Auth + Dashboard |
 | 2. Registration Management | 2/2 | Complete | API + UI |
 | 3. Match Management | 2/2 | Complete   | 2026-02-25 |
+| 4. Fix Audit Page Filtering | 0/1 | In Progress | — |
 
 ---
 
@@ -113,6 +135,7 @@ Plans:
 | Phase 1 | AUTH-01, AUTH-02, AUTH-03, AUTH-04, API-01, DASH-01, DASH-02 (7) |
 | Phase 2 | API-02, API-03, API-04, API-05, API-07, DASH-03, REG-01, REG-02, REG-03, REG-04, REG-05, REG-06, AUDIT-01, AUDIT-02, AUDIT-03 (15) |
 | Phase 3 | API-06, MATCH-01, MATCH-02, MATCH-03, DQ-01, DQ-02, DQ-03, DQ-04 (8) |
+| Phase 4 | AUDIT-01, AUDIT-02, AUDIT-03 (gap closure) |
 
 ---
 
@@ -125,4 +148,4 @@ Plans:
 
 ---
 
-*Last updated: 2026-02-25T16:40:23Z*
+*Last updated: 2026-02-26*
