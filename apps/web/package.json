@@ -6,7 +6,7 @@
     "dev": "dotenv -e ../../.env -- next dev",
     "build": "next build",
     "start": "dotenv -e ../../.env -- next start",
-    "lint": "next lint",
+    "lint": "eslint --ext .ts,.tsx .",
     "test": "vitest run",
     "test:watch": "vitest"
   },

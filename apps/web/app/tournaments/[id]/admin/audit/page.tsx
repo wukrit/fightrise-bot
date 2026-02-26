@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { prisma } from '@fightrise/database';
 import { requireTournamentAdminById } from '@/lib/tournament-admin';
@@ -92,7 +92,12 @@ export default async function AdminAuditPage({
   // Authorization check
   const auth = await requireTournamentAdminById(tournamentId);
   if (auth instanceof Response) {
-    return auth;
+    // For 401/403, redirect to sign in or show not found
+    const { status } = auth;
+    if (status === 401) {
+      redirect('/api/auth/signin');
+    }
+    return notFound();
   }
 
   const [data, tournamentName] = await Promise.all([

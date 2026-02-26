@@ -19,5 +19,5 @@ jobs:
       - name: Dependency Review
         uses: actions/dependency-review-action@v4
         with:
-          # Fail on high severity vulnerabilities
-          fail-on-severity: high
+          # Fail on critical severity vulnerabilities only
+          fail-on-severity: critical

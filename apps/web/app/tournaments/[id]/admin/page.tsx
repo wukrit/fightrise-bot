@@ -80,7 +80,7 @@ export default async function AdminDashboardPage({
   // Authorization check
   const auth = await requireTournamentAdminById(tournamentId);
   if (auth instanceof Response) {
-    return auth;
+    return notFound();
   }
 
   const data = await getTournamentData(tournamentId);
