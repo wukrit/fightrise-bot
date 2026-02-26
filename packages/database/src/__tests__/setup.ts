@@ -1,6 +1,8 @@
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { PrismaClient } from '@prisma/client';
 import { execSync } from 'child_process';
+import path from 'path';
+import fs from 'fs';
 
 let container: StartedPostgreSqlContainer | null = null;
 let prisma: PrismaClient | null = null;
@@ -22,14 +24,42 @@ export async function setupTestDatabase(): Promise<{
 
   const databaseUrl = container.getConnectionUri();
 
-  // Push schema to test database using Prisma
-  execSync('npx prisma db push --skip-generate', {
+  // Determine the database package directory based on where we're running from
+  // When running tests from apps/web: process.cwd() = /home/ubuntu/fightrise-bot/apps/web
+  // When running tests from packages/database: process.cwd() = /home/ubuntu/fightrise-bot/packages/database
+
+  let databasePackageDir = '';
+  const cwd = process.cwd();
+
+  // First try: running from apps/web
+  const webPath = path.join(cwd, '../../packages/database');
+  if (fs.existsSync(path.join(webPath, 'prisma/schema.prisma'))) {
+    databasePackageDir = webPath;
+  }
+  // Second try: running from packages/database
+  else if (fs.existsSync(path.join(cwd, 'prisma/schema.prisma'))) {
+    databasePackageDir = cwd;
+  }
+  // Third try: running from repo root
+  else if (fs.existsSync(path.join(cwd, 'packages/database/prisma/schema.prisma'))) {
+    databasePackageDir = path.join(cwd, 'packages/database');
+  }
+
+  if (!databasePackageDir) {
+    throw new Error(`Could not find database package directory. cwd=${cwd}`);
+  }
+
+  const schemaPath = path.join(databasePackageDir, 'prisma/schema.prisma');
+  console.log('Using schema path:', schemaPath);
+
+  // Push schema to test database using Prisma with explicit schema path
+  execSync(`npx prisma db push --skip-generate --schema=${schemaPath}`, {
     env: {
       ...process.env,
       DATABASE_URL: databaseUrl,
     },
-    cwd: process.cwd(),
-    stdio: 'pipe',
+    cwd: databasePackageDir,
+    stdio: 'inherit',
   });
 
   // Create Prisma client connected to test database
@@ -42,7 +72,6 @@ export async function setupTestDatabase(): Promise<{
   });
 
   await prisma.$connect();
-
   return { prisma, databaseUrl };
 }
 
