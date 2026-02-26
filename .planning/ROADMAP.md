@@ -56,8 +56,10 @@
   5. API tests cover both success and error paths
 
 **Plans**:
-- [x] 06-01-PLAN.md — Tournament API tests (registrations, matches) [PLANNED]
-- [x] 06-02-PLAN.md — Match API tests (report, dispute, dq) [PLANNED]
+- [x] 06-01-PLAN.md — Tournament API tests (registrations, matches) [COMPLETE]
+- [x] 06-02-PLAN.md — Match API tests (report, dispute, dq) [COMPLETE]
+- [x] 06-03-PLAN.md — Start.gg client integration tests [COMPLETE]
+- [x] 06-04-PLAN.md — Retry logic and audit API tests [COMPLETE]
 - [x] 06-03-PLAN.md — Start.gg client tests (queries, mutations) [PLANNED]
 - [x] 06-04-PLAN.md — Retry logic and audit API tests [PLANNED]
 
