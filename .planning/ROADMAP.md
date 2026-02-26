@@ -31,7 +31,10 @@
   4. Shared utility tests pass (validation schemas, error classes)
   5. Bot service tests achieve 80%+ code coverage
 
-**Plans**: TBD
+**Plans**:
+- [ ] 05-01-PLAN.md — Handler tests (scoreHandler, checkinHandler)
+- [ ] 05-02-PLAN.md — dqService tests
+- [ ] 05-03-PLAN.md — Analysis, documentation, and coverage verification
 
 ---
 
