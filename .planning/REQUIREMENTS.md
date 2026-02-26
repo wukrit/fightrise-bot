@@ -19,7 +19,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **BOT-02**: Unit tests for scoreHandler.ts (score reporting, confirmation flow)
 - [ ] **BOT-03**: Unit tests for checkinHandler.ts (check-in button interactions)
 - [ ] **BOT-04**: Unit tests for tournamentService.ts (setup, admin operations)
-- [ ] **BOT-05**: Unit tests for dqService.ts (disqualification handling)
+- [x] **BOT-05**: Unit tests for dqService.ts (disqualification handling)
 - [ ] **BOT-06**: Unit tests for registrationSyncService.ts (Start.gg sync)
 - [ ] **BOT-07**: Unit tests for pollingService.ts (BullMQ job processing)
 
@@ -102,7 +102,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BOT-02 | Phase 5 | Pending |
 | BOT-03 | Phase 5 | Pending |
 | BOT-04 | Phase 5 | Pending |
-| BOT-05 | Phase 5 | Pending |
+| BOT-05 | Phase 5 | Complete |
 | BOT-06 | Phase 5 | Pending |
 | BOT-07 | Phase 5 | Pending |
 | API-01 | Phase 6 | Pending |
