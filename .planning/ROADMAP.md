@@ -55,7 +55,11 @@
   4. Client retry logic and error handling tests pass
   5. API tests cover both success and error paths
 
-**Plans**: TBD
+**Plans**:
+- [x] 06-01-PLAN.md — Tournament API tests (registrations, matches) [PLANNED]
+- [x] 06-02-PLAN.md — Match API tests (report, dispute, dq) [PLANNED]
+- [x] 06-03-PLAN.md — Start.gg client tests (queries, mutations) [PLANNED]
+- [x] 06-04-PLAN.md — Retry logic and audit API tests [PLANNED]
 
 ---
 
@@ -104,7 +108,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 5. Bot Services Unit Tests | 3/5 | In Progress| 3 plans |
-| 6. Web API + Start.gg Integration | 0/1 | Not started | - |
+| 6. Web API + Start.gg Integration | 4/4 | In Progress | 4 plans |
 | 7. Database Model Integration | 0/1 | Not started | - |
 | 8. E2E Page Tests | 0/1 | Not started | - |
 
