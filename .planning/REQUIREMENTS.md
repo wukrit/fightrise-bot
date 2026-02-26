@@ -95,45 +95,45 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ANALYSIS-01 | Phase 1 | Pending |
-| ANALYSIS-02 | Phase 1 | Pending |
-| ANALYSIS-03 | Phase 1 | Pending |
-| BOT-01 | Phase 1 | Pending |
-| BOT-02 | Phase 1 | Pending |
-| BOT-03 | Phase 1 | Pending |
-| BOT-04 | Phase 1 | Pending |
-| BOT-05 | Phase 1 | Pending |
-| BOT-06 | Phase 1 | Pending |
-| BOT-07 | Phase 1 | Pending |
-| API-01 | Phase 2 | Pending |
-| API-02 | Phase 2 | Pending |
-| API-03 | Phase 2 | Pending |
-| API-04 | Phase 2 | Pending |
-| API-05 | Phase 2 | Pending |
-| API-06 | Phase 2 | Pending |
-| DB-01 | Phase 3 | Pending |
-| DB-02 | Phase 3 | Pending |
-| DB-03 | Phase 3 | Pending |
-| DB-04 | Phase 3 | Pending |
-| DB-05 | Phase 3 | Pending |
-| DB-06 | Phase 3 | Pending |
-| DB-07 | Phase 3 | Pending |
-| DB-08 | Phase 3 | Pending |
-| DB-09 | Phase 3 | Pending |
-| DB-10 | Phase 3 | Pending |
-| DB-11 | Phase 3 | Pending |
-| E2E-01 | Phase 4 | Pending |
-| E2E-02 | Phase 4 | Pending |
-| E2E-03 | Phase 4 | Pending |
-| E2E-04 | Phase 4 | Pending |
-| E2E-05 | Phase 4 | Pending |
-| E2E-06 | Phase 4 | Pending |
-| E2E-07 | Phase 4 | Pending |
-| SHR-01 | Phase 1 | Pending |
-| SHR-02 | Phase 1 | Pending |
-| SGG-01 | Phase 2 | Pending |
-| SGG-02 | Phase 2 | Pending |
-| SGG-03 | Phase 2 | Pending |
+| ANALYSIS-01 | Phase 5 | Pending |
+| ANALYSIS-02 | Phase 5 | Pending |
+| ANALYSIS-03 | Phase 5 | Pending |
+| BOT-01 | Phase 5 | Pending |
+| BOT-02 | Phase 5 | Pending |
+| BOT-03 | Phase 5 | Pending |
+| BOT-04 | Phase 5 | Pending |
+| BOT-05 | Phase 5 | Pending |
+| BOT-06 | Phase 5 | Pending |
+| BOT-07 | Phase 5 | Pending |
+| API-01 | Phase 6 | Pending |
+| API-02 | Phase 6 | Pending |
+| API-03 | Phase 6 | Pending |
+| API-04 | Phase 6 | Pending |
+| API-05 | Phase 6 | Pending |
+| API-06 | Phase 6 | Pending |
+| DB-01 | Phase 7 | Pending |
+| DB-02 | Phase 7 | Pending |
+| DB-03 | Phase 7 | Pending |
+| DB-04 | Phase 7 | Pending |
+| DB-05 | Phase 7 | Pending |
+| DB-06 | Phase 7 | Pending |
+| DB-07 | Phase 7 | Pending |
+| DB-08 | Phase 7 | Pending |
+| DB-09 | Phase 7 | Pending |
+| DB-10 | Phase 7 | Pending |
+| DB-11 | Phase 7 | Pending |
+| E2E-01 | Phase 8 | Pending |
+| E2E-02 | Phase 8 | Pending |
+| E2E-03 | Phase 8 | Pending |
+| E2E-04 | Phase 8 | Pending |
+| E2E-05 | Phase 8 | Pending |
+| E2E-06 | Phase 8 | Pending |
+| E2E-07 | Phase 8 | Pending |
+| SHR-01 | Phase 5 | Pending |
+| SHR-02 | Phase 5 | Pending |
+| SGG-01 | Phase 6 | Pending |
+| SGG-02 | Phase 6 | Pending |
+| SGG-03 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 43 total
@@ -142,4 +142,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-26*
-*Last updated: 2026-02-26 after requirements definition*
+*Last updated: 2026-02-26 after roadmap creation*
