@@ -22,8 +22,17 @@ async function getAuditLogs(tournamentId: string, searchParams: SearchParams) {
     'REGISTRATION_MANUAL_REMOVE',
   ];
 
+  // Get registration IDs for this tournament to filter audit logs
+  const tournamentRegistrations = await prisma.registration.findMany({
+    where: { tournamentId },
+    select: { id: true },
+  });
+  const registrationIds = tournamentRegistrations.map((r) => r.id);
+
   const where: Record<string, unknown> = {
     action: { in: REGISTRATION_ACTIONS },
+    entityType: 'Registration',
+    entityId: { in: registrationIds },
   };
 
   if (action && REGISTRATION_ACTIONS.includes(action)) {
