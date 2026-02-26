@@ -1,171 +1,177 @@
 # Project Research Summary
 
-**Project:** FightRise Admin Web Portal
-**Domain:** Tournament Admin Web Portals in Next.js with Discord Integration
-**Researched:** 2026-02-25
+**Project:** FightRise Testing Enhancements (v2.0)
+**Domain:** Testing Infrastructure for Node.js/TypeScript Monorepo
+**Researched:** 2026-02-26
 **Confidence:** HIGH
 
 ## Executive Summary
 
-FightRise is building a tournament admin web portal that complements the existing Discord bot for managing Start.gg tournaments. The research confirms that the existing tech stack (Next.js 14, NextAuth, Prisma, Radix UI) is well-suited for this work, with only minor additions needed (React Query, react-hook-form). The core challenge is not technology selection but architectural coherence between the Discord bot and web portal.
+FightRise v2.0 aims to add comprehensive test coverage across a Turborepo monorepo containing a Discord bot (discord.js v14, BullMQ) and Next.js 14 web portal. The project already has substantial testing infrastructure in place, including a Discord test harness, Testcontainers for PostgreSQL, MSW for Start.gg API mocking, and Playwright for E2E tests. The main task is expanding coverage rather than building infrastructure from scratch.
 
-The critical insight from research is the **authorization gap** between Discord and web admin interfaces. Admins who have permissions in one channel cannot perform the same actions in the other without explicit database records. This must be solved in Phase 1 to avoid security vulnerabilities. Additionally, the web portal must share validation logic with the Discord bot to prevent inconsistent behavior.
-
-The recommended approach builds the admin API using Next.js Route Handlers with explicit RBAC checks, leverages Server Actions for mutations, and designs admin pages as Server Components that fetch fresh data (no stale caching). This architecture follows established Next.js patterns and integrates cleanly with existing FightRise infrastructure.
+Research confirms the existing stack is well-suited. The only required change is upgrading vitest in the bot package from v1.0.0 to v4.0.18 for consistency. Critical pitfalls to avoid include testing implementation instead of behavior (causes brittle tests), inadequate test isolation (causes flaky tests), and over-mocking external dependencies (causes integration failures). The recommended approach is to prioritize critical user flows first: tournament setup through match completion.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The project reuses existing FightRise infrastructure with targeted additions:
+The existing testing stack requires only one minor upgrade. All other tooling is already in place and well-suited for the goals.
 
-**Core technologies (already in use):**
-- Next.js 14 — API routes with Route Handlers
-- NextAuth.js 4.24 — Discord OAuth, JWT sessions
-- Prisma 5.7 — ORM with existing schema
-- Zod 4.x — Schema validation
-- Redis (ioredis) — Rate limiting via existing ratelimit.ts
-
-**New additions for admin features:**
-- @tanstack/react-query 5 — Client-side data fetching for real-time admin dashboards
-- react-hook-form 7 + @hookform/resolvers — Form handling with Zod validation
-- @radix-ui/react-table 1.1 — Admin table components
-
-**Authentication pattern:** Extend existing NextAuth with tournament-specific admin checks via the `TournamentAdmin` Prisma model. Create reusable `requireTournamentAdmin()` helper.
+**Core technologies:**
+- **Vitest ^4.0.18** — Unit and integration test runner (upgrade bot from v1.0.0 for consistency)
+- **Playwright v1.58.0** — E2E browser testing (complete, already configured)
+- **MSW v2.0.0** — GraphQL API mocking for Start.gg (complete, handlers exist)
+- **Testcontainers v10.0.0** — PostgreSQL containers for integration tests (complete)
+- **@testing-library/react v14.0.0** — React component testing (complete)
 
 ### Expected Features
 
-**Must have (table stakes):**
-- Tournament Dashboard — Central view of tournament state, entrants, matches
-- Registration Management (list, approve, reject, bulk operations)
-- Manual Registration — Add walk-ins or substitutions
-- Match List with Filters — View matches by round, state
-- Basic DQ (Disqualification) — Remove players with reason logging
-- Admin Authentication — Discord OAuth + tournament admin role verification
+This is a test coverage enhancement project, so "features" represent test areas that need coverage.
 
-**Should have (competitive advantage):**
-- Seeding Management — Drag-drop reordering with Discord notifications
-- Check-in Dashboard — Real-time status board with reminder buttons
-- Audit Log Viewer — Full admin action history
-- Match State Override — Emergency corrections
+**Must have (critical paths requiring tests):**
+- Match service tests — Core thread creation and check-in handling
+- Score handler tests — Score reporting and confirmation flow
+- Tournament service tests — Setup and admin operations
+- Registration API routes — Web admin CRUD endpoints
 
-**Defer (v2+):**
-- Full Bracket Visualization — Embed Start.gg instead
-- Bulk Messaging — Requires careful rate limiting
-- CSV Export — Nice-to-have
-- Multi-event Management — For multi-game tournaments
+**Should have (important coverage):**
+- Database model integration tests — All 11 Prisma models
+- Button handler tests — Check-in, score, registration handlers
+- E2E page tests — Dashboard, tournaments, matches
+
+**Defer (lower ROI):**
+- UI component tests in packages/ui/ — Lower priority than critical paths
+- Load tests — Out of scope for v2.0
+- Smoke tests against real APIs — Require credentials, can run ad-hoc
 
 ### Architecture Approach
 
-The recommended structure places admin routes under `/api/tournaments/[tournamentId]/admin/` and pages under `/tournaments/[tournamentId]/admin/`, following existing conventions. Business logic lives in `lib/admin/services/` with Server Actions for mutations.
+The architecture follows a three-layer strategy: Unit tests (Vitest with mocks) for fast feedback on pure functions and service logic; Integration tests (Vitest + Testcontainers + MSW) for testing with real database and mocked external APIs; E2E tests (Playwright) for full user flows in the browser.
 
 **Major components:**
-1. **Admin API Routes** (`app/api/tournaments/[id]/admin/*`) — REST endpoints with RBAC checks
-2. **Admin Service Layer** (`lib/admin/`) — Reusable business logic for tournament operations
-3. **Admin Pages** (`app/tournaments/[id]/admin/*`) — Server Components with fresh data fetching
-4. **Admin Check Utility** — Reusable `verifyTournamentAdmin()` function with role-based permissions
+1. **DiscordTestClient** — In-memory mock of Discord.js client for command/button testing without real Discord connection
+2. **Testcontainers** — Isolated PostgreSQL containers spun up per test suite for database integration tests
+3. **MSW Handlers** — Intercept HTTP requests to mock Start.gg GraphQL API responses
 
 ### Critical Pitfalls
 
-1. **Authorization Gap** — Discord admins lack web permissions. Prevention: Sync Discord roles to `TournamentAdmin` table, unified permission model.
-2. **Missing Audit Trail** — Web actions not logged. Prevention: Call existing `auditService` from all admin API endpoints.
-3. **State Desync** — Web shows stale Discord changes. Prevention: No caching for admin views, use `cache: 'no-store'`.
-4. **API Authorization Gaps** — UI hides buttons but API accepts any authenticated request. Prevention: Verify permissions in every API endpoint.
-5. **Race Conditions** — Concurrent check-ins/scores. Prevention: Use Prisma transactions with state validation.
+1. **Testing Implementation Instead of Behavior** — Tests break whenever implementation details change, becoming maintenance burden. Assert on outcomes (messages sent, database state) not internal calls.
+
+2. **Inadequate Test Isolation** — Tests affect each other through shared state, causing flaky tests. Use `clearTestDatabase()`, reset mocks in `beforeEach`, use unique IDs per test.
+
+3. **Over-Mocking External Dependencies** — Tests pass but integration fails at runtime. Have a mix of mocked unit tests and real integration tests.
+
+4. **Not Testing Error Paths** — Tests only cover happy path. Production fails on errors never tested. Add error case tests alongside happy path.
+
+5. **Ignoring Async Timing** — Tests pass locally but fail in CI due to race conditions. Always await async, use `waitForEvent()` helper.
 
 ## Implications for Roadmap
 
 Based on research, suggested phase structure:
 
-### Phase 1: Foundation & Authorization
-**Rationale:** The authorization gap is critical. Without solving Discord-web permission sync, all subsequent work creates security vulnerabilities.
-**Delivers:**
-- Unified admin permission model
-- `requireTournamentAdmin()` helper
-- Admin API route scaffolding with RBAC checks
-- Basic tournament dashboard page
-**Addresses:** Features - Admin Auth, Tournament Dashboard | Pitfalls - Authorization Gap, API Authorization
-**Research Flags:** Standard patterns - Next.js auth is well-documented
+### Phase 1: Bot Service Unit Tests
+**Rationale:** Bot services contain the core business logic (match handling, score reporting, tournament management). Testing these first provides the highest confidence in critical flows.
 
-### Phase 2: Core Admin API & Registration
-**Rationale:** Registration management is the most frequent admin task. Must include audit logging and pagination from the start.
 **Delivers:**
-- Full Registration CRUD API
-- Registration Server Actions (approve, reject, bulk)
-- Registration admin page with table
-- Audit logging integration
-- Pagination on list endpoints
-**Addresses:** Features - Registration Management, Manual Registration | Pitfalls - Audit Trail, Pagination, Race Conditions
-**Research Flags:** Standard patterns - Prisma pagination is well-known
+- Unit tests for matchService.ts, scoreHandler.ts, checkinHandler.ts, tournamentService.ts, dqService.ts
+- Uses existing DiscordTestClient harness with vi.mock for Prisma
 
-### Phase 3: Match Management
-**Rationale:** Match operations are more complex (DQ, disputes) and depend on registration data.
-**Delivers:**
-- Match list API with filters
-- DQ and dispute Server Actions
-- Match admin page
-- Match state override functionality
-**Addresses:** Features - Match List, DQ Management, Match State Override
-**Research Flags:** Needs validation - DQ cascade logic with Start.gg sync
+**Addresses:**
+- Critical paths: Tournament Setup -> Registration -> Check-in -> Match flow
+- scoreHandler.ts - Score reporting critical path
 
-### Phase 4: Seeding & Advanced Features
-**Rationale:** Lower priority, builds on existing infrastructure.
+**Avoids:** Pitfall #1 (testing behavior not implementation) by asserting on messages/database state
+
+**Research Flags:** Standard patterns — Discord test harness already exists, well-documented
+
+### Phase 2: Web API Integration Tests
+**Rationale:** Web API routes connect database to web portal. After bot services are tested, the web API routes are the next critical integration point.
+
 **Delivers:**
-- Seeding management API and UI
-- Check-in dashboard
-- Audit log viewer
-**Addresses:** Features - Seeding Management, Check-in Dashboard, Audit Log
-**Research Flags:** Standard patterns - Seeding is simple reorder, not bracket editing
+- Integration tests for all registration and match API routes
+- Uses Testcontainers for real PostgreSQL
+
+**Addresses:**
+- API routes: /api/tournaments/[id]/register, /api/tournaments/[id]/matches, /api/matches/[id]/report, /api/matches/[id]/dispute, /api/matches/[id]/dq
+
+**Avoids:** Pitfall #3 (over-mocking) by using real database
+
+**Research Flags:** Standard patterns — Vitest + Testcontainers pattern well-established
+
+### Phase 3: Database Model Integration Tests
+**Rationale:** All services depend on database operations. Testing models ensures Prisma operations work correctly before expanding coverage.
+
+**Delivers:**
+- Integration tests for all 11 Prisma models (User, Tournament, Event, Match, MatchPlayer, GameResult, Dispute, Registration, TournamentAdmin, GuildConfig, AuditLog)
+
+**Addresses:**
+- All model CRUD operations
+- Transaction patterns used in services
+
+**Avoids:** Pitfall #6 (transaction boundaries) by testing real transactions
+
+### Phase 4: E2E Page Tests
+**Rationale:** After services and APIs are tested, E2E tests verify the full user experience in the browser.
+
+**Delivers:**
+- Playwright tests for: Dashboard, Tournament list/detail, Tournament registrations, Tournament matches, Admin pages, Account
+
+**Addresses:**
+- Web page user flows with mocked auth
+
+**Avoids:** Pitfall #9 (network variability) by using Playwright auto-waiting and networkidle
+
+**Research Flags:** May need research — Auth mocking patterns for NextAuth v5 may need verification
 
 ### Phase Ordering Rationale
 
-1. **Authorization first** — Security vulnerabilities are worse than missing features
-2. **Registration before matches** — Can't have matches without registrants; this is the main workflow
-3. **Matches before seeding** — Seeding depends on having entrants; match state affects seeding
-4. **Audit throughout** — Every phase must integrate audit logging to avoid retrofitting
+- **Why bot services first:** They contain the most complex logic (Discord interactions, BullMQ workers, Start.gg sync) and have existing test infrastructure
+- **Why web API second:** Database operations are simpler, but testing against real DB catches issues that mocks miss
+- **Why database models third:** Ensures Prisma layer works correctly before E2E tests depend on it
+- **Why E2E last:** Browser tests are slowest and most expensive; validate lower layers first
 
 ### Research Flags
 
-**Phases likely needing deeper research during planning:**
-- **Phase 3 (Match Management):** DQ cascade logic needs careful handling with Start.gg sync. How does disqualifying a player affect the bracket in Start.gg? Need to verify Start.gg API capabilities.
-- **Phase 4 (Seeding):** How to push seeding changes back to Start.gg? Need to verify mutation availability in startgg-client.
+Phases likely needing deeper research during planning:
+- **Phase 4 (E2E):** Auth mocking for NextAuth v5 may need verification during implementation — existing auth utils may need updates
 
-**Phases with standard patterns (skip research-phase):**
-- **Phase 1:** Next.js authentication patterns are well-established
-- **Phase 2:** Prisma CRUD operations are standard
+Phases with standard patterns (skip research-phase):
+- **Phase 1:** DiscordTestClient harness exists and is well-documented
+- **Phase 2:** Vitest + Testcontainers pattern is standard
+- **Phase 3:** Prisma testing patterns are well-documented
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All technologies already in use; additions are well-established |
-| Features | HIGH | Based on competitor analysis and existing FightRise functionality |
-| Architecture | HIGH | Standard Next.js App Router patterns with clear integration points |
-| Pitfalls | HIGH | Identified from existing codebase analysis; concrete prevention strategies |
+| Stack | HIGH | Existing infrastructure verified, only vitest upgrade needed |
+| Features | HIGH | Clear understanding of what needs testing based on existing code |
+| Architecture | HIGH | Multi-layer testing architecture well-established |
+| Pitfalls | HIGH | Common testing pitfalls well-documented, existing infrastructure addresses most |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-1. **Start.gg DQ/Seeding API** — Need to verify mutations exist in startgg-client for pushing DQ and seeding changes. May need to add mutations.
-2. **Discord Permission Sync** — The strategy to import Discord guild roles to TournamentAdmin needs validation with actual Discord OAuth scopes.
-3. **Real-time Updates** — Simple polling approach recommended, but check-in dashboard may need SSE. Defer to Phase 4.
+- **Bot handler tests:** Some button handlers (registration.ts flow) may need additional test utilities beyond existing harness — handle during Phase 1 implementation
+- **NextAuth v5 auth mocking:** If web uses NextAuth v5, auth utilities may need updates — verify during Phase 4 planning
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- Context7: /vercel/next.js — Route Handlers, Server Actions, App Router patterns
-- Context7: /nextauthjs/next-auth — RBAC patterns, session callbacks
-- Existing codebase: apps/web/lib/auth.ts — Current auth implementation
-- Existing codebase: apps/bot/src/services/auditService.ts — Audit logging pattern
+- Existing codebase: `apps/bot/src/__tests__/harness/` — DiscordTestClient implementation
+- Existing codebase: `packages/database/src/__tests__/setup.ts` — Testcontainers setup
+- Existing codebase: `packages/startgg-client/src/__mocks__/handlers.ts` — MSW handlers
+- Vitest Documentation (https://vitest.dev/) — Test runner configuration
+- Playwright Documentation (https://playwright.dev/) — E2E testing
 
 ### Secondary (MEDIUM confidence)
-- Context7: /colinhacks/zod — Schema validation patterns
-- Start.gg API documentation — For DQ and seeding mutation verification needed
+- discord.js Testing Guide (https://discordjs.guide/testing/) — Bot testing patterns
+- Prisma Testing Best Practices (https://www.prisma.io/docs/guides/testing) — Database testing
 
 ### Tertiary (LOW confidence)
-- Discord OAuth role scopes — Need verification during Phase 1 planning
+- None — All primary sources are existing codebase and official documentation
 
 ---
-*Research completed: 2026-02-25*
+*Research completed: 2026-02-26*
 *Ready for roadmap: yes*

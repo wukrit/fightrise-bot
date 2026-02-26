@@ -1,193 +1,228 @@
-# Stack Research
+# Technology Stack: Testing (v2.0)
 
-**Domain:** Admin REST APIs in Next.js with Authentication and Role-Based Access
-**Researched:** 2026-02-25
+**Project:** FightRise Testing Enhancements
+**Researched:** 2026-02-26
 **Confidence:** HIGH
 
-## Recommended Stack
+## Executive Summary
 
-### Core Technologies
+The FightRise project already has a comprehensive testing infrastructure in place across its monorepo. This research confirms the existing stack is well-suited for the v2.0 testing goals. The only required change is upgrading vitest in the bot package for version consistency.
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|----------------|
-| Next.js 14 | 14.x | API routes / Route Handlers | Already in use; supports App Router with modern Request/Response APIs |
-| NextAuth.js | 4.24 | Authentication | Already in use; Discord OAuth provider configured; supports JWT sessions |
-| Prisma | 5.7 | Database ORM | Already in use; integrates with existing schema |
-| Zod | 4.x | Request validation | Already in use; TypeScript-first schema validation |
-| Redis (via ioredis) | 5.3 | Rate limiting | Already in use for BullMQ; reuse for API rate limiting |
+## Existing Testing Stack
 
-### Supporting Libraries
+### Test Runners
 
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| @radix-ui/react-* | 1.1.x | Admin UI components | Already in use; Modal, Select, Dialog, Table for admin pages |
-| @tanstack/react-query | 5.x | Client-side data fetching | Admin dashboard with real-time updates |
-| react-hook-form | 7.x | Form handling | Admin forms with complex validation |
-| @hookform/resolvers | 3.x | Zod + react-hook-form | Type-safe form validation |
+| Package | Current Version | Purpose | Status |
+|---------|-----------------|---------|--------|
+| `vitest` | v1.0.0 (bot), v4.0.18 (web/database/startgg-client) | Unit and integration tests | Needs upgrade in bot |
+| `@playwright/test` | v1.58.0 | E2E browser tests | Complete |
 
-### Authentication & Authorization Pattern
+**Recommendation:** Upgrade bot package from vitest v1.0.0 to v4.0.18 for consistency and latest features. Vitest v4.x provides better TypeScript support, improved performance, and Vite 7 compatibility.
 
-The project already has:
-- Discord OAuth via NextAuth.js
-- JWT sessions with 30-day maxAge
-- API key authentication (`validateApiKey()`)
-- Tournament-specific admin roles via `TournamentAdmin` Prisma model
+### Unit & Integration Testing
 
-**Recommendation:** Extend the existing pattern for RBAC:
+| Package | Current Version | Purpose | Status |
+|---------|-----------------|---------|--------|
+| `@testing-library/react` | v14.0.0 | React component testing | Complete |
+| `@testing-library/jest-dom` | v6.0.0 | DOM assertions | Complete |
+| `@testing-library/user-event` | v14.6.1 | User interaction simulation | Complete |
+| `jsdom` | v23.0.0 | DOM environment for Node | Complete |
+
+### API Mocking
+
+| Package | Current Version | Purpose | Status |
+|---------|-----------------|---------|--------|
+| `msw` | v2.0.0 | REST/GraphQL mocking | Complete |
+| `playwright-msw` | v3.0.1 | MSW + Playwright integration | Complete |
+
+**Existing MSW Setup:**
+- Handlers: `packages/startgg-client/src/__mocks__/handlers.ts`
+- Fixtures: `packages/startgg-client/src/__mocks__/fixtures.ts`
+- Server: `packages/startgg-client/src/__mocks__/server.ts`
+
+### Database Testing
+
+| Package | Current Version | Purpose | Status |
+|---------|-----------------|---------|--------|
+| `@testcontainers/postgresql` | v10.0.0 | PostgreSQL test containers | Complete |
+
+**Existing Database Test Setup:**
+- Setup: `packages/database/src/__tests__/setup.ts`
+- Seeders: `packages/database/src/__tests__/utils/seeders.ts`
+
+### E2E Testing
+
+| Package | Current Version | Purpose | Status |
+|---------|-----------------|---------|--------|
+| `@playwright/test` | v1.58.0 | Browser automation | Complete |
+
+**Existing Playwright Configuration:**
+- Config: `playwright.config.ts`
+- E2E Tests: `apps/web/__tests__/e2e/*.spec.ts`
+- Auth Utils: `apps/web/__tests__/e2e/utils/auth.ts`
+
+## Existing Test Infrastructure by Package
+
+### Bot Package (`apps/bot/`)
+
+| Test Type | Location | Config |
+|-----------|----------|--------|
+| Unit | `src/__tests__/services/*.test.ts` | `vitest.config.ts` |
+| Integration | `src/__tests__/integration/*.integration.test.ts` | `vitest.integration.config.ts` |
+| E2E | `src/__tests__/e2e/*.e2e.test.ts` | `vitest.e2e.config.ts` |
+| Smoke | `src/__tests__/smoke/*.smoke.test.ts` | `vitest.smoke.config.ts` |
+| Load | `src/__tests__/load/*.test.ts` | Load scenarios |
+
+**Bot Test Harness:** `apps/bot/src/__tests__/harness/`
+- `DiscordTestClient` - Mock Discord.js client
+- `MockInteraction` - Simulate slash commands
+- `MockChannel` - Track messages and threads
+
+### Web Package (`apps/web/`)
+
+| Test Type | Location | Config |
+|-----------|----------|--------|
+| Unit | `__tests__/unit/*.test.ts` | `vitest.config.ts` |
+| E2E | `__tests__/e2e/*.spec.ts` | `playwright.config.ts` |
+| Smoke | `__tests__/smoke/*.smoke.spec.ts` | `vitest.smoke.config.ts` |
+
+### Database Package (`packages/database/`)
+
+| Test Type | Location | Config |
+|-----------|----------|--------|
+| Unit | `src/__tests__/unit/*.test.ts` | `vitest.config.ts` |
+| Smoke | `src/__tests__/smoke/*.smoke.test.ts` | `vitest.smoke.config.ts` |
+
+### Start.gg Client Package (`packages/startgg-client/`)
+
+| Test Type | Location | Config |
+|-----------|----------|--------|
+| Unit | `src/__tests__/unit/*.test.ts` | `vitest.config.ts` |
+| Smoke | `src/__tests__/smoke/*.smoke.test.ts` | `vitest.smoke.config.ts` |
+
+## Recommended Versions
+
+| Package | Recommended Version | Rationale |
+|---------|---------------------|------------|
+| `vitest` | ^4.0.18 (align all packages) | Latest stable, Vite 7 compatible |
+| `@playwright/test` | ^1.58.0 (keep current) | Current version is recent |
+| `msw` | ^2.0.0 (keep current) | Current version supports GraphQL |
+| `@testcontainers/postgresql` | ^10.0.0 (keep current) | Stable PostgreSQL support |
+| `@testing-library/react` | ^14.0.0 (keep current) | Compatible with React 18 |
+| `@testing-library/jest-dom` | ^6.0.0 (keep current) | Stable |
+| `@testing-library/user-event` | ^14.6.1 (keep current) | Current |
+
+## Integration Patterns
+
+### Unit Test Pattern
 
 ```typescript
-// 1. Add role to session (already partially done via TournamentAdmin)
-// In auth.ts callbacks - expose admin status per tournament
-// 2. Use middleware for route protection
-// 3. Use per-route checks for granular permissions
+// apps/bot/src/services/myService.test.ts
+import { describe, it, expect, vi } from 'vitest';
 
-// Recommended: Create reusable auth helpers
-// apps/web/lib/auth-admin.ts
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma, AdminRole } from '@fightrise/database';
-
-export async function requireTournamentAdmin(tournamentId: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.discordId) {
-    throw new Error('Unauthorized');
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { discordId: session.user.discordId }
+describe('serviceName', () => {
+  it('should do something', () => {
+    // Test implementation
   });
-
-  if (!user) throw new Error('User not found');
-
-  const admin = await prisma.tournamentAdmin.findFirst({
-    where: {
-      userId: user.id,
-      tournamentId,
-      role: { in: [AdminRole.OWNER, AdminRole.ADMIN, AdminRole.MODERATOR] }
-    }
-  });
-
-  if (!admin) throw new Error('Forbidden');
-  return user;
-}
-```
-
-### API Route Patterns
-
-| Pattern | When to Use | Example |
-|---------|-------------|---------|
-| Route Handlers | External API consumers, REST endpoints | `/api/admin/tournaments/[id]/...` |
-| Server Actions | Internal mutations from React components | Form submissions in admin UI |
-
-**Recommendation:** Use Route Handlers for admin APIs because:
-- Already established pattern in codebase
-- More explicit about HTTP methods
-- Better for external API consumers (third-party integrations)
-- Same-origin only by default (security benefit)
-
-### Validation Strategy
-
-Use Zod with react-hook-form for consistency:
-
-```typescript
-// schemas/admin.ts
-import { z } from 'zod';
-
-export const updateRegistrationSchema = z.object({
-  registrationId: z.string().uuid(),
-  status: z.enum(['CONFIRMED', 'CANCELLED', 'DQ']),
-  notes: z.string().optional(),
 });
 ```
 
-### Rate Limiting
-
-The project already has Redis-based rate limiting in `apps/web/lib/ratelimit.ts`. Extend with admin-specific configs:
+### Integration Test Pattern (with Database)
 
 ```typescript
-export const RATE_LIMIT_CONFIGS = {
-  // ... existing configs
-  admin: { limit: 20, windowMs: 60000 },  // Already exists
-  adminWrite: { limit: 10, windowMs: 60000 },  // For mutations
-} as const;
+// packages/database/src/__tests__/integration/myTest.integration.ts
+import { setupPostgres, teardownPostgres } from '../setup';
+
+describe('database operations', () => {
+  beforeAll(async () => {
+    await setupPostgres();
+  });
+
+  afterAll(async () => {
+    await teardownPostgres();
+  });
+
+  it('should create a record', async () => {
+    // Test with real database via Prisma
+  });
+});
 ```
 
-### Admin UI Components
+### E2E Test Pattern (Playwright)
 
-Leverage existing UI package (`packages/ui/src/`):
+```typescript
+// apps/web/__tests__/e2e/myFlow.spec.ts
+import { test, expect } from '@playwright/test';
 
-| Existing Component | Admin Use Case |
-|-------------------|----------------|
-| Table | Registration lists, match lists |
-| Modal | Confirmations, edit forms |
-| Select | Status dropdowns, role selection |
-| Button | Actions |
-| Input/Textarea | Search, notes |
-| Badge | Status indicators |
-| Card | Dashboard widgets |
+test('user flow', async ({ page }) => {
+  await page.goto('/tournaments');
+  await expect(page.locator('h1')).toContainText('Tournaments');
+});
+```
 
-### Error Handling
+### API Mocking Pattern (MSW)
 
-Reuse existing utilities in `apps/web/lib/api-response.ts`:
-- `createErrorResponse()` for standardized errors
-- `createSuccessResponse()` for responses
-- `createRateLimitResponse()` for rate limits
+```typescript
+// In test setup
+import { setupServer } from 'msw/node';
+import { handlers } from '@fightrise/startgg-client/__mocks__/handlers';
 
-## Alternatives Considered
+const server = setupServer(...handlers);
 
-| Recommended | Alternative | When to Use Alternative |
-|-------------|-------------|------------------------|
-| Route Handlers | Server Actions | When mutation is only called from server components |
-| NextAuth session + DB checks | Full RBAC library (e.g., AccessControl) | When you need organization-level roles globally |
-| Custom rate limiting | Upstash rate limiter | If you want managed rate limiting service |
-| react-hook-form + Zod | tRPC | When you want end-to-end type safety (larger change) |
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+```
 
-## What NOT to Use
+## Docker-Based Testing Commands
 
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| pages/api routes | Deprecated pattern | Route Handlers (app/api/*/route.ts) |
-| Express.js standalone | Extra overhead, not needed | Next.js Route Handlers |
-| Passport.js | Unmaintained, complex | NextAuth.js (already in use) |
-| RBAC libraries with DB adapters | Overkill for tournament-specific roles | Custom tournament admin checks |
-| Client-side only auth | Security risk | Server-side session checks |
+| Command | Purpose |
+|---------|---------|
+| `docker:infra` | Start Postgres and Redis |
+| `docker:test` | Run unit tests (all packages) |
+| `docker:test:integration` | Run integration tests |
+| `docker:test:e2e` | Run Playwright E2E tests |
+| `docker:test:smoke` | Run smoke tests (all packages) |
+| `docker:lint` | Run ESLint |
+
+## Optional Enhancements
+
+Based on the existing infrastructure, **no new libraries are required**. The current stack covers all v2.0 testing goals:
+
+1. **Unit tests** - Vitest + @testing-library
+2. **Integration tests** - Vitest + Testcontainers + MSW
+3. **E2E tests** - Playwright with MSW integration
+4. **Smoke tests** - Vitest against real APIs (requires credentials)
+
+### Potential Future Additions
+
+| Package | Purpose | When to Add |
+|---------|---------|-------------|
+| `happy-dom` | Faster DOM alternative to jsdom | Performance-critical React tests |
+| `vitest-coverage-v8` | Advanced V8 coverage | Detailed coverage reports |
+| `vitest-sonar` | SonarQube integration | CI coverage tracking |
 
 ## Installation
 
+The testing dependencies are already installed. Only vitest upgrade needed in bot:
+
 ```bash
-# Core - already installed
-npm list next next-auth @prisma/client zod
+# In apps/bot/
+npm install -D vitest@^4.0.18
 
-# Additional for admin features
-npm install @tanstack/react-query@5
-npm install react-hook-form@7 @hookform/resolvers@3
-npm install @radix-ui/react-table@1.1
-npm install @radix-ui/react-dropdown-menu@1.1  # For admin context menus
-npm install @radix-ui/react-tabs@1.1          # For admin page sections
-
-# Dev
-npm install -D @types/jsonwebtoken
+# Verify all packages have consistent versions
+npm ls vitest
 ```
-
-## Version Compatibility
-
-| Package A | Compatible With | Notes |
-|-----------|-----------------|-------|
-| next-auth 4.24 | next 14.x | Current setup |
-| @prisma/client 5.7 | prisma 5.7 | Must match |
-| react-hook-form 7 | zod 3.x/4.x | Use @hookform/resolvers |
-| @tanstack/react-query 5 | next 14.x | Server Components compatible |
 
 ## Sources
 
-- Context7: /nextauthjs/next-auth - RBAC patterns, session callbacks
-- Context7: /colinhacks/zod - Schema validation, version 4.x available
-- Context7: /vercel/next.js - Route Handlers vs Server Actions
-- Existing codebase: apps/web/lib/auth.ts - Current auth implementation
-- Existing codebase: apps/web/lib/ratelimit.ts - Rate limiting patterns
-- Existing codebase: apps/web/lib/api-response.ts - Error handling patterns
+- [Vitest](https://vitest.dev/) - v4.0.17 latest (2026)
+- [Playwright](https://playwright.dev/) - Cross-browser testing
+- [MSW](https://mswjs.io/) - API mocking for browser and Node.js
+- [Testcontainers](https://testcontainers.com/) - Database containerization
+- [@testing-library/react](https://testing-library.com/docs/react-testing-library/intro/) - React component testing
 
 ---
 
-*Stack research for: Admin REST APIs in Next.js*
-*Researched: 2026-02-25*
+*Stack research for: FightRise Testing Enhancements v2.0*
+*Researched: 2026-02-26*

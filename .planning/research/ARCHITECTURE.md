@@ -1,499 +1,530 @@
-# Architecture Research
+# Architecture Research: Testing Infrastructure
 
-**Domain:** Tournament Admin Web Portals in Next.js App Router
-**Researched:** 2026-02-25
+**Domain:** Test Architecture for Turborepo Monorepo (Discord Bot + Web Portal)
+**Researched:** 2026-02-26
 **Confidence:** HIGH
 
 ## Standard Architecture
 
 ### System Overview
 
+The FightRise project uses a multi-layered testing strategy with Vitest for unit/integration tests and Playwright for E2E tests. Tests run in Docker containers for consistency with CI/CD.
+
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                     Admin UI Layer (React)                         │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐    │
-│  │ Admin Pages     │  │ Dashboard      │  │ Registration    │    │
-│  │ /admin/         │  │ Stats          │  │ Management      │    │
-│  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘    │
-│           │                    │                    │              │
-├───────────┴────────────────────┴────────────────────┴──────────────┤
-│                  Admin API Routes (Next.js Route Handlers)         │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────────────┐  │
-│  │              Admin Service Layer                             │  │
-│  │  - TournamentAdminService                                   │  │
-│  │  - RegistrationService                                      │  │
-│  │  - MatchAdminService                                        │  │
-│  └──────────────────────────┬──────────────────────────────────┘  │
-├──────────────────────────────┴─────────────────────────────────────┤
-│                    Shared Packages                                  │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐            │
-│  │ Database    │  │ Shared       │  │ UI Components│            │
-│  │ (Prisma)   │  │ (Types)      │  │ (Radix UI)   │            │
-│  └──────────────┘  └──────────────┘  └──────────────┘            │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         E2E Test Layer (Playwright)                        │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐    │
+│  │ Auth Tests  │  │ Dashboard   │  │ Tournament  │  │ Match Tests │    │
+│  │             │  │ Tests       │  │ Tests       │  │             │    │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘    │
+│         │                 │                 │                 │            │
+├─────────┴─────────────────┴─────────────────┴─────────────────┴───────────┤
+│                    Test Utilities Layer                                      │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────┐    │
+│  │ Auth Mocks      │  │ Session Utils   │  │ Page Helpers            │    │
+│  │ (NextAuth)      │  │ (JWT Cookies)   │  │                         │    │
+│  └────────┬────────┘  └────────┬────────┘  └────────────┬────────────┘    │
+├───────────┴─────────────────────┴────────────────────────┴──────────────────┤
+│                  Integration Test Layer (Vitest)                            │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────┐    │
+│  │ Discord Harness │  │ Testcontainers  │  │ MSW Handlers            │    │
+│  │ (Mock Client)   │  │ (PostgreSQL)    │  │ (Start.gg API)          │    │
+│  └────────┬────────┘  └────────┬────────┘  └────────────┬────────────┘    │
+├───────────┴────────────────────┴────────────────────────┴──────────────────┤
+│                      Unit Test Layer (Vitest)                              │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────┐    │
+│  │ vi.mock         │  │ Transaction      │  │ Service Mocks           │    │
+│  │ (Prisma/Discord)│  │ Mock Utility     │  │ (BullMQ/StartGG)       │    │
+│  └─────────────────┘  └─────────────────┘  └─────────────────────────┘    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                         Docker Container Layer                              │
+│         ┌──────────────┐  ┌──────────────┐  ┌──────────────┐            │
+│         │ Web Container│  │ Bot Container│  │ Infra        │            │
+│         │ (Next.js)    │  │ (Node.js)    │  │ (PG + Redis) │            │
+│         └──────────────┘  └──────────────┘  └──────────────┘            │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Component Responsibilities
 
-| Component | Responsibility | Typical Implementation |
-|-----------|----------------|------------------------|
-| Admin API Routes | HTTP endpoints for admin operations | Next.js Route Handlers in `app/api/tournaments/[id]/admin/*` |
-| Admin Pages | Server-rendered admin UI pages | Next.js Pages in `app/tournaments/[id]/admin/*` |
-| Admin Services | Business logic for admin operations | TypeScript modules in `lib/admin/` |
-| TournamentAdmin Model | RBAC for tournament access | Prisma model with OWNER/ADMIN/MODERATOR roles |
+| Component | Responsibility | Location |
+|-----------|---------------|----------|
+| **DiscordTestClient** | In-memory mock of Discord.js client for command/button testing | `apps/bot/src/__tests__/harness/` |
+| **MockInteraction** | Simulates Discord slash command and button interactions | `apps/bot/src/__tests__/harness/` |
+| **Testcontainers** | Spins up isolated PostgreSQL for integration tests | `packages/database/src/__tests__/` |
+| **MSW Handlers** | Intercepts HTTP requests to mock Start.gg GraphQL | `packages/startgg-client/src/__mocks__/` |
+| **Playwright** | Browser automation for E2E web testing | `apps/web/__tests__/e2e/` |
+| **Auth Mocks** | Mocks NextAuth session endpoints for E2E tests | `apps/web/__tests__/e2e/utils/auth.ts` |
 
-## Recommended Project Structure
+## Test File Structure
+
+### Existing Test Organization
 
 ```
-apps/web/
-├── app/
-│   ├── api/
-│   │   └── tournaments/
-│   │       └── [tournamentId]/
-│   │           └── admin/
-│   │               ├── route.ts              # GET /api/tournaments/:id/admin
-│   │               ├── registrations/
-│   │               │   ├── route.ts          # GET/POST /admin/registrations
-│   │               │   └── [registrationId]/
-│   │               │       ├── route.ts      # GET/PUT/DELETE single
-│   │               │       ├── approve/route.ts
-│   │               │       └── reject/route.ts
-│   │               ├── matches/
-│   │               │   ├── route.ts          # GET matches for admin
-│   │               │   └── [matchId]/
-│   │               │       ├── route.ts      # GET/PUT match
-│   │               │       ├── dq/route.ts   # POST DQ player
-│   │               │       └── dispute/route.ts
-│   │               ├── seeding/
-│   │               │   └── route.ts          # GET/POST seeding
-│   │               └── settings/
-│   │                   └── route.ts         # GET/PUT tournament settings
-│   │
-│   └── tournaments/
-│       └── [tournamentId]/
-│           └── admin/
-│               ├── page.tsx                 # Admin dashboard
-│               ├── registrations/
-│               │   └── page.tsx            # Registration management
-│               ├── matches/
-│               │   └── page.tsx            # Match management
-│               ├── seeding/
-│               │   └── page.tsx            # Seeding editor
-│               └── settings/
-│                   └── page.tsx            # Tournament settings
+apps/
+├── bot/
+│   └── src/
+│       ├── __tests__/
+│       │   ├── harness/           # Discord test client utilities
+│       │   │   ├── DiscordTestClient.ts
+│       │   │   ├── MockInteraction.ts
+│       │   │   ├── MockChannel.ts
+│       │   │   └── index.ts
+│       │   ├── integration/       # Integration tests (with DB)
+│       │   │   ├── checkin-flow.integration.test.ts
+│       │   │   ├── match-threads.integration.test.ts
+│       │   │   ├── score-reporting.integration.test.ts
+│       │   │   └── ...
+│       │   ├── services/          # Unit tests for services
+│       │   │   ├── matchService.test.ts
+│       │   │   ├── tournamentService.test.ts
+│       │   │   └── registrationSyncService.test.ts
+│       │   ├── smoke/             # Smoke tests (real APIs)
+│       │   │   ├── discord-api.smoke.test.ts
+│       │   │   └── redis.smoke.test.ts
+│       │   └── load/              # Load testing scenarios
+│       └── services/
+│           └── __tests__/         # Colocated service tests
 │
-├── lib/
-│   ├── admin/
-│   │   ├── tournament-admin.ts            # Admin check utilities
-│   │   ├── services/
-│   │   │   ├── registration-service.ts
-│   │   │   ├── match-admin-service.ts
-│   │   │   └── seeding-service.ts
-│   │   └── actions/
-│   │       ├── registration-actions.ts     # Server Actions
-│   │       └── match-actions.ts
-│   └── auth.ts                             # Existing - NextAuth config
+└── web/
+    └── __tests__/
+        ├── e2e/                   # Playwright E2E tests
+        │   ├── auth.spec.ts
+        │   ├── dashboard.spec.ts
+        │   ├── tournaments.spec.ts
+        │   ├── matches.spec.ts
+        │   └── utils/
+        │       └── auth.ts        # Auth mocking utilities
+        └── smoke/                 # Web smoke tests
+            └── oauth.smoke.spec.ts
+
+packages/
+├── database/
+│   └── src/
+│       └── __tests__/
+│           ├── setup.ts           # Testcontainers setup
+│           ├── smoke/             # DB smoke tests
+│           └── utils/
+│               └── seeders.ts    # Test data factories
 │
-└── components/
-    └── admin/
-        ├── RegistrationTable.tsx           # Shared admin components
-        ├── MatchCard.tsx
-        ├── SeedingEditor.tsx
-        └── BulkActionBar.tsx
+└── startgg-client/
+    └── src/
+        ├── __mocks__/             # MSW handlers
+        │   ├── handlers.ts
+        │   ├── fixtures.ts
+        │   └── server.ts
+        └── __tests__/
+            └── smoke/             # API smoke tests
 ```
 
-### Structure Rationale
+### Recommended Structure for v2.0
 
-- **`app/api/tournaments/[tournamentId]/admin/`:** Follows existing API route conventions in codebase. Nested admin routes mirror page structure.
-- **`app/tournaments/[tournamentId]/admin/`:** Pages colocated with other tournament pages. Admin subfolder keeps admin-specific UI isolated.
-- **`lib/admin/`:** Centralized admin business logic reusable across API routes, pages, and Server Actions.
-- **`components/admin/`:** Reusable UI components shared between admin pages.
-- **Server Actions:** Use for mutations (approve, reject, DQ) following Next.js best practices.
+New tests should follow existing patterns:
 
-## Architectural Patterns
+- **Unit tests**: Colocated in `__tests__` folder next to source, or in `services/__tests__/` for service layer
+- **Integration tests**: In `__tests__/integration/` folder
+- **E2E tests**: In `__tests__/e2e/` folder (Playwright)
+- **Smoke tests**: In `__tests__/smoke/` folder (require real credentials)
 
-### Pattern 1: Admin Route Handler with RBAC
+## Testing Patterns
 
-**What:** REST API endpoint that verifies tournament admin role before processing request.
-**When:** All admin API routes.
-**Trade-offs:** Consistent auth pattern but requires repeated check code.
+### Pattern 1: Discord Test Client (Bot Unit Tests)
+
+**What:** In-memory mock of Discord.js client for testing slash commands without real Discord connection.
+
+**When:** Testing bot commands and button handlers.
 
 **Example:**
 ```typescript
-// apps/web/app/api/tournaments/[id]/admin/registrations/route.ts
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  // 1. Authenticate user
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.discordId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+// apps/bot/src/__tests__/harness/DiscordTestClient.ts
+const client = createDiscordTestClient();
 
-  const { id: tournamentId } = await params;
+// Register the command
+client.registerCommand(myCommand);
 
-  // 2. Check admin role (OWNER, ADMIN, or MODERATOR)
-  const adminCheck = await prisma.tournamentAdmin.findFirst({
-    where: {
-      user: { discordId: session.user.discordId },
-      tournamentId,
-      role: { in: [AdminRole.OWNER, AdminRole.ADMIN, AdminRole.MODERATOR] },
-    },
-  });
+// Execute command
+const interaction = await client.executeCommand('mycommand', {
+  optionName: 'value',
+});
 
-  if (!adminCheck) {
-    return NextResponse.json(
-      { error: 'Only tournament admins can view registrations' },
-      { status: 403 }
-    );
-  }
-
-  // 3. Process request
-  const registrations = await prisma.registration.findMany({
-    where: { tournamentId },
-    include: { user: { select: { ... } } },
-  });
-
-  return NextResponse.json({ registrations });
-}
+// Assert
+expect(interaction.lastReply?.content).toBe('Expected response');
 ```
 
-### Pattern 2: Server Actions with Role Verification
+### Pattern 2: vi.mock for External Dependencies
 
-**What:** Mutate data using Server Actions with explicit role checks.
-**When:** Admin mutations (approve, reject, DQ, update seeding).
-**Trade-offs:** Better UX with progressive enhancement, but requires client-side JavaScript for best experience.
+**What:** Mock modules before imports using Vitest's `vi.mock()`.
+
+**When:** Testing services that depend on Prisma, Discord.js, or other external packages.
 
 **Example:**
 ```typescript
-// apps/web/lib/admin/actions/registration-actions.ts
-'use server'
-
-import { prisma, AdminRole } from '@fightrise/database';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { revalidatePath } from 'next/cache';
-
-async function verifyTournamentAdmin(tournamentId: string, minRole: AdminRole = AdminRole.MODERATOR) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.discordId) {
-    throw new Error('Unauthorized');
-  }
-
-  const admin = await prisma.tournamentAdmin.findFirst({
-    where: {
-      user: { discordId: session.user.discordId },
-      tournamentId,
-      role: { in: [AdminRole.OWNER, AdminRole.ADMIN, AdminRole.MODERATOR] },
+// Mock database
+vi.mock('@fightrise/database', () => ({
+  prisma: {
+    match: {
+      findUnique: vi.fn(),
+      updateMany: vi.fn(),
     },
-  });
+    $transaction: vi.fn(async (callback) => {
+      const tx = { /* mock tx object */ };
+      return callback(tx);
+    }),
+    MatchState: { /* enum values */ },
+  },
+}));
 
-  if (!admin) {
-    throw new Error('Only tournament admins can perform this action');
-  }
-
-  return true;
-}
-
-export async function approveRegistration(registrationId: string, tournamentId: string) {
-  await verifyTournamentAdmin(tournamentId, AdminRole.MODERATOR);
-
-  await prisma.registration.update({
-    where: { id: registrationId },
-    data: { status: RegistrationStatus.CONFIRMED },
-  });
-
-  revalidatePath(`/tournaments/${tournamentId}/admin/registrations`);
-}
+// Mock Discord client
+vi.mock('discord.js', () => ({
+  ChannelType: { GuildText: 0 },
+  Client: vi.fn(),
+}));
 ```
 
-### Pattern 3: Admin Page with Server Components
+### Pattern 3: Transaction Mock Utility
 
-**What:** Server-rendered admin page that fetches data on the server.
-**When:** Read-only admin pages (dashboard, view registrations).
-**Trade-offs:** Fast initial load, SEO-friendly, but requires full page reload for data updates.
+**What:** Helper to mock Prisma `$transaction` behavior for testing state transitions.
+
+**When:** Testing services that use transactions for atomic operations.
 
 **Example:**
 ```typescript
-// apps/web/app/tournaments/[id]/admin/registrations/page.tsx
-import { prisma, AdminRole } from '@fightrise/database';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { redirect } from 'next/navigation';
-import { RegistrationTable } from '@/components/admin/RegistrationTable';
+import { setupTransactionMock } from '../../__tests__/utils/transactionMock.js';
 
-export default async function AdminRegistrationsPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.discordId) {
-    redirect('/auth/signin');
-  }
-
-  const { id: tournamentId } = await params;
-
-  // Verify admin
-  const admin = await prisma.tournamentAdmin.findFirst({
-    where: {
-      user: { discordId: session.user.discordId },
-      tournamentId,
-      role: { in: [AdminRole.OWNER, AdminRole.ADMIN, AdminRole.MODERATOR] },
-    },
-  });
-
-  if (!admin) {
-    redirect(`/tournaments/${tournamentId}`);
-  }
-
-  // Fetch data
-  const registrations = await prisma.registration.findMany({
-    where: { tournamentId },
-    include: { user: true },
-    orderBy: { createdAt: 'desc' },
-  });
-
-  return <RegistrationTable registrations={registrations} tournamentId={tournamentId} />;
-}
+const txClient = setupTransactionMock(prisma, {
+  matchPlayer: {
+    count: vi.fn().mockResolvedValue(1),
+  },
+});
 ```
 
-### Pattern 4: Admin Check Utility
+### Pattern 4: Testcontainers for Integration Tests
 
-**What:** Reusable function to verify admin permissions.
-**When:** Multiple admin routes/actions need consistent checking.
-**Trade-offs:** DRY but adds indirection.
+**What:** Spins up isolated PostgreSQL container for each test run.
+
+**When:** Integration tests that need real database operations.
 
 **Example:**
 ```typescript
-// apps/web/lib/admin/tournament-admin.ts
-import { prisma, AdminRole } from '@fightrise/database';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+// packages/database/src/__tests__/setup.ts
+import { PostgreSqlContainer } from '@testcontainers/postgresql';
 
-export type AdminPermission = 'view' | 'manage_registrations' | 'manage_matches' | 'manage_seeding' | 'manage_settings';
+const container = await new PostgreSqlContainer('postgres:15-alpine')
+  .withDatabase('fightrise_test')
+  .withUsername('test')
+  .withPassword('test')
+  .start();
 
-const rolePermissions: Record<AdminRole, AdminPermission[]> = {
-  [AdminRole.OWNER]: ['view', 'manage_registrations', 'manage_matches', 'manage_seeding', 'manage_settings'],
-  [AdminRole.ADMIN]: ['view', 'manage_registrations', 'manage_matches', 'manage_seeding', 'manage_settings'],
-  [AdminRole.MODERATOR]: ['view', 'manage_registrations', 'manage_matches'],
-};
-
-export async function verifyTournamentAdmin(
-  tournamentId: string,
-  requiredPermission: AdminPermission = 'view'
-): Promise<boolean> {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.discordId) {
-    return false;
-  }
-
-  const admin = await prisma.tournamentAdmin.findFirst({
-    where: {
-      user: { discordId: session.user.discordId },
-      tournamentId,
-    },
-  });
-
-  if (!admin) {
-    return false;
-  }
-
-  const permissions = rolePermissions[admin.role] || [];
-  return permissions.includes(requiredPermission);
-}
+const databaseUrl = container.getConnectionUri();
 ```
 
-## Data Flow
+### Pattern 5: MSW for API Mocking
 
-### Request Flow: Admin API
+**What:** Mock Service Worker intercepts HTTP requests to mock external APIs.
 
-```
-[Admin UI Component]
-    ↓ fetch()
-[Admin API Route: /api/tournaments/:id/admin/registrations]
-    ↓
-[Auth Check: Session + TournamentAdmin]
-    ↓
-[Admin Service Layer]
-    ↓
-[Prisma ORM]
-    ↓
-[PostgreSQL Database]
-    ↓
-[Response → JSON]
-    ↓
-[Admin UI Updates (use or revalidatePath)]
-```
+**When:** Testing code that calls Start.gg GraphQL API.
 
-### Request Flow: Server Action
+**Example:**
+```typescript
+// packages/startgg-client/src/__mocks__/handlers.ts
+import { graphql, HttpResponse } from 'msw';
 
-```
-[Admin UI Form]
-    ↓ submit()
-[Server Action: approveRegistration()]
-    ↓
-[verifyTournamentAdmin() - checks session + role]
-    ↓
-[Prisma Transaction]
-    ↓
-[revalidatePath() - purge cache]
-    ↓
-[UI Automatically Refetches]
+const startgg = graphql.link('https://api.start.gg/gql/alpha');
+
+export const handlers = [
+  startgg.query('GetTournament', () => {
+    return HttpResponse.json({
+      data: {
+        tournament: { id: 'mock-id-12345', name: 'Weekly Tournament' },
+      },
+    });
+  }),
+];
 ```
 
-### State Management
+### Pattern 6: Playwright E2E with Auth Mocks
 
+**What:** Mock NextAuth session endpoints for testing authenticated flows without real OAuth.
+
+**When:** Testing protected web pages and user flows.
+
+**Example:**
+```typescript
+// apps/web/__tests__/e2e/utils/auth.ts
+import { setupAuthenticatedState } from './utils/auth';
+
+test('dashboard loads for authenticated user', async ({ page }) => {
+  await setupAuthenticatedState(page);
+  await page.goto('/dashboard');
+  await expect(page.locator('h1')).toContainText('Dashboard');
+});
 ```
-[Server Component]
-    ↓ (fetches data)
-[React Component Props]
-    ↓ (renders)
-[UI State (useState/useReducer for local interactions)]
-    ↓ (user actions)
-[Server Actions or API Calls]
-    ↓ (mutate data)
-[revalidatePath() or router.refresh()]
-    ↓ (refetch)
-[Server Component Re-renders]
+
+### Pattern 7: Session Cookie for Middleware Auth
+
+**What:** Set JWT cookie directly to authenticate for middleware-protected routes.
+
+**When:** Testing routes protected by NextAuth middleware.
+
+**Example:**
+```typescript
+// Generate valid JWT token for middleware
+const session = createMockSession();
+await setSessionCookie(page, session);
+await mockAuthEndpoints(page, { session });
+await page.goto('/protected-route'); // Middleware allows access
 ```
 
-### Key Data Flows
+## Mocking Strategies by Dependency
 
-1. **Admin Dashboard Load:** Server Component fetches tournament + registrations + matches in parallel, renders page.
-2. **Registration Approval:** User clicks approve → Server Action validates admin → Updates DB → revalidatePath → UI updates.
-3. **Bulk Actions:** Select multiple → Submit bulk action → Server Action processes array → revalidatePath.
-4. **Real-time-ish Updates:** After mutations, use `revalidatePath()` to refresh server components.
+### Database (Prisma)
 
-## Scaling Considerations
+| Test Type | Strategy | Implementation |
+|-----------|----------|----------------|
+| Unit | `vi.mock()` | Mock `prisma` object with `vi.fn()` |
+| Integration | Testcontainers | Spin up PostgreSQL container |
+| E2E | Real database | Docker compose provides shared DB |
 
-| Scale | Architecture Adjustments |
-|-------|-------------------------|
-| 0-1K users | Single Next.js instance, Prisma with basic queries fine |
-| 1K-100K users | Add database indexing on tournamentId, consider read replicas |
-| 100K+ users | Consider separate admin API endpoints, caching with Redis |
+**Key files:**
+- Unit mock: `apps/bot/src/__tests__/utils/transactionMock.ts`
+- Integration setup: `packages/database/src/__tests__/setup.ts`
 
-### Scaling Priorities
+### Discord API
 
-1. **First bottleneck:** Database queries on registrations table with no indexes. Fix: Add composite index on (tournamentId, status).
-2. **Second bottleneck:** Admin page load times with large tournaments. Fix: Implement pagination, limit fields returned.
+| Test Type | Strategy | Implementation |
+|-----------|----------|----------------|
+| Unit | `DiscordTestClient` | In-memory mock of client, channels, threads |
+| Integration | Real Discord (smoke) | `discord-api.smoke.test.ts` |
+| E2E | N/A | Discord not involved in web tests |
+
+**Key files:**
+- Test client: `apps/bot/src/__tests__/harness/DiscordTestClient.ts`
+- Channel mock: `apps/bot/src/__tests__/harness/MockChannel.ts`
+- Interaction mock: `apps/bot/src/__tests__/harness/MockInteraction.ts`
+
+### Start.gg API
+
+| Test Type | Strategy | Implementation |
+|-----------|----------|----------------|
+| Unit | `vi.mock()` | Mock the StartGGClient class |
+| Integration | MSW handlers | Intercept GraphQL requests |
+| Smoke | Real API | `startgg-api.smoke.test.ts` |
+
+**Key files:**
+- MSW handlers: `packages/startgg-client/src/__mocks__/handlers.ts`
+- Fixtures: `packages/startgg-client/src/__mocks__/fixtures.ts`
+
+### NextAuth (Web)
+
+| Test Type | Strategy | Implementation |
+|-----------|----------|----------------|
+| Unit | N/A | Auth tested in E2E |
+| Integration | N/A | Auth tested in E2E |
+| E2E | Mock endpoints + cookies | `apps/web/__tests__/e2e/utils/auth.ts` |
+
+**Key files:**
+- Auth utilities: `apps/web/__tests__/e2e/utils/auth.ts`
+- Session mock: `createMockSession()`, `mockAuthSession()`
+
+## Docker Test Infrastructure
+
+### Test Scripts (from package.json)
+
+```bash
+# Unit tests
+npm run docker:test                           # Run vitest in web container
+
+# Integration tests
+npm run docker:test:integration              # Run integration suite
+
+# E2E tests
+npm run docker:test:e2e                      # Run Playwright tests
+
+# Smoke tests (require credentials)
+npm run docker:test:smoke                     # All smoke tests
+npm run docker:test:smoke:bot               # Bot smoke tests
+npm run docker:test:smoke:startgg           # Start.gg API tests
+```
+
+### Docker Compose Services
+
+| Service | Purpose | For Tests |
+|---------|---------|-----------|
+| `web` | Next.js app | Unit, integration, E2E |
+| `bot` | Discord bot | Unit, integration, smoke |
+| `postgres` | Database | Integration, E2E |
+| `redis` | BullMQ queues | Integration |
+
+### Test Configuration Files
+
+| File | Purpose |
+|------|---------|
+| `apps/bot/vitest.config.ts` | Bot test config (exclude integration/smoke) |
+| `apps/web/vitest.config.ts` | Web test config (jsdom environment) |
+| `playwright.config.ts` | E2E test config with webServer |
+| `packages/database/vitest.config.ts` | Database package tests |
+| `packages/startgg-client/vitest.config.ts` | Start.gg client tests |
+
+## Build Order for Tests
+
+### Phase 1: Unit Test Foundation
+
+1. **Build shared packages first** (required by apps)
+   ```bash
+   npm run build --filter=@fightrise/database
+   npm run build --filter=@fightrise/shared
+   npm run build --filter=@fightrise/startgg-client
+   npm run build --filter=@fightrise/ui
+   ```
+
+2. **Run bot unit tests**
+   ```bash
+   npm run docker:test -- --filter=@fightrise/bot
+   ```
+
+3. **Run web unit tests**
+   ```bash
+   npm run docker:test -- --filter=@fightrise/web
+   ```
+
+### Phase 2: Integration Tests
+
+1. **Ensure infra is running**
+   ```bash
+   npm run docker:infra        # Start Postgres and Redis
+   npm run docker:db:push      # Push schema
+   ```
+
+2. **Run integration tests**
+   ```bash
+   npm run docker:test:integration
+   ```
+
+### Phase 3: E2E Tests
+
+1. **Ensure full stack is running**
+   ```bash
+   npm run docker:dev          # Full stack with hot-reload
+   ```
+
+2. **Run E2E tests**
+   ```bash
+   npm run docker:test:e2e
+   ```
+
+### Phase 4: Smoke Tests (Optional, requires credentials)
+
+```bash
+npm run docker:test:smoke
+```
+
+## Test Isolation Strategies
+
+| Resource | Isolation Method | Cleanup |
+|----------|-----------------|---------|
+| Database | Testcontainers per suite | `teardownTestDatabase()` |
+| Discord state | `client.reset()` | Reset between tests |
+| Auth state | Fresh page context | `page.context().clearCookies()` |
+| MSW | Handlers reset | `server.resetHandlers()` |
 
 ## Anti-Patterns
 
-### Anti-Pattern 1: Client-Side Admin Checks Only
+### Anti-Pattern 1: Testing Implementation Details
 
-**What people do:** Check admin role only in React components, not on server.
-**Why it's wrong:** Any user can bypass UI and call API directly.
-**Do this instead:** Always verify admin role in API route handler AND Server Action.
+**What:** Asserting on internal function calls rather than outcomes.
 
-### Anti-Pattern 2: Direct Prisma Access in Components
+**Why:** Brittle tests that break on refactoring.
 
-**What people do:** Import prisma directly in page components for queries.
-**Why it's wrong:** Mixing data fetching with UI code, harder to test, duplicates logic.
-**Do this instead:** Use service layer in `lib/admin/services/`, import in components.
+**Instead:** Test observable behavior (API responses, messages sent, DB state).
 
-### Anti-Pattern 3: Mixing Admin and User Routes
+### Anti-Pattern 2: Shared Mutable State Between Tests
 
-**What people do:** Put admin endpoints in same routes as user endpoints.
-**Why it's wrong:** Authorization bugs, harder to secure, confusing structure.
-**Do this instead:** Use explicit `/admin/` prefix in routes and pages.
+**What:** Using global variables or module-level state.
 
-### Anti-Pattern 4: Not Using Transactions
+**Why:** Test order dependencies, flaky tests.
 
-**What people do:** Multiple sequential Prisma calls without transactions.
-**Why it's wrong:** Partial failures leave inconsistent state (e.g., approve registration but fail to notify).
-**Do this instead:** Use `prisma.$transaction()` for multi-step operations.
+**Instead:** Use `beforeEach` to reset state, create fresh instances.
+
+### Anti-Pattern 3: Skipping Tests "Temporarily"
+
+**What:** Adding `.skip` or comments to skip tests.
+
+**Why:** Technical debt, forgotten tests.
+
+**Instead:** Delete or fix the test. Use `.todo` for planned tests.
+
+### Anti-Pattern 4: Testing Without Assertions
+
+**What:** Console.log debugging left in tests.
+
+**Why:** No value, confuses future developers.
+
+**Instead:** Write proper assertions, remove debug code.
+
+### Anti-Pattern 5: Mocking Everything
+
+**What:** Mocking all dependencies including simple utilities.
+
+**Why:** Tests don't verify real behavior.
+
+**Instead:** Mock at appropriate boundaries (DB, external APIs), test with real logic.
 
 ## Integration Points
 
-### External Services
+### Test Infrastructure -> Application Code
 
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| Discord API | Webhook for admin notifications | Bot already handles Discord |
-| Start.gg API | GraphQL mutations for seeding updates | Use existing startgg-client package |
+| Integration | Boundary | How Tested |
+|-------------|----------|------------|
+| Bot -> Prisma | Service layer | Unit: vi.mock, Integration: Testcontainers |
+| Bot -> Discord | Discord.js | Unit: DiscordTestClient, Smoke: Real API |
+| Bot -> Start.gg | GraphQL client | Unit: vi.mock, Integration: MSW |
+| Web -> Prisma | API routes | E2E: Playwright with real DB |
+| Web -> NextAuth | Auth flow | E2E: Mocked session endpoints |
+| Web -> Bot | Database | E2E: Both containers same DB |
 
-### Internal Boundaries
+### Test Containers Communication
 
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| Admin API ↔ Bot | Database + Event | Both write to same Prisma models |
-| Admin Pages ↔ API | HTTP + Server Actions | Use fetch() or Server Actions |
-| Web ↔ Database | Prisma | Shared via @fightrise/database package |
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      Docker Network                             │
+│  ┌──────────────┐    DATABASE_URL    ┌──────────────┐         │
+│  │ Web Container│ ◄────────────────► │ PostgreSQL   │         │
+│  │ (Next.js)    │                    │              │         │
+│  └──────────────┘                    └──────────────┘         │
+│         │                                      ▲                 │
+│         │ REDIS_URL                           │                 │
+│         ▼                                      │                 │
+│  ┌──────────────┐                             │                 │
+│  │ Bot Container│ ─────────────────────────────┘                 │
+│  │ (Node.js)    │                                            │
+│  └──────────────┘                                            │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-## Build Order
+## Scaling Considerations
 
-### Phase 1: Foundation (Week 1)
+| Scale | Test Strategy |
+|-------|--------------|
+| <100 tests | Run all in single suite |
+| 100-500 tests | Split by package, parallel execution |
+| 500+ tests | Split by type (unit/integration/e2e), CI pipeline |
 
-1. **Admin Service Layer** (`lib/admin/`)
-   - `tournament-admin.ts` - Admin verification utility
-   - Service modules for registrations, matches, seeding
+### Performance Tips
 
-2. **Admin API Routes** (first batch)
-   - `GET /api/tournaments/[id]/admin` - Dashboard data
-   - `GET /api/tournaments/[id]/admin/registrations` - List registrations (existing partial)
-
-**Dependencies:** None - builds on existing auth and Prisma
-
-### Phase 2: Registration Management (Week 2)
-
-1. **Registration API** - Full CRUD
-   - PUT `/api/tournaments/[id]/admin/registrations/[regId]`
-   - POST `/api/tournaments/[id]/admin/registrations/bulk-approve`
-   - POST `/api/tournaments/[id]/admin/registrations/bulk-reject`
-
-2. **Registration Server Actions**
-   - `approveRegistration()`
-   - `rejectRegistration()`
-   - `bulkApproveRegistrations()`
-
-3. **Registration Admin Page**
-   - Update existing mock page to use real data
-   - Add Server Action integration
-
-**Dependencies:** Phase 1 foundation
-
-### Phase 3: Match Management (Week 3)
-
-1. **Match Admin API**
-   - GET `/api/tournaments/[id]/admin/matches` - List all matches
-   - PUT `/api/tournaments/[id]/admin/matches/[matchId]` - Update match
-
-2. **Match Admin Server Actions**
-   - `dqPlayer()`
-   - `resolveDispute()`
-
-3. **Match Admin Page**
-   - List matches with filters
-   - DQ modal
-
-**Dependencies:** Phase 1 + Registration management
-
-### Phase 4: Seeding & Settings (Week 4)
-
-1. **Seeding API**
-   - GET/POST `/api/tournaments/[id]/admin/seeding`
-
-2. **Settings API**
-   - GET/PUT `/api/tournaments/[id]/admin/settings`
-
-3. **Seeding Editor UI**
-   - Drag-and-drop seeding interface
-
-**Dependencies:** All previous phases
+1. **Unit tests first** - Fast, no external dependencies
+2. **Mock external services** - Don't hit real APIs in CI
+3. **Parallel execution** - Vitest runs in parallel by default
+4. **E2E selectively** - Only critical user flows need browser tests
 
 ## Sources
 
-- [Next.js App Router Documentation](https://nextjs.org/docs/app) - Route handlers, Server Actions
-- [Next.js Authentication Guide](https://nextjs.org/docs/app/building-your-application/authentication) - Authorization patterns
-- [Next.js Data Security](https://nextjs.org/docs/app/building-your-application/data-security) - Server Actions security
-- Context7 library: `/vercel/next.js` - Version-aware documentation
+- [Vitest Documentation](https://vitest.dev/) - Test runner configuration
+- [Playwright Documentation](https://playwright.dev/) - E2E testing
+- [Testcontainers](https://testcontainers.com/) - Database containers
+- [MSW Documentation](https://mswjs.io/) - API mocking
+- Existing codebase: `apps/bot/src/__tests__/harness/`, `packages/database/src/__tests__/setup.ts`
 
 ---
 
-*Architecture research for: Tournament Admin Web Portals*
-*Researched: 2026-02-25*
+*Architecture research for: Testing Infrastructure*
+*Researched: 2026-02-26*

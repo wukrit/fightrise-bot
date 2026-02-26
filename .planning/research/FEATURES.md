@@ -1,170 +1,384 @@
-# Feature Research: Tournament Admin Web Portal
+# Feature Landscape: Test Coverage Enhancement
 
-**Domain:** Tournament Management Web Admin Portal
-**Researched:** 2026-02-25
+**Domain:** Testing infrastructure for FightRise Discord bot and web portal
+**Researched:** 2026-02-26
 **Confidence:** HIGH
 
-## Feature Landscape
+## Executive Summary
 
-### Table Stakes (Users Expect These)
+FightRise v2.0 aims to add comprehensive test coverage across all packages. This research identifies what should be tested in each package, the appropriate test type (unit, integration, E2E), and critical paths that require coverage.
 
-Features users assume exist. Missing these = product feels incomplete for tournament admins.
+**Key Findings:**
+- Bot has test harness infrastructure but limited service/handler tests (only ~20% coverage estimated)
+- Web has API route tests but missing page/component tests
+- Database has seeders and basic smoke tests, needs full integration coverage
+- Start.gg client has mocks but missing mutation/query coverage
+- Shared package has good validation test coverage
 
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| **Tournament Dashboard** | Admins need a central view of tournament state, entrants, matches, and progress | MEDIUM | Core entry point; shows event summary, entrant count, bracket status |
-| **Registration Management** | Admins must view, approve, reject, and remove registrations; bulk operations essential | MEDIUM | Already exists partially in Discord bot; web UI needed for bulk actions |
-| **Manual Registration** | Admins need to register players who cannot self-register (walk-ins, substitutions) | LOW | Simple form with player lookup/creation |
-| **Player Search/Lookup** | Admins must find players by Discord username, Start.gg ID, or display name | LOW | Search across linked User records |
-| **Match List View** | Admins need to see all matches with filters (by round, state, player) | MEDIUM | Table with sorting, filtering by match state (checked-in, in-progress, completed) |
-| **Disqualification (DQ) Management** | Admins must be able to disqualify players and handle DQ disputes | MEDIUM | Includes DQ confirmation, reason logging, cascade to bracket |
-| **Match State Override** | Admins need to manually correct match states (reset, advance player) | MEDIUM | Emergency fix for bracket errors or software bugs |
-| **Event/Bracket View** | Admins need to visualize the bracket and match progression | HIGH | Full bracket visualization; complex for double-elimination |
-| **Admin Role Management** | Assign/remove tournament admins with different permission levels | LOW | Already in database schema (TournamentAdmin model) |
-| **Audit Log Viewer** | Admins need to see who did what and when (especially for DQ, DQs, seeding changes) | LOW | Already tracked in database; needs UI display |
+## Test Breakdown by Package
 
-### Differentiators (Competitive Advantage)
+### 1. Discord Bot (`apps/bot/`)
 
-Features that set the product apart. Not required, but valuable for FightRise's Discord-centric positioning.
+#### What's Already Tested
+| Area | Status | Test Pattern |
+|------|--------|--------------|
+| `/tournament` command | Partial | Unit tests with mocked services |
+| `/register` command | Partial | Unit tests with mocked services |
+| `/link-startgg` command | Partial | Unit tests |
+| `/my-matches` command | Partial | Unit tests |
+| Command loader | Partial | Unit tests |
+| Polling service | Partial | Unit tests |
 
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| **Seeding Management** | Web-based seeding editor with drag-drop reordering; syncs to Discord notifications | MEDIUM | Start.gg handles seeding, but web UI for manual adjustments adds value |
-| **Real-time Match Feed** | Live-updating match cards showing current matches, scores, who's up next | MEDIUM | Complements Discord thread creation; useful for venue displays |
-| **Check-in Dashboard** | See who's checked in, who's pending, send reminder notifications | LOW | Real-time check-in status board; integrates with Discord reminders |
-| **Bulk Messaging** | Send messages to all entrants, specific subgroups (e.g., "round 1 losers") | LOW | Uses Discord DM capabilities via bot |
-| **Registration CSV Export** | Export entrant data for external tools, prize distribution, etc. | LOW | Simple download feature |
-| **Score Correction** | Admins can modify reported scores after submission (with audit trail) | MEDIUM | Beyond basic DQ; handles honest mistakes |
-| **Multi-event Management** | View/manage multiple events (brackets) within a tournament from one view | MEDIUM | Tournament often has multiple games/events |
-| **Discord Channel Linking** | Configure which Discord channels receive tournament updates from web UI | LOW | Bridge between web admin and Discord bot |
+#### What's NOT Tested (Priority Order)
 
-### Anti-Features (Commonly Requested, Often Problematic)
+**Critical Paths (must have tests):**
+| Area | Test Type | Complexity | Rationale |
+|------|-----------|------------|-----------|
+| `matchService.ts` | Unit + Integration | High | Core match thread creation, check-in handling |
+| `scoreHandler.ts` | Unit + Integration | High | Score reporting flow, loser confirmation |
+| `checkin.ts` (handler) | Unit + Integration | Medium | Check-in button interactions |
+| `registrationSyncService.ts` | Unit + Integration | High | Start.gg registration sync |
+| `tournamentService.ts` | Unit + Integration | High | Tournament setup, admin checks |
+| `dqService.ts` | Unit + Integration | High | Player disqualification |
+| `auditService.ts` | Unit | Medium | Admin audit logging |
 
-Features that seem good but create problems.
+**Button Handlers:**
+| Handler | Test Type | Complexity |
+|---------|-----------|------------|
+| `buttonHandlers.ts` router | Unit | Low |
+| `scoreHandler.ts` confirm path | Integration | High |
+| `registration.ts` flow | Integration | Medium |
 
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| **Full Bracket Editor** | Admins want complete manual control over bracket structure | High complexity, conflicts with Start.gg as source of truth, creates sync issues | Provide seeding adjustments only; let Start.gg handle bracket |
-| **Tournament Creation from Web** | Users prefer web UI for setup | Duplicates Start.gg functionality; Discord bot setup is faster for existing users | Keep tournament creation in Start.gg; focus on management |
-| **Real-time WebSocket Updates** | Admins want instant updates without refreshing | Significant complexity, maintenance burden, marginal value for admin use | Simple polling (5-10s) is sufficient for admin dashboard |
-| **Player Profile Pages** | Public profile pages for players | Scope creep; Focus on admin features, not social features | Keep player data private; minimal profile for admin lookup only |
-| **Payment Processing** | Handle venue fees, prize pool distribution | Regulatory complexity, payment integration overhead | Integrate with existing payment tools; don't rebuild |
-| **Automated Seeding Algorithms** | Auto-generate optimal seeding | Complex to get right; Start.gg already handles this | Trust Start.gg seeding; offer manual adjustments only |
+**Commands Missing Tests:**
+| Command | Priority | Complexity |
+|---------|----------|------------|
+| `/admin` | Critical | High |
+| `/checkin` | Critical | Medium |
+| `/report` | Critical | High |
+| `/unlink-startgg` | Medium | Low |
+| `/tournament status` | Medium | Low |
+| `/tournament setup` subcommands | Partial | High |
 
-## Feature Dependencies
+#### Bot Test Dependencies
+- Uses vitest with discord.js mocking
+- Test harness: `apps/bot/src/__tests__/harness/` (DiscordTestClient, MockInteraction, MockChannel)
+- Mock infrastructure for Redis (BullMQ), Prisma
+
+---
+
+### 2. Web Portal (`apps/web/`)
+
+#### What's Already Tested
+| Area | Status | Test Pattern |
+|------|--------|--------------|
+| `/api/tournaments` route | Full | Unit tests |
+| `/api/health` route | Full | Unit tests |
+| `/api/auth/[...nextauth]` | Partial | Unit tests |
+| `/api/matches/[id]/report` | Partial | Unit tests |
+| `/api/tournaments/[id]/admin/audit` | Full | Unit tests |
+| `/api/tournaments/[id]/admin/matches` | Full | Unit tests |
+| `/api/tournaments/[id]/admin/players/[playerId]/dq` | Full | Unit tests |
+| `/api/tournaments/[id]/admin/registrations/*` | Full | Unit tests |
+| Home page | Partial | Unit tests |
+
+#### What's NOT Tested (Priority Order)
+
+**API Routes Missing Tests:**
+| Route | Priority | Complexity |
+|-------|----------|------------|
+| `/api/tournaments/[id]/admin/register` | Critical | High |
+| `/api/tournaments/[id]/admin/seeding` | Critical | High |
+| `/api/tournaments/[id]/register` | Critical | High |
+| `/api/tournaments/[id]/matches` | Critical | High |
+| `/api/tournaments/me` | Medium | Medium |
+| `/api/tournaments/validate` | Medium | Low |
+| `/api/user/matches` | Critical | High |
+| `/api/user/profile` | Medium | Medium |
+| `/api/user/tournaments` | Medium | Medium |
+| `/api/matches/[id]` | Medium | Medium |
+| `/api/matches/[id]/checkin` | Medium | Medium |
+| `/api/matches/[id]/confirm` | Medium | Medium |
+| `/api/matches/[id]/dispute` | Critical | High |
+| `/api/matches/[id]/dq` | Critical | High |
+| `/api/registrations/[id]/approve` | Medium | Medium |
+| `/api/registrations/[id]/reject` | Medium | Medium |
+| `/api/discord/guilds` | Low | Low |
+| `/api/keys` | Low | Low |
+| `/api/auth/callback/*` | Medium | High |
+
+**Web Pages Missing Tests:**
+| Page | Test Type | Priority |
+|------|-----------|----------|
+| Dashboard (`/dashboard`) | E2E | Critical |
+| Tournament list (`/tournaments`) | E2E | Critical |
+| Tournament detail (`/tournaments/[id]`) | E2E | Critical |
+| Tournament registrations (`/tournaments/[id]/registrations`) | E2E | Critical |
+| Tournament matches (`/tournaments/[id]/matches`) | E2E | Critical |
+| Tournament bracket (`/tournaments/[id]/bracket`) | E2E | Medium |
+| Admin page (`/tournaments/[id]/admin`) | E2E | Critical |
+| Admin registrations (`/tournaments/[id]/admin/registrations`) | E2E | Critical |
+| Admin matches (`/tournaments/[id]/admin/matches`) | E2E | Critical |
+| Admin audit (`/tournaments/[id]/admin/audit`) | E2E | Critical |
+| Matches list (`/matches`) | E2E | Medium |
+| Match detail (`/matches/[id]`) | E2E | Medium |
+| Account (`/account`) | E2E | Medium |
+
+**Components Missing Tests:**
+- All page components (React testing library)
+- Shared UI components from `@fightrise/ui`
+
+---
+
+### 3. Database Package (`packages/database/`)
+
+#### What's Already Tested
+| Area | Status | Test Pattern |
+|------|--------|--------------|
+| Basic export | Partial | Smoke tests |
+| Seeders | Partial | Manual verification |
+
+#### What's NOT Tested (Priority Order)
+
+| Area | Test Type | Complexity | Rationale |
+|------|-----------|------------|-----------|
+| All Prisma operations | Integration | High | All CRUD for 11 models |
+| Model relations | Integration | High | User->Registration, Tournament->Match, etc. |
+| Transaction patterns | Integration | High | Atomic operations in services |
+| Enum constraints | Unit | Low | TournamentState, MatchState transitions |
+| Indexes/queries | Integration | Medium | Performance at scale |
+
+**Database Models Needing Tests:**
+| Model | Operations to Test |
+|-------|-------------------|
+| User | create, findUnique, findFirst, update, link/unlink |
+| Tournament | create, findUnique, findMany, update, delete |
+| Event | create, findMany, update state |
+| Match | create, findUnique, update state, thread creation |
+| MatchPlayer | create, update check-in, report score |
+| GameResult | create for each game in best-of |
+| Dispute | create, resolve, status transitions |
+| Registration | create, approve, reject, DQ |
+| TournamentAdmin | create, find, role checks |
+| GuildConfig | create, find, update |
+| AuditLog | create, findMany, pagination |
+
+---
+
+### 4. Start.gg Client (`packages/startgg-client/`)
+
+#### What's Already Tested
+| Area | Status | Test Pattern |
+|------|--------|--------------|
+| GraphQL client | Partial | Unit tests |
+| Retry logic | Full | Unit tests |
+| Cache | Partial | Unit tests |
+| MSW mocks | Full | Handler fixtures |
+
+#### What's NOT Tested (Priority Order)
+
+| Area | Test Type | Complexity | Rationale |
+|------|-----------|------------|-----------|
+| All GraphQL queries | Integration | Medium | getTournament, getEventSets, getEventEntrants |
+| All GraphQL mutations | Integration | High | reportSet, dqEntrant |
+| Error handling | Unit | Medium | API failures, rate limits |
+| Rate limiting | Integration | High | Backoff behavior |
+
+**Queries Needing Tests:**
+- `getTournament.ts`
+- `getTournamentsByOwner.ts`
+- `getEventSets.ts`
+- `getEventEntrants.ts`
+
+**Mutations Needing Tests:**
+- `reportSet.ts` - Score reporting
+- `dqEntrant.ts` - Disqualification
+
+---
+
+### 5. Shared Package (`packages/shared/`)
+
+#### What's Already Tested (Good Coverage)
+| Area | Status |
+|------|--------|
+| Validation (`validation.ts`) | Full |
+| Types (`types.ts`) | Partial |
+| Constants (`constants.ts`) | Partial |
+| Errors (`errors.ts`) | Partial |
+| DateTime (`datetime.ts`) | Partial |
+| Interactions (`interactions.ts`) | Partial |
+| Schemas (`schemas.ts`) | Partial |
+
+#### What's NOT Tested (Low Priority)
+- Edge cases in type guards
+- Schema validation edge cases
+- Error class hierarchy
+
+---
+
+## Critical Paths Requiring Coverage
+
+### Path 1: Tournament Setup -> Registration -> Check-in -> Match
 
 ```
-[Tournament Dashboard]
-    └──requires──> [Tournament Data API]
-    └──requires──> [Admin Authentication]
+/tournament setup (command)
+  -> tournamentService.setupTournament()
+  -> Start.gg API call
+  -> Create Tournament in DB
 
-[Registration Management]
-    └──requires──> [Player Search]
-    └──enhances──> [Manual Registration]
+/register (command)
+  -> Create Registration in DB
 
-[Match Management]
-    └──requires──> [Match List View]
-    └──requires──> [Score Reporting API]
+/match ready (pollingService)
+  -> matchService.handleMatchReady()
+  -> Create Discord thread
+  -> Notify players
 
-[Disqualification]
-    └──requires──> [Match State Override]
-    └──enhances──> [Audit Log Viewer]
+/checkin (button)
+  -> checkinHandler
+  -> Update MatchPlayer.isCheckedIn
 
-[Seeding Management]
-    └──requires──> [Registration Management]
-    └──conflicts──> [Full Bracket Editor]  (Don't build both)
-
-[Check-in Dashboard]
-    └──requires──> [Registration Management]
-    └──enhances──> [Bulk Messaging]
+/report (button)
+  -> scoreHandler
+  -> reportSet mutation
+  -> Update Match state
 ```
 
-### Dependency Notes
+**Test Coverage Needed:**
+- Unit: Each service method
+- Integration: Full flow with mocked Discord/Start.gg
 
-- **Tournament Dashboard requires Tournament Data API:** The web dashboard is meaningless without API endpoints exposing tournament state. This is foundational.
-- **Seeding Management conflicts with Full Bracket Editor:** If we build full bracket editing, we create a sync nightmare with Start.gg. Better to only allow seeding reorder which pushes back to Start.gg.
-- **Check-in Dashboard enhances Bulk Messaging:** Once admins know who's not checked in, they need to send reminders via Discord.
-- **DQ Management requires Match State Override:** Disqualifying a player must also update the bracket state correctly.
+### Path 2: Admin Registration Management (Web API)
 
-## MVP Definition
+```
+GET /api/tournaments/[id]/admin/registrations
+  -> requireTournamentAdmin
+  -> Query registrations
+  -> Return paginated list
 
-### Launch With (v1)
+POST /api/tournaments/[id]/admin/registrations
+  -> requireTournamentAdmin
+  -> Validate input
+  -> Create or find User
+  -> Create Registration
+  -> Create AuditLog
 
-Minimum viable product — what's needed to validate the concept.
+PATCH /api/tournaments/[id]/admin/registrations/[id]
+  -> requireTournamentAdmin
+  -> Update status
+  -> Sync to Start.gg if needed
+  -> Create AuditLog
+```
 
-- [ ] **Tournament Dashboard** — Central view of tournament state; essential for any admin work
-- [ ] **Registration List + Manual Registration** — View and add entrants; core admin task
-- [ ] **Match List with Filters** — See all matches, filter by state; essential for tournament running
-- [ ] **Basic DQ Functionality** — Disqualify players with reason; handle bracket implications
-- [ ] **Admin Authentication** — Discord OAuth + tournament admin role verification
+**Test Coverage Needed:**
+- Unit: Input validation, auth checks
+- Integration: Full flow with database
 
-### Add After Validation (v1.x)
+### Path 3: Score Reporting Flow
 
-Features to add once core is working.
+```
+User clicks "Report Score" button
+  -> scoreHandler receives button data
+  -> Parse scores, validate
+  -> If opponent needs to confirm:
+     -> Send confirmation to opponent
+     -> Wait for confirmation
 
-- [ ] **Seeding Management** — Drag-drop reordering; high value for competitive events
-- [ ] **Check-in Dashboard** — Real-time check-in status board with reminder buttons
-- [ ] **Audit Log Viewer** — See all admin actions for accountability
-- [ ] **Match State Override** — Emergency corrections for bracket errors
+Opponent clicks "Confirm" or "Dispute"
+  -> Confirm: reportSet mutation to Start.gg
+  -> Dispute: Create Dispute record
+```
 
-### Future Consideration (v2+)
+**Test Coverage Needed:**
+- Unit: Score validation, state machine
+- Integration: Full confirmation flow
 
-Features to defer until product-market fit is established.
+---
 
-- [ ] **Full Bracket Visualization** — Complex to build well; consider embedding existing library
-- [ ] **Bulk Messaging** — Requires careful message rate limiting
-- [ ] **CSV Export** — Nice-to-have for data portability
-- [ ] **Multi-event Management** — Once multiple event tournaments become common
+## Test Type Recommendations
 
-## Feature Prioritization Matrix
+### Unit Tests
+- Pure functions in shared package
+- Validation functions
+- Service methods with mocked dependencies
+- Command option parsing
 
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Tournament Dashboard | HIGH | MEDIUM | P1 |
-| Registration List + Search | HIGH | LOW | P1 |
-| Manual Registration | HIGH | LOW | P1 |
-| Match List (filtered) | HIGH | MEDIUM | P1 |
-| Basic DQ | HIGH | MEDIUM | P1 |
-| Admin Auth + Role Check | HIGH | LOW | P1 |
-| Seeding Management | MEDIUM | MEDIUM | P2 |
-| Check-in Dashboard | MEDIUM | MEDIUM | P2 |
-| Audit Log Viewer | MEDIUM | LOW | P2 |
-| Match State Override | MEDIUM | MEDIUM | P2 |
-| Bracket Visualization | MEDIUM | HIGH | P3 |
-| Bulk Messaging | LOW | MEDIUM | P3 |
-| CSV Export | LOW | LOW | P3 |
+### Integration Tests
+- Database operations (all 11 models)
+- Service-to-service communication
+- API routes with real database (Testcontainers)
+- Start.gg client queries/mutations with mocked server
 
-**Priority key:**
-- P1: Must have for launch
-- P2: Should have, add when possible
-- P3: Nice to have, future consideration
+### E2E Tests
+- Web portal user flows (Playwright)
+- Auth flow (Discord OAuth)
+- Tournament registration flow
+- Admin workflows
 
-## Competitor Feature Analysis
+---
 
-| Feature | Start.gg | Challonge | Our Approach |
-|---------|-----------|------------|--------------|
-| Tournament Dashboard | Full web dashboard | Full web dashboard | Build web portal; Discord-first notifications |
-| Registration Management | Full management | Limited | Web UI + Discord integration for notifications |
-| Seeding | Manual + import | Manual only | Web UI for manual adjustments; push to Start.gg |
-| DQ Management | Via bracket editor | Via match editing | Dedicated DQ flow with Discord notifications |
-| Check-in | Built-in check-in | Not built-in | Real-time check-in dashboard; Discord reminders |
-| Bracket Visualization | Full + embeddable | Full + embeddable | Embed Start.gg brackets rather than rebuild |
-| Audit Log | Not prominent | Not built-in | First-class audit trail for accountability |
+## MVP Test Recommendation
 
-**Our Differentiation:**
-- **Discord-native notifications** — All admin actions can trigger Discord messages to relevant players
-- **Tournament thread integration** — Match threads already created in Discord; web admin complements this
-- **Audit trail first** — Critical for community trust in DQ decisions
+Prioritize critical paths first:
+
+1. **matchService.ts** - Core match thread functionality
+2. **scoreHandler.ts** - Score reporting critical path
+3. **tournamentService.ts** - Tournament setup/admin
+4. **API registration routes** - Web admin CRUD
+5. **API match routes** - Score reporting endpoints
+6. **Database model tests** - All Prisma operations
+
+Defer:
+- UI component tests (lower ROI)
+- Load tests (out of scope)
+- Smoke tests (require credentials)
+
+---
+
+## Existing Test Infrastructure
+
+| Component | Tool | Location |
+|-----------|------|----------|
+| Bot test harness | vitest | `apps/bot/src/__tests__/harness/` |
+| Bot unit tests | vitest | `apps/bot/src/__tests__/` |
+| Web API tests | vitest | `apps/web/app/api/**/*.test.ts` |
+| Database tests | vitest + Testcontainers | `packages/database/src/__tests__/` |
+| Start.gg mocks | MSW | `packages/startgg-client/src/__mocks__/` |
+| Shared tests | vitest | `packages/shared/src/**/*.test.ts` |
+
+---
+
+## Confidence Assessment
+
+| Area | Level | Reason |
+|------|-------|--------|
+| Bot tests | HIGH | Test harness exists, patterns clear |
+| Web API tests | HIGH | Test patterns established, good coverage so far |
+| Database tests | MEDIUM | Testcontainers setup exists, needs expansion |
+| Start.gg tests | MEDIUM | MSW setup exists, needs query/mutation tests |
+| E2E tests | LOW | Playwright setup needed, patterns unclear |
+
+---
+
+## Gaps to Address
+
+1. **Bot handlers**: scoreHandler, checkinHandler, registrationHandler need full test coverage
+2. **Bot services**: matchService, dqService, registrationSyncService need integration tests
+3. **Web E2E**: No Playwright tests exist yet for pages
+4. **Database**: No comprehensive integration tests for all models
+5. **Start.gg mutations**: reportSet, dqEntrant not tested
+
+---
 
 ## Sources
 
-- Start.gg tournament management features (existing platform)
-- Challonge admin capabilities
-- FightRise existing Discord bot functionality (apps/bot/src/services/)
-- Database schema analysis (packages/database/prisma/schema.prisma)
-- CONCERNS.md - identifies missing Admin API endpoints, Registration API, DQ API, Check-in API
-- PROJECT.md - defines requirements for REST API + web UI admin pages
+- Existing test files in `apps/bot/src/__tests__/`
+- Existing test files in `apps/web/app/api/`
+- Test harness in `apps/bot/src/__tests__/harness/`
+- MSW mocks in `packages/startgg-client/src/__mocks__/`
+- Database schema in `packages/database/prisma/schema.prisma`
+- CLAUDE.md testing documentation
 
 ---
-*Feature research for: Tournament Admin Web Portal*
-*Researched: 2026-02-25*
+
+*Feature research for: Test Coverage Enhancement v2.0*
+*Researched: 2026-02-26*

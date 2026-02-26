@@ -1,228 +1,256 @@
 # Domain Pitfalls
 
-**Domain:** Admin Web Portal for Tournament Management (Next.js + Discord Bot)
-**Researched:** 2026-02-25
+**Project:** FightRise - Testing Enhancements (v2.0)
+**Researched:** 2026-02-26
+**Focus:** Common mistakes when adding test coverage to existing Node.js/TypeScript monorepo with Discord bot and Next.js web app
 
 ## Critical Pitfalls
 
-Mistakes that cause rewrites or major issues.
+Mistakes that cause rewrites or major issues when adding test coverage to existing projects.
 
-### Pitfall 1: Authorization Gap Between Discord and Web Admin
+### Pitfall 1: Testing Implementation Instead of Behavior
 
-**What goes wrong:** Admins who have permissions in Discord cannot perform the same actions in the web portal, or vice versa. The authorization models are not aligned.
-
-**Why it happens:** The Discord bot checks Discord guild permissions (e.g., manage channels, kick members) while the web API checks database `TournamentAdmin` roles. A user might be a Discord admin but not in the `TournamentAdmin` table, or have database admin rights but no Discord permissions.
-
-**Consequences:**
-- Admins cannot manage tournaments they own in one interface
-- Security inconsistency: users can block actions in one place but not the other
-- User confusion when permissions differ between channels
-
-**Prevention:**
-1. **Unified permission model**: Create a single source of truth for tournament admin permissions
-2. **Sync Discord roles to database**: When a tournament is linked, import Discord guild roles as `TournamentAdmin` entries
-3. **Add Discord permission check in API**: For operations that require Discord permissions (like thread creation), verify both database and Discord roles
-
-**Detection:**
-- Test: Create a user with Discord admin role but no database admin record - they should be blocked in web
-- Warning sign: Users reporting "I can do X in Discord but not in web"
-
-**Phase to address:** Authorization (Phase 1-2)
-
----
-
-### Pitfall 2: Missing Audit Trail for Web Admin Actions
-
-**What goes wrong:** Admin actions performed through the web portal are not logged, making it impossible to trace who made changes or investigate issues.
-
-**Why it happens:** The Discord bot has `auditService.ts` that logs all admin actions, but the existing admin API endpoints don't call it. Web actions operate independently from the bot's audit system.
-
-**Consequences:**
-- No accountability for admin actions in web portal
-- Cannot debug issues by tracing admin operations
-- Compliance issues for tournament运行
-- Inconsistent history between Discord and web admin actions
-
-**Prevention:**
-1. **Create unified audit logging function** that both Discord bot and web API call
-2. **Wrap all admin mutations** with automatic audit logging
-3. **Include admin API actions in existing audit queries**
-
-**Detection:**
-- Code review: Check every admin API endpoint for audit service calls
-- Warning sign: `auditService.log()` not imported in admin route files
-
-**Phase to address:** Core API Implementation (Phase 2)
-
----
-
-### Pitfall 3: State Desync Between Discord and Web UI
-
-**What goes wrong:** The web portal displays stale or incorrect tournament state because it doesn't reflect changes made through the Discord bot in real-time.
+**What goes wrong:** Tests break whenever implementation details change, even though the behavior remains correct. Tests become a maintenance burden rather than a safety net.
 
 **Why it happens:**
-- No WebSocket or real-time updates between Discord bot and web portal
-- Cached data in web UI doesn't refresh after Discord-side changes
-- Database reads might hit replica lag in production
+- Mocking internal dependencies instead of testing through public interfaces
+- Asserting on specific method calls rather than outcomes
+- Testing implementation details like "did we call prisma.user.findUnique?" instead of "did we get the user?"
 
 **Consequences:**
-- Admins make decisions based on outdated information
-- Conflict: Admin approves registration in web while bot processes check-in
-- User sees inconsistent tournament state across interfaces
+- Tests must be rewritten for every refactor
+- False negatives: passing code fails tests due to harmless refactoring
+- Developer frustration leads to skipping or deleting tests
 
 **Prevention:**
-1. **Always fetch fresh data for admin operations** - no caching for admin views
-2. **Add revalidation to Next.js pages** after mutations
-3. **Consider polling or SSE** for real-time updates (defer WebSocket complexity)
-4. **Optimistic UI with rollback** - show expected state but revert on failure
+- Test through public interfaces (commands, API routes, service public methods)
+- Assert on side effects: database state, messages sent, API responses
+- Use behavior-driven assertions: `expect(result.userId).toBe(expected)` not `expect(prisma.user.findUnique).toHaveBeenCalledWith(...)`
 
-**Detection:**
-- Manual test: Open tournament page in web, make change in Discord, refresh - data should match
-- Warning sign: `cache: 'no-store'` not used in admin data fetches
+**Detection:** When refactoring code breaks more than 5% of tests, this is the problem.
 
-**Phase to address:** UI Implementation (Phase 3)
+### Pitfall 2: Inadequate Test Isolation
 
----
+**What goes wrong:** Tests affect each other through shared state in isolation but fails. A test passes in the suite, or vice versa.
 
-### Pitfall 4: Insufficient Permission Checks at API Layer
-
-**What goes wrong:** The web UI hides admin buttons for unauthorized users, but the underlying API endpoints accept requests from any authenticated user who guesses the endpoint URL.
-
-**Why it happens:** UI-only authorization is security theater. API endpoints might skip database permission checks, assuming the UI prevents access.
+**Why it happens:**
+- Using real database without cleanup between tests
+- Global mutable state (singleton services, cached data)
+- Not resetting mocks between tests
+- Shared Discord test client instance across tests
 
 **Consequences:**
-- Security vulnerability: Any authenticated user can perform admin operations by calling API directly
-- Bypasses role-based access control
+- Flaky tests that pass/fail non-deterministically
+- "Works on my machine" issues in CI
+- Tests must run in specific order
 
 **Prevention:**
-1. **Never trust client-side authorization** - always verify in API
-2. **Copy the exact permission checks** from existing admin endpoints (like `/api/tournaments/[id]/admin/registrations`)
-3. **Add integration tests** that call API endpoints with non-admin sessions
+- Use the existing `setupTestDatabase()` and `clearTestDatabase()` utilities in `packages/database/src/__tests__/setup.ts`
+- Call `vi.clearAllMocks()` and `vi.restoreAllMocks()` in `beforeEach`/`afterEach`
+- Use unique Discord user IDs per test: `createDiscordTestClient({ userId: 'unique-user-${testIndex}' })`
+- Create fresh service instances per test
 
-**Detection:**
-- Security audit: Call admin API endpoints with non-admin OAuth token
-- Warning sign: Admin routes without `tournamentAdmin` database query
+**Existing Infrastructure (use these):**
+```typescript
+// Database - use existing setup
+import { setupTestDatabase, clearTestDatabase, teardownTestDatabase } from '@fightrise/database';
 
-**Phase to address:** Core API Implementation (Phase 2)
+// Discord - reset between tests
+testClient.reset(); // Clear messages, threads, interactions
+
+// Mocks - clear in beforeEach
+beforeEach(() => vi.clearAllMocks());
+afterEach(() => vi.restoreAllMocks());
+```
+
+### Pitfall 3: Over-Mocking External Dependencies
+
+**What goes wrong:** Tests pass but the code doesn't work with real dependencies. Integration tests fail at runtime.
+
+**Why it happens:**
+- Mocking everything: Prisma, Discord.js, Start.gg client
+- Not having integration tests that use real infrastructure
+- Mocks returning simplified data that doesn't match real API responses
+
+**Consequences:**
+- Unit tests pass, integration tests fail
+- Production bugs discovered in deployment
+- False confidence from high coverage numbers
+
+**Prevention:**
+- Have a mix of unit tests (mocked) and integration tests (real dependencies)
+- Use Testcontainers for PostgreSQL (already set up in `packages/database/src/__tests__/setup.ts`)
+- Use the MSW handlers for Start.gg GraphQL that match real API structure
+- Run smoke tests against real APIs: `npm run docker:test:smoke`
+
+**Detection:** If all tests can run without Docker/Postgres/Redis, you're over-mocking.
 
 ---
 
 ## Moderate Pitfalls
 
-### Pitfall 5: No Pagination on Admin List Endpoints
+### Pitfall 4: Not Testing Error Paths and Edge Cases
 
-**What goes wrong:** Admin pages attempt to load all registrations, matches, or players at once, causing slow page loads or timeouts with large tournaments.
+**What goes wrong:** Tests only cover the happy path. Production fails on errors that were never tested.
 
-**Why it happens:** Existing admin API returns `findMany()` without pagination (noted in CONCERNS.md). Frontend iterates over entire result set.
-
-**Consequences:**
-- Page hangs or crashes with 500+ entries
-- Poor UX on large tournaments
-- Database performance degradation
-
-**Prevention:**
-1. **Add cursor-based pagination** to all list endpoints
-2. **Implement infinite scroll or pagination UI** in admin pages
-3. **Default limit of 50 items** per page
-
-**Phase to address:** Core API Implementation (Phase 2)
-
----
-
-### Pitfall 6: Race Conditions in Check-in and Score Operations
-
-**What goes wrong:** A player checks in through both Discord and web simultaneously, or an admin confirms a match while a player reports a score, causing inconsistent state.
-
-**Why it happens:** No optimistic locking or atomic operations. Concurrent requests can overwrite each other's changes.
+**Why it happens:**
+- Writing tests only for main functionality
+- Ignoring error handling code paths
+- Not testing null/undefined edge cases
 
 **Consequences:**
-- Duplicate check-ins
-- Lost score reports
-- Match state corruption (e.g., marked complete but has pending scores)
+- Unhandled exceptions in production
+- Poor error messages for users
+- Silent failures that are hard to debug
 
 **Prevention:**
-1. **Use database transactions** with `where` clauses that verify current state
-2. **Implement idempotency keys** for all write operations
-3. **Add state validation** before mutations (match must be in correct state)
+- Use existing test patterns from `apps/bot/src/services/__tests__/`:
+  ```typescript
+  it('should return USER_NOT_LINKED error if user has no Start.gg account', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
+    const result = await service.setupTournament(mockSetupParams);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.code).toBe('USER_NOT_LINKED');
+    }
+  });
+  ```
+- Test: null values, empty arrays, network errors, rate limits, permission denied
 
-**Phase to address:** Core API Implementation (Phase 2)
+### Pitfall 5: Testing Async Code Without Proper Waiting
 
----
+**What goes wrong:** Tests pass locally but fail in CI due to race conditions. Promises resolve after the test completes.
 
-### Pitfall 7: Inconsistent Validation Between Discord and Web
-
-**What goes wrong:** An action allowed through the Discord bot is blocked in the web portal, or vice versa, due to different validation logic.
-
-**Why it happens:** Validation rules are implemented separately in bot handlers and API routes without sharing validation code.
+**Why it happens:**
+- Not awaiting async operations
+- Using `.then()` instead of `async/await`
+- Not waiting for Discord message sends to complete
+- BullMQ jobs executing after test assertion
 
 **Consequences:**
-- User confusion when same operation fails differently
-- Bugs: one interface allows invalid state that other rejects
-- Maintenance burden: fixes need to be applied in two places
+- Flaky tests in CI
+- Intermittent failures that are hard to reproduce
+- Tests that work locally but fail in Docker
 
 **Prevention:**
-1. **Extract validation to shared package** (`@fightrise/shared`)
-2. **Use shared Zod schemas** for all tournament operations
-3. **Test that both interfaces accept/reject same inputs**
+- Always `await` async operations
+- Use the existing `waitForEvent()` helper from `DiscordTestClient`:
+  ```typescript
+  const thread = await waitForEvent<MockThreadChannel>(testClient, 'threadCreated');
+  ```
+- For BullMQ: wait for job completion or use job test utilities
+- Use `vi.useFakeTimers()` for time-dependent code when appropriate
 
-**Phase to address:** API Implementation + Integration (Phase 2-3)
+### Pitfall 6: Ignoring Database Transaction Boundaries
 
----
+**What goes wrong:** Tests don't account for Prisma `$transaction()` calls. Mock doesn't match production behavior.
 
-### Pitfall 8: Poor Error Messages to End Users
-
-**What goes wrong:** API returns generic 500 errors or raw database errors, leaving admins confused about why their action failed.
-
-**Why it happens:** Error handling catches exceptions but doesn't provide actionable messages. Database constraint violations leak implementation details.
+**Why it happens:**
+- Mocking Prisma methods individually without considering transactions
+- Not testing that operations actually happen within a transaction
+- Transaction failures not simulated
 
 **Consequences:**
-- Admins cannot fix issues without developer help
-- Security risk: stack traces or internal error details exposed
+- Tests pass but real code fails with transaction errors
+- Partial commits in production not caught in tests
+- Rollback scenarios not tested
 
 **Prevention:**
-1. **Map database errors to user-friendly messages**
-2. **Handle specific error types**: not found, already exists, permission denied, invalid state
-3. **Return actionable guidance**: "Cannot register player - tournament registration is closed"
-
-**Phase to address:** Core API Implementation (Phase 2)
+- Use the existing `createMockTransaction()` utility from `apps/bot/src/__tests__/utils/transactionMock.ts`:
+  ```typescript
+  const txClient = createMockTransaction({
+    tournament: { findUnique: vi.fn(), upsert: vi.fn() }
+  });
+  vi.mocked(prisma.$transaction).mockImplementation(async (callback) => callback(txClient));
+  ```
+- Test transaction success and failure cases
 
 ---
 
 ## Minor Pitfalls
 
-### Pitfall 9: Missing CSRF Protection on Admin Actions
+### Pitfall 7: Hardcoded Test IDs and Data
 
-**What goes wrong:** Admin actions via web forms could be vulnerable to cross-site request forgery.
+**What goes wrong:** Tests use hardcoded IDs that might conflict with real data or future tests.
 
-**Why it happens:** Next.js API routes might not validate CSRF tokens for state-changing operations.
+**Why it happens:**
+- Copy-pasting test code without changing IDs
+- Using "123" or "test-user" everywhere
 
-**Prevention:**
-- Use NextAuth's built-in CSRF protection
-- Ensure `dangerouslyAllowMutations` is not used without understanding implications
-
----
-
-### Pitfall 10: No Rate Limiting on Admin Endpoints
-
-**What goes wrong:** Admin endpoints (especially write operations) lack rate limiting, allowing potential abuse.
-
-**Why it happens:** Some admin endpoints use `RATE_LIMIT_CONFIGS.write` which might be too permissive for admin operations.
+**Consequences:**
+- ID collisions in tests
+- Confusing test output
+- Tests that accidentally pass due to matching data
 
 **Prevention:**
-- Use stricter rate limits for admin endpoints
-- Consider per-user rate limits in addition to IP-based
+- Use factory functions: `createTestUser({ id: \`user-${uuid()}\` })`
+- Use the existing seeders in `packages/database/src/__tests__/utils/seeders.ts`
+- For Discord: use unique IDs per test context
 
----
+### Pitfall 8: Not Testing Discord Permission and Rate Limit Scenarios
 
-### Pitfall 11: Admin UI Not Reflecting Permission Levels
+**What goes wrong:** Tests assume Discord API always succeeds. Production fails when rate limited or permissions missing.
 
-**What goes wrong:** UI shows all admin features to any admin user, even though they have different permission levels (OWNER, ADMIN, MODERATOR).
+**Why it happens:**
+- Mocked Discord client always succeeds
+- Not testing what happens when bot lacks permissions
+- Not testing rate limit handling
 
-**Why it happens:** Frontend doesn't differentiate between admin roles when rendering UI.
+**Consequences:**
+- Bot fails silently in production
+- Rate limits cause cascading failures
+- Missing permissions not detected until production
 
 **Prevention:**
-- Pass admin role to frontend
-- Conditionally render features based on role level
+- Add tests for Discord API failures:
+  ```typescript
+  mockChannel.send.mockRejectedValue(new Error('Missing Permissions'));
+  await expect(command.execute(interaction)).rejects.toThrow('Missing Permissions');
+  ```
+- Test rate limit error handling
+- Test missing permission scenarios
+
+### Pitfall 9: E2E Tests Not Accounting for Network Variability
+
+**What goes wrong:** E2E tests pass in fast CI but fail on slow connections. Timeouts are too tight.
+
+**Why it happens:**
+- Hardcoded timeouts too short for CI
+- Not waiting for network idle
+- Page loads assumed instantaneous
+
+**Consequences:**
+- Flaky E- CI failures that don't reflect real issues2E tests
+
+- Tests that require multiple retries to pass
+
+**Prevention:**
+- Use Playwright's auto-waiting: `await page.click('button')` waits for element
+- Use `waitForURL()` instead of checking URL immediately
+- Set reasonable timeouts in `playwright.config.ts`
+- Use `networkidle` for critical navigations:
+  ```typescript
+  await page.goto('/dashboard', { waitUntil: 'networkidle' });
+  ```
+
+### Pitfall 10: Missing Test Coverage for Prisma Schema Changes
+
+**What goes wrong:** Tests use old Prisma client, breaking when schema changes.
+
+**Why it happens:**
+- Not regenerating Prisma client after schema changes
+- Tests use stale types
+- Type errors in tests after schema migration
+
+**Consequences:**
+- Tests fail to compile after schema changes
+- Type safety lost
+- Runtime errors from schema/client mismatch
+
+**Prevention:**
+- Always run `npm run db:generate` after schema changes
+- Run tests in Docker where schema is pushed fresh: `npm run docker:db:push`
+- Add schema change tests that verify model relationships work
 
 ---
 
@@ -230,19 +258,57 @@ Mistakes that cause rewrites or major issues.
 
 | Phase Topic | Likely Pitfall | Mitigation |
 |-------------|---------------|------------|
-| Authorization Design | Pitfall 1 (Authorization Gap) | Design unified permission model early |
-| Core Admin API | Pitfall 4 (API Authorization) | Add permission checks to every endpoint |
-| Admin API Development | Pitfall 2 (Audit Logging) | Build audit logging into API scaffold |
-| Admin API Development | Pitfall 5 (Pagination) | Add pagination from the start |
-| Admin API Development | Pitfall 6 (Race Conditions) | Use transactions with state validation |
-| Web Admin UI | Pitfall 3 (State Sync) | Design with fresh data fetching |
-| Web Admin UI | Pitfall 7 (Validation Inconsistency) | Share validation code between interfaces |
-| Testing | All pitfalls | Integration tests cover Discord + Web flows |
+| Unit tests for bot commands | Testing implementation not behavior | Assert on messages sent, not internal calls |
+| Unit tests for services | Not testing error paths | Add error case tests alongside happy path |
+| Integration tests for database | Not clearing state between tests | Use `clearTestDatabase()` in beforeEach |
+| Integration tests for Start.gg | Mocks don't match real API | Use MSW handlers from packages/startgg-client |
+| E2E tests for web portal | Not mocking auth properly | Use auth utils from e2e/utils |
+| E2E tests for Discord flows | Race conditions in async code | Use `waitForEvent()` for thread/message creation |
+
+---
+
+## Domain-Specific Pitfalls
+
+### Discord Bot Pitfalls
+
+| Pitfall | Why Bad | Prevention |
+|---------|---------|------------|
+| Not mocking Discord events properly | Tests fail without real Discord | Use DiscordTestClient harness |
+| Testing button handlers in isolation | Ignores event routing | Test through button click: `testClient.clickButton()` |
+| Not testing permission checks | Security vulnerability | Test with non-admin users |
+| Ignoring thread archival | Matches stay open in production | Test thread state transitions |
+
+### Next.js Web Pitfalls
+
+| Pitfall | Why Bad | Prevention |
+|---------|---------|------------|
+| Testing server components without setup | Environment variables missing | Use Docker test environment |
+| Not mocking NextAuth session | Auth tests fail | Use auth utilities from e2e/utils |
+| Testing API routes without request context | Headers missing | Use supertest or Playwright |
+| Ignoring middleware | Protected routes bypassed | Test both authenticated and unauthenticated |
+
+### Prisma Database Pitfalls
+
+| Pitfall | Why Bad | Prevention |
+|---------|---------|------------|
+| Not respecting foreign keys | Tests pass, production fails | Clear tables in order (see existing setup) |
+| Testing without transactions | Race conditions in tests | Use `createMockTransaction()` |
+| Not testing cascade deletes | Orphaned data in production | Test delete flows with relations |
+
+### GraphQL/Start.gg Pitfalls
+
+| Pitfall | Why Bad | Prevention |
+|---------|---------|------------|
+| Mocks don't match GraphQL schema | Tests pass, real API fails | Use existing MSW handlers |
+| Not testing rate limit handling | Production hangs | Mock rate limit errors |
+| Not testing OAuth token refresh | Auth fails silently | Test token refresh flow |
 
 ---
 
 ## Sources
 
-- Existing codebase analysis: `/apps/web/app/api/tournaments/[id]/admin/` endpoints
-- CONCERNS.md: Pagination, authorization, and sync issues already identified
-- PROJECT.md: Admin API and UI are active requirements
+- Vitest Documentation (https://vitest.dev/) - Test runner used in project
+- Playwright Best Practices (https://playwright.dev/docs/best-practices) - E2E testing
+- discord.js Testing Guide (https://discordjs.guide/testing/) - Bot testing patterns
+- Prisma Testing Best Practices (https://www.prisma.io/docs/guides/testing) - Database testing
+- Mock Service Worker (MSW) (https://mswjs.io/) - API mocking used for Start.gg
