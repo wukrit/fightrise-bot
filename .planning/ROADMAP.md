@@ -107,7 +107,10 @@ Plans:
 2. No audit logs from other tournaments are exposed to admins
 3. Server-side filtering matches the API route filtering behavior
 
-**Plans:** 0/1 plans
+**Plans:** 1/1 plans
+
+Plans:
+- [x] 04-01-PLAN.md — Fix audit page tournament filtering
 
 ---
 
