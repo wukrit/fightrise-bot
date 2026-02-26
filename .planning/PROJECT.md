@@ -14,6 +14,17 @@ Run Start.gg tournaments entirely within Discord — now with web-based admin to
 
 ## Requirements
 
+## Current Milestone: v2.0 Testing Enhancements
+
+**Goal:** Add comprehensive test coverage across all packages to improve reliability and enable confident future development.
+
+**Target features:**
+- Unit tests for bot commands and services
+- Unit tests for web API routes and pages
+- Integration tests for database operations
+- Integration tests for Start.gg client
+- E2E tests for web portal user flows
+
 ### Validated
 
 - ✓ Discord bot with 9 slash commands — existing
@@ -32,17 +43,20 @@ Run Start.gg tournaments entirely within Discord — now with web-based admin to
 
 ### Active
 
-- [ ] Real-time match updates (WebSocket) — high complexity, defer
-- [ ] Tournament creation from web — can use Discord bot
+- [ ] Unit tests for bot commands and services — v2.0
+- [ ] Unit tests for web API routes and pages — v2.0
+- [ ] Integration tests for database operations — v2.0
+- [ ] Integration tests for Start.gg client — v2.0
+- [ ] E2E tests for web portal user flows — v2.0
 
 ### Out of Scope
 
 - Real-time match updates (WebSocket) — high complexity, defer
-- Tournament creation from web — can use Discord bot for v1
+- Tournament creation from web — can use Discord bot
 
 ## Context
 
-**Shipped v1.0 Admin Web Portal** with:
+**Completed v1.0 Admin Web Portal** with:
 - 30 requirements satisfied
 - 4 phases completed
 - Security fix for audit page tournament filtering
@@ -69,4 +83,4 @@ Run Start.gg tournaments entirely within Discord — now with web-based admin to
 
 ---
 
-*Last updated: 2026-02-26 after v1.0 milestone*
+*Last updated: 2026-02-26 after v1.0 milestone, starting v2.0*
