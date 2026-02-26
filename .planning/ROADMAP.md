@@ -14,7 +14,7 @@
 - [ ] **Phase 1: Foundation & Authorization** - Unified admin permission model and basic dashboard
 - [ ] **Phase 2: Registration Management** - Full registration CRUD with audit logging
 - [x] **Phase 3: Match Management** - Match list, details, and disqualification handling (completed 2026-02-25)
-- [ ] **Phase 4: Fix Audit Page Tournament Filtering** - Close integration gap from audit
+- [x] **Phase 4: Fix Audit Page Tournament Filtering** - Close integration gap from audit (completed 2026-02-26)
 
 ---
 
@@ -107,7 +107,7 @@ Plans:
 2. No audit logs from other tournaments are exposed to admins
 3. Server-side filtering matches the API route filtering behavior
 
-**Plans:** 1/1 plans
+**Plans:** 1/1 plans complete
 
 Plans:
 - [x] 04-01-PLAN.md — Fix audit page tournament filtering
@@ -121,7 +121,7 @@ Plans:
 | 1. Foundation & Authorization | 1/1 | Complete | Auth + Dashboard |
 | 2. Registration Management | 2/2 | Complete | API + UI |
 | 3. Match Management | 2/2 | Complete   | 2026-02-25 |
-| 4. Fix Audit Page Filtering | 0/1 | In Progress | — |
+| 4. Fix Audit Page Filtering | 0/1 | Complete    | 2026-02-26 |
 
 ---
 
