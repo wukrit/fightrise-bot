@@ -81,7 +81,7 @@
   5. Transaction patterns tested and verified
 
 **Plans**:
-- [ ] 07-01-PLAN.md — Missing seeders (GameResult, Dispute, AuditLog factories)
+- [x] 07-01-PLAN.md — Missing seeders (GameResult, Dispute, AuditLog factories) [COMPLETE]
 - [ ] 07-02-PLAN.md — User and Tournament model tests
 - [ ] 07-03-PLAN.md — Event, Registration, TournamentAdmin model tests
 - [ ] 07-04-PLAN.md — Match, MatchPlayer, GameResult model tests
@@ -116,9 +116,9 @@
 |-------|----------------|--------|-----------|
 | 5. Bot Services Unit Tests | 4/5 | Complete    | 2026-02-27 |
 | 6. Web API + Start.gg Integration | 4/4 | Complete    | 2026-02-26 |
-| 7. Database Model Integration | 5/5 | Planned     | - |
+| 7. Database Model Integration | 1/5 | In Progress | - |
 | 8. E2E Page Tests | 0/1 | Not started | - |
 
 ---
 
-*Last updated: 2026-02-26 during roadmap creation*
+*Last updated: 2026-02-27*
