@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, EventState, TournamentState, MatchState, RegistrationSource, RegistrationStatus, AdminRole, DisputeStatus, AuditAction, AuditSource } from '@prisma/client';
 import type {
   User,
   Tournament,
@@ -10,14 +10,6 @@ import type {
   Registration,
   TournamentAdmin,
   GuildConfig,
-  TournamentState,
-  MatchState,
-  RegistrationSource,
-  RegistrationStatus,
-  AdminRole,
-  DisputeStatus,
-  AuditAction,
-  AuditSource,
 } from '@prisma/client';
 
 // Counter for generating unique IDs
@@ -134,7 +126,7 @@ interface CreateEventOptions {
   startggId?: string;
   name?: string;
   numEntrants?: number;
-  state?: number;
+  state?: EventState;
 }
 
 export async function createEvent(
@@ -149,7 +141,7 @@ export async function createEvent(
       startggId: options.startggId ?? `startgg-event-${id}`,
       name: options.name ?? `Test Event ${id}`,
       numEntrants: options.numEntrants ?? 0,
-      state: options.state ?? 1 as any,
+      state: options.state ?? EventState.CREATED,
     },
   });
 }
