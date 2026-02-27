@@ -5,6 +5,8 @@ import type {
   Event,
   Match,
   MatchPlayer,
+  GameResult,
+  Dispute,
   Registration,
   TournamentAdmin,
   GuildConfig,
@@ -13,6 +15,9 @@ import type {
   RegistrationSource,
   RegistrationStatus,
   AdminRole,
+  DisputeStatus,
+  AuditAction,
+  AuditSource,
 } from '@prisma/client';
 
 // Counter for generating unique IDs
@@ -335,6 +340,104 @@ export async function createGuildConfig(
       prefix: options.prefix ?? '!',
       locale: options.locale ?? 'en',
       timezone: options.timezone ?? 'UTC',
+    },
+  });
+}
+
+// ============================================
+// GameResult Factory
+// ============================================
+
+interface CreateGameResultOptions {
+  gameNumber?: number;
+  winnerId?: string;
+  characterId?: string;
+  characterName?: string;
+  stageId?: string;
+  stageName?: string;
+}
+
+export async function createGameResult(
+  prisma: PrismaClient,
+  matchId: string,
+  matchPlayerId: string,
+  options: CreateGameResultOptions = {}
+): Promise<GameResult> {
+  const id = uniqueId();
+  return prisma.gameResult.create({
+    data: {
+      matchId,
+      matchPlayerId,
+      gameNumber: options.gameNumber ?? 1,
+      winnerId: options.winnerId,
+      characterId: options.characterId,
+      characterName: options.characterName,
+      stageId: options.stageId,
+      stageName: options.stageName,
+    },
+  });
+}
+
+// ============================================
+// Dispute Factory
+// ============================================
+
+interface CreateDisputeOptions {
+  reason?: string;
+  status?: DisputeStatus;
+  resolvedById?: string;
+  resolution?: string;
+  resolvedAt?: Date;
+}
+
+export async function createDispute(
+  prisma: PrismaClient,
+  matchId: string,
+  initiatorId: string,
+  options: CreateDisputeOptions = {}
+): Promise<Dispute> {
+  return prisma.dispute.create({
+    data: {
+      matchId,
+      initiatorId,
+      reason: options.reason,
+      status: options.status ?? 'OPEN',
+      resolvedById: options.resolvedById,
+      resolution: options.resolution,
+      resolvedAt: options.resolvedAt,
+    },
+  });
+}
+
+// ============================================
+// AuditLog Factory
+// ============================================
+
+interface CreateAuditLogOptions {
+  action?: AuditAction;
+  entityType?: string;
+  entityId?: string;
+  before?: unknown;
+  after?: unknown;
+  reason?: string;
+  source?: AuditSource;
+}
+
+export async function createAuditLog(
+  prisma: PrismaClient,
+  userId: string,
+  options: CreateAuditLogOptions = {}
+): Promise<import('@prisma/client').AuditLog> {
+  return prisma.auditLog.create({
+    data: {
+      userId,
+      action: options.action ?? 'TOURNAMENT_CREATED',
+      entityType: options.entityType ?? 'Tournament',
+      entityId: options.entityId ?? uniqueId(),
+      before: options.before as any,
+      after: options.after as any,
+      reason: options.reason,
+      source: options.source ?? 'DISCORD',
     },
   });
 }
