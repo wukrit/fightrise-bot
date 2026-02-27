@@ -7,7 +7,7 @@
 
 ## Phases
 
-- [ ] **Phase 5: Bot Services Unit Tests** — Unit tests for bot services and shared utilities
+- [x] **Phase 5: Bot Services Unit Tests** — Unit tests for bot services and shared utilities (completed 2026-02-27)
 - [x] **Phase 6: Web API + Start.gg Integration Tests** — API route and Start.gg client tests (completed 2026-02-26)
 - [ ] **Phase 7: Database Model Integration Tests** — Integration tests for all Prisma models
 - [ ] **Phase 8: E2E Page Tests** — Playwright browser tests for web portal pages
@@ -36,7 +36,7 @@
 - [x] 05-02-PLAN.md — tournamentService and dqService tests [COMPLETE]
 - [x] 05-03-PLAN.md — Run tests and document coverage [COMPLETE]
 - [ ] 05-04-PLAN.md — pollingService tests
-- [ ] 05-05-PLAN.md — registrationSyncService tests
+- [x] 05-05-PLAN.md — registrationSyncService tests [COMPLETE]
 
 ---
 
@@ -109,7 +109,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 5. Bot Services Unit Tests | 5/5 | In Progress| 5 plans |
+| 5. Bot Services Unit Tests | 4/5 | In Progress|  |
 | 6. Web API + Start.gg Integration | 4/4 | Complete    | 2026-02-26 |
 | 7. Database Model Integration | 0/1 | Not started | - |
 | 8. E2E Page Tests | 0/1 | Not started | - |
