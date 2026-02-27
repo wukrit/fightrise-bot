@@ -80,7 +80,12 @@
   4. Registration, TournamentAdmin, GuildConfig, AuditLog models fully tested
   5. Transaction patterns tested and verified
 
-**Plans**: TBD
+**Plans**:
+- [ ] 07-01-PLAN.md — Missing seeders (GameResult, Dispute, AuditLog factories)
+- [ ] 07-02-PLAN.md — User and Tournament model tests
+- [ ] 07-03-PLAN.md — Event, Registration, TournamentAdmin model tests
+- [ ] 07-04-PLAN.md — Match, MatchPlayer, GameResult model tests
+- [ ] 07-05-PLAN.md — Dispute, GuildConfig, AuditLog model tests
 
 ---
 
@@ -111,7 +116,7 @@
 |-------|----------------|--------|-----------|
 | 5. Bot Services Unit Tests | 4/5 | Complete    | 2026-02-27 |
 | 6. Web API + Start.gg Integration | 4/4 | Complete    | 2026-02-26 |
-| 7. Database Model Integration | 0/1 | Not started | - |
+| 7. Database Model Integration | 5/5 | Planned     | - |
 | 8. E2E Page Tests | 0/1 | Not started | - |
 
 ---
