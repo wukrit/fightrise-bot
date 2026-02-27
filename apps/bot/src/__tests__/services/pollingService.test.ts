@@ -1,9 +1,9 @@
 /**
  * Unit tests for the polling service.
- * Tests calculatePollInterval, getPollStatus, triggerImmediatePoll, and match state logic.
+ * Tests calculatePollInterval, getPollStatus, triggerImmediatePoll, startPollingService, stopPollingService, schedulePoll, and match state logic.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TournamentState, MatchState } from '@fightrise/database';
 import { POLL_INTERVALS, STARTGG_SET_STATE } from '@fightrise/shared';
 
@@ -28,13 +28,271 @@ vi.mock('@fightrise/database', async () => {
   };
 });
 
-// Import after mocking
+// Mock BullMQ - use hoisted factory for proper hoisting
+const { Queue: MockQueue, Worker: MockWorker } = vi.hoisted(() => {
+  const mockQueueInstance = {
+    add: vi.fn().mockResolvedValue({ id: 'job-1' }),
+    close: vi.fn().mockResolvedValue(undefined),
+  };
+  const mockWorkerInstance = {
+    on: vi.fn(),
+    pause: vi.fn().mockResolvedValue(undefined),
+    close: vi.fn().mockResolvedValue(undefined),
+  };
+
+  const QueueFn = vi.fn(() => mockQueueInstance);
+  const WorkerFn = vi.fn(() => mockWorkerInstance);
+
+  return { Queue: QueueFn, Worker: WorkerFn, mockQueueInstance, mockWorkerInstance };
+});
+
+vi.mock('bullmq', () => ({
+  Queue: MockQueue,
+  Worker: MockWorker,
+}));
+
+// Mock Redis connection - use hoisted factory
+const { getRedisConnection: mockGetRedisConnection, closeRedisConnection: mockCloseRedisConnection } = vi.hoisted(() => ({
+  getRedisConnection: vi.fn().mockReturnValue({ host: 'localhost', port: 6379 }),
+  closeRedisConnection: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../lib/redis.js', () => ({
+  getRedisConnection: mockGetRedisConnection,
+  closeRedisConnection: mockCloseRedisConnection,
+}));
+
+// Mock the service logger - use hoisted factory
+const { createServiceLogger: mockCreateServiceLogger } = vi.hoisted(() => {
+  const mockLogger = {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  };
+  return {
+    createServiceLogger: vi.fn(() => mockLogger),
+    mockLogger,
+  };
+});
+
+vi.mock('../../lib/logger.js', () => ({
+  createServiceLogger: mockCreateServiceLogger,
+}));
+
+// Import after mocking - this is key for the mocks to work
 import { prisma } from '@fightrise/database';
 import {
   calculatePollInterval,
   getPollStatus,
   triggerImmediatePoll,
+  startPollingService,
+  stopPollingService,
+  schedulePoll,
 } from '../../services/pollingService.js';
+
+// Mock Discord Client
+const mockDiscordClient = {
+  channels: {
+    cache: {
+      get: vi.fn(),
+    },
+  },
+};
+
+describe('startPollingService', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Reset env var for each test
+    vi.stubEnv('STARTGG_API_KEY', 'test-api-key');
+    vi.stubEnv('BULLMQ_CONCURRENCY', '1');
+  });
+
+  afterEach(async () => {
+    // Clean up any started services
+    await stopPollingService();
+    vi.unstubAllEnvs();
+  });
+
+  it('starts successfully with valid API key and Redis connection', async () => {
+    vi.mocked(prisma.tournament.findMany).mockResolvedValue([]);
+
+    await expect(startPollingService(mockDiscordClient as never)).resolves.not.toThrow();
+  });
+
+  it('throws error when STARTGG_API_KEY is missing', async () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv('STARTGG_API_KEY', '');
+
+    await expect(startPollingService()).rejects.toThrow('STARTGG_API_KEY environment variable is required');
+  });
+
+  it('throws error when Redis connection is unavailable', async () => {
+    mockGetRedisConnection.mockReturnValue(null);
+
+    await expect(startPollingService()).rejects.toThrow('Redis connection unavailable');
+
+    // Restore the mock
+    mockGetRedisConnection.mockReturnValue({ host: 'localhost', port: 6379 });
+  });
+
+  it('creates queue and worker with correct options', async () => {
+    vi.mocked(prisma.tournament.findMany).mockResolvedValue([]);
+
+    await startPollingService(mockDiscordClient as never);
+
+    expect(MockQueue).toHaveBeenCalledWith(
+      'tournament-polling',
+      expect.objectContaining({
+        connection: expect.any(Object),
+        defaultJobOptions: expect.objectContaining({
+          attempts: 3,
+          backoff: expect.objectContaining({ type: 'exponential' }),
+        }),
+      })
+    );
+
+    expect(MockWorker).toHaveBeenCalledWith(
+      'tournament-polling',
+      expect.any(Function),
+      expect.objectContaining({
+        connection: expect.any(Object),
+        concurrency: 1,
+      })
+    );
+  });
+
+  it('schedules active tournaments on startup', async () => {
+    vi.mocked(prisma.tournament.findMany).mockResolvedValue([
+      { id: 'tournament-1', state: TournamentState.IN_PROGRESS },
+      { id: 'tournament-2', state: TournamentState.REGISTRATION_OPEN },
+    ]);
+
+    await startPollingService(mockDiscordClient as never);
+
+    expect(prisma.tournament.findMany).toHaveBeenCalledWith({
+      where: {
+        state: { notIn: [TournamentState.COMPLETED, TournamentState.CANCELLED] },
+      },
+      select: { id: true, state: true },
+    });
+  });
+
+  it('stores Discord client when provided', async () => {
+    vi.mocked(prisma.tournament.findMany).mockResolvedValue([]);
+
+    await startPollingService(mockDiscordClient as never);
+
+    // Service should start without error, which means Discord client was stored
+    expect(mockDiscordClient.channels.cache.get).not.toHaveBeenCalled();
+  });
+
+  it('starts successfully without Discord client (thread creation disabled)', async () => {
+    vi.mocked(prisma.tournament.findMany).mockResolvedValue([]);
+
+    // Should start without error - Discord client is optional
+    await expect(startPollingService(undefined)).resolves.not.toThrow();
+  });
+});
+
+describe('schedulePoll', () => {
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    vi.stubEnv('STARTGG_API_KEY', 'test-api-key');
+    vi.stubEnv('BULLMQ_CONCURRENCY', '1');
+    vi.mocked(prisma.tournament.findMany).mockResolvedValue([]);
+    await startPollingService();
+  });
+
+  afterEach(async () => {
+    await stopPollingService();
+    vi.unstubAllEnvs();
+  });
+
+  it('adds job to queue with correct tournamentId and delay', async () => {
+    await schedulePoll('tournament-123', 15000);
+
+    expect(MockQueue.mock.results[0].value.add).toHaveBeenCalledWith(
+      'poll-tournament',
+      { tournamentId: 'tournament-123' },
+      {
+        jobId: 'poll-tournament-123',
+        delay: 15000,
+      }
+    );
+  });
+
+  it('returns early when queue is null (service not started)', async () => {
+    // Stop the service first
+    await stopPollingService();
+
+    // This should return early without error
+    await expect(schedulePoll('tournament-123', 15000)).resolves.not.toThrow();
+  });
+
+  it('uses jobId to prevent duplicate jobs', async () => {
+    await schedulePoll('tournament-123', 15000);
+
+    // Verify jobId is set to prevent duplicates
+    expect(MockQueue.mock.results[0].value.add).toHaveBeenCalledWith(
+      'poll-tournament',
+      expect.any(Object),
+      expect.objectContaining({
+        jobId: expect.stringContaining('poll-tournament-123'),
+      })
+    );
+  });
+});
+
+describe('stopPollingService', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubEnv('STARTGG_API_KEY', 'test-api-key');
+    vi.stubEnv('BULLMQ_CONCURRENCY', '1');
+  });
+
+  afterEach(async () => {
+    await stopPollingService();
+    vi.unstubAllEnvs();
+  });
+
+  it('closes queue and worker when both exist', async () => {
+    vi.mocked(prisma.tournament.findMany).mockResolvedValue([]);
+    await startPollingService();
+
+    await stopPollingService();
+
+    expect(MockWorker.mock.results[0].value.close).toHaveBeenCalled();
+    expect(MockQueue.mock.results[0].value.close).toHaveBeenCalled();
+  });
+
+  it('handles missing queue gracefully', async () => {
+    // Don't start the service - queue will be null
+
+    await expect(stopPollingService()).resolves.not.toThrow();
+  });
+
+  it('handles missing worker gracefully', async () => {
+    vi.mocked(prisma.tournament.findMany).mockResolvedValue([]);
+    await startPollingService();
+
+    // Simulate worker being already closed
+    MockWorker.mock.results[0].value.close = vi.fn().mockResolvedValue(undefined);
+
+    await expect(stopPollingService()).resolves.not.toThrow();
+  });
+
+  it('clears all service instances', async () => {
+    vi.mocked(prisma.tournament.findMany).mockResolvedValue([]);
+    await startPollingService();
+
+    await stopPollingService();
+
+    // Service should be stopped - calling start again should work
+    vi.mocked(prisma.tournament.findMany).mockResolvedValue([]);
+    await expect(startPollingService()).resolves.not.toThrow();
+  });
+});
 
 describe('calculatePollInterval', () => {
   it('returns null for completed tournaments', () => {
