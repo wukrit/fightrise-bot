@@ -9,7 +9,7 @@
 
 - [x] **Phase 5: Bot Services Unit Tests** — Unit tests for bot services and shared utilities (completed 2026-02-27)
 - [x] **Phase 6: Web API + Start.gg Integration Tests** — API route and Start.gg client tests (completed 2026-02-26)
-- [ ] **Phase 7: Database Model Integration Tests** — Integration tests for all Prisma models
+- [x] **Phase 7: Database Model Integration Tests** — Integration tests for all Prisma models (completed 2026-02-27)
 - [ ] **Phase 8: E2E Page Tests** — Playwright browser tests for web portal pages
 
 ---
@@ -84,8 +84,8 @@
 - [x] 07-01-PLAN.md — Missing seeders (GameResult, Dispute, AuditLog factories) [COMPLETE]
 - [x] 07-02-PLAN.md — User and Tournament model tests [COMPLETE]
 - [x] 07-03-PLAN.md — Event, Registration, TournamentAdmin model tests [COMPLETE]
-- [ ] 07-04-PLAN.md — Match, MatchPlayer, GameResult model tests
-- [ ] 07-05-PLAN.md — Dispute, GuildConfig, AuditLog model tests
+- [x] 07-04-PLAN.md — Match, MatchPlayer, GameResult model tests [COMPLETE]
+- [x] 07-05-PLAN.md — Dispute, GuildConfig, AuditLog model tests [COMPLETE]
 
 ---
 
@@ -116,7 +116,7 @@
 |-------|----------------|--------|-----------|
 | 5. Bot Services Unit Tests | 4/5 | Complete    | 2026-02-27 |
 | 6. Web API + Start.gg Integration | 4/4 | Complete    | 2026-02-26 |
-| 7. Database Model Integration | 1/5 | In Progress | - |
+| 7. Database Model Integration | 4/5 | In Progress|  |
 | 8. E2E Page Tests | 0/1 | Not started | - |
 
 ---

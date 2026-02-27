@@ -34,17 +34,17 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Database Models
 
-- [ ] **DB-01**: Integration tests for User model CRUD
-- [ ] **DB-02**: Integration tests for Tournament model CRUD
-- [ ] **DB-03**: Integration tests for Event model CRUD
-- [ ] **DB-04**: Integration tests for Match model CRUD
-- [ ] **DB-05**: Integration tests for MatchPlayer model CRUD
-- [ ] **DB-06**: Integration tests for GameResult model CRUD
-- [ ] **DB-07**: Integration tests for Dispute model CRUD
-- [ ] **DB-08**: Integration tests for Registration model CRUD
-- [ ] **DB-09**: Integration tests for TournamentAdmin model CRUD
-- [ ] **DB-10**: Integration tests for GuildConfig model CRUD
-- [ ] **DB-11**: Integration tests for AuditLog model CRUD
+- [x] **DB-01**: Integration tests for User model CRUD
+- [x] **DB-02**: Integration tests for Tournament model CRUD
+- [x] **DB-03**: Integration tests for Event model CRUD
+- [x] **DB-04**: Integration tests for Match model CRUD
+- [x] **DB-05**: Integration tests for MatchPlayer model CRUD
+- [x] **DB-06**: Integration tests for GameResult model CRUD
+- [x] **DB-07**: Integration tests for Dispute model CRUD
+- [x] **DB-08**: Integration tests for Registration model CRUD
+- [x] **DB-09**: Integration tests for TournamentAdmin model CRUD
+- [x] **DB-10**: Integration tests for GuildConfig model CRUD
+- [x] **DB-11**: Integration tests for AuditLog model CRUD
 
 ### E2E Page Tests
 
@@ -111,17 +111,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | API-04 | Phase 6 | Pending |
 | API-05 | Phase 6 | Pending |
 | API-06 | Phase 6 | Pending |
-| DB-01 | Phase 7 | Pending |
-| DB-02 | Phase 7 | Pending |
-| DB-03 | Phase 7 | Pending |
-| DB-04 | Phase 7 | Pending |
-| DB-05 | Phase 7 | Pending |
-| DB-06 | Phase 7 | Pending |
-| DB-07 | Phase 7 | Pending |
-| DB-08 | Phase 7 | Pending |
-| DB-09 | Phase 7 | Pending |
-| DB-10 | Phase 7 | Pending |
-| DB-11 | Phase 7 | Pending |
+| DB-01 | Phase 7 | Complete |
+| DB-02 | Phase 7 | Complete |
+| DB-03 | Phase 7 | Complete |
+| DB-04 | Phase 7 | Complete |
+| DB-05 | Phase 7 | Complete |
+| DB-06 | Phase 7 | Complete |
+| DB-07 | Phase 7 | Complete |
+| DB-08 | Phase 7 | Complete |
+| DB-09 | Phase 7 | Complete |
+| DB-10 | Phase 7 | Complete |
+| DB-11 | Phase 7 | Complete |
 | E2E-01 | Phase 8 | Pending |
 | E2E-02 | Phase 8 | Pending |
 | E2E-03 | Phase 8 | Pending |
