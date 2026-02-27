@@ -109,7 +109,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 5. Bot Services Unit Tests | 3/5 | In Progress| 3 plans |
+| 5. Bot Services Unit Tests | 5/5 | In Progress| 5 plans |
 | 6. Web API + Start.gg Integration | 4/4 | Complete    | 2026-02-26 |
 | 7. Database Model Integration | 0/1 | Not started | - |
 | 8. E2E Page Tests | 0/1 | Not started | - |
