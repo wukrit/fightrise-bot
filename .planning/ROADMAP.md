@@ -82,8 +82,8 @@
 
 **Plans**:
 - [x] 07-01-PLAN.md — Missing seeders (GameResult, Dispute, AuditLog factories) [COMPLETE]
-- [ ] 07-02-PLAN.md — User and Tournament model tests
-- [ ] 07-03-PLAN.md — Event, Registration, TournamentAdmin model tests
+- [x] 07-02-PLAN.md — User and Tournament model tests [COMPLETE]
+- [x] 07-03-PLAN.md — Event, Registration, TournamentAdmin model tests [COMPLETE]
 - [ ] 07-04-PLAN.md — Match, MatchPlayer, GameResult model tests
 - [ ] 07-05-PLAN.md — Dispute, GuildConfig, AuditLog model tests
 
