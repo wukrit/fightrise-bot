@@ -3,7 +3,7 @@
  * Extends Playwright test with authentication helpers.
  */
 
-import { test as base, Page } from '@playwright/test';
+import { test as base, Page, expect, Locator } from '@playwright/test';
 import {
   createMockSession,
   MockSession,
@@ -11,8 +11,6 @@ import {
   setupUnauthenticatedState,
 } from './auth';
 
-// Re-export expect from playwright/test for convenience
-export { expect } from '@playwright/test';
 
 /**
  * Extended test context with authentication helpers.
