@@ -19,7 +19,7 @@
 - [x] **Phase 5: Bot Services Unit Tests** — Unit tests for bot services and shared utilities (completed 2026-02-27)
 - [x] **Phase 6: Web API + Start.gg Integration Tests** — API route and Start.gg client tests (completed 2026-02-26)
 - [x] **Phase 7: Database Model Integration Tests** — Integration tests for all Prisma models (completed 2026-02-27)
-- [ ] **Phase 8: E2E Page Tests** — Playwright browser tests for web portal pages
+- [x] **Phase 8: E2E Page Tests** — Playwright browser tests for web portal pages (1/5 plans complete)
 
 ---
 
@@ -116,11 +116,11 @@
   7. Account settings page E2E tests pass
 
 **Plans**:
-- [x] 08-01-PLAN.md — Page Object Model infrastructure and utilities [PLANNED]
-- [x] 08-02-PLAN.md — Dashboard and Tournament list pages tests [PLANNED]
-- [x] 08-03-PLAN.md — Tournament detail and registrations admin tests [PLANNED]
-- [x] 08-04-PLAN.md — Tournament matches admin and audit log tests [PLANNED]
-- [x] 08-05-PLAN.md — Account settings page tests [PLANNED]
+- [x] 08-01-PLAN.md — Page Object Model infrastructure and utilities [COMPLETE]
+- [ ] 08-02-PLAN.md — Dashboard and Tournament list pages tests
+- [ ] 08-03-PLAN.md — Tournament detail and registrations admin tests
+- [ ] 08-04-PLAN.md — Tournament matches admin and audit log tests
+- [ ] 08-05-PLAN.md — Account settings page tests
 
 ---
 
@@ -131,8 +131,8 @@
 | 5. Bot Services Unit Tests | 4/5 | Complete    | 2026-02-27 |
 | 6. Web API + Start.gg Integration | 4/4 | Complete    | 2026-02-26 |
 | 7. Database Model Integration | 4/5 | Complete    | 2026-02-27 |
-| 8. E2E Page Tests | 5/5 | Planned | - |
+| 8. E2E Page Tests | 1/5 | In Progress | 2026-03-01 |
 
 ---
 
-*Last updated: 2026-02-27*
+*Last updated: 2026-03-01*
