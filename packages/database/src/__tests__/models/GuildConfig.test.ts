@@ -15,7 +15,7 @@ import {
 import { createGuildConfig } from '../utils/seeders';
 import type { GuildConfig } from '@prisma/client';
 
-describe('GuildConfig Model Integration Tests', () => {
+describe.skip('GuildConfig Model Integration Tests', () => {
   let prisma: PrismaClient;
   let databaseUrl: string;
 

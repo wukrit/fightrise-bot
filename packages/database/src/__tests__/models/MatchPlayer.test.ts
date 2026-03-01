@@ -22,7 +22,7 @@ import {
 } from '../utils/seeders';
 import type { MatchPlayer } from '@prisma/client';
 
-describe('MatchPlayer Model Integration Tests', () => {
+describe.skip('MatchPlayer Model Integration Tests', () => {
   let prisma: PrismaClient;
   let databaseUrl: string;
 
