@@ -120,7 +120,7 @@
 - [x] 08-02-PLAN.md — Dashboard and Tournament list pages tests [COMPLETE]
 - [x] 08-03-PLAN.md — Tournament detail and registrations admin tests [COMPLETE]
 - [x] 08-04-PLAN.md — Tournament matches admin and audit log tests [COMPLETE]
-- [ ] 08-05-PLAN.md — Account settings page tests
+- [x] 08-05-PLAN.md — Account settings page tests [COMPLETE]
 
 ---
 
@@ -131,7 +131,7 @@
 | 5. Bot Services Unit Tests | 4/5 | Complete    | 2026-02-27 |
 | 6. Web API + Start.gg Integration | 4/4 | Complete    | 2026-02-26 |
 | 7. Database Model Integration | 4/5 | Complete    | 2026-02-27 |
-| 8. E2E Page Tests | 4/5 | In Progress | 2026-03-01 |
+| 8. E2E Page Tests | 5/5 | Complete    | 2026-03-01 |
 
 ---
 
