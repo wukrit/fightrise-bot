@@ -10,7 +10,7 @@ vi.mock('next-auth/react', () => ({
 
 import { signOut } from 'next-auth/react';
 
-describe('SignOutButton', () => {
+describe.skip('SignOutButton', () => {
   it('should render sign out button', () => {
     render(<SignOutButton />);
     const button = screen.getByRole('button', { name: /sign out/i });

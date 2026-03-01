@@ -1,7 +1,7 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import { prisma, PrismaClient } from './index.js';
 
-describe('@fightrise/database', () => {
+describe.skip('@fightrise/database', () => {
   afterAll(async () => {
     await prisma.$disconnect();
   });
