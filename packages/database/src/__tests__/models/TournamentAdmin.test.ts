@@ -15,7 +15,7 @@ import {
 import { createUser, createTournament, createTournamentAdmin } from '../utils/seeders';
 import type { TournamentAdmin } from '@prisma/client';
 
-describe.skip('TournamentAdmin Model Integration Tests', () => {
+describe('TournamentAdmin Model Integration Tests', () => {
   let prisma: PrismaClient;
   let databaseUrl: string;
 

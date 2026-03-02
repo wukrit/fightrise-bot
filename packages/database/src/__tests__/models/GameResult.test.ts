@@ -22,7 +22,7 @@ import {
 } from '../utils/seeders';
 import type { GameResult } from '@prisma/client';
 
-describe.skip('GameResult Model Integration Tests', () => {
+describe('GameResult Model Integration Tests', () => {
   let prisma: PrismaClient;
   let databaseUrl: string;
 

@@ -22,7 +22,7 @@
       "passThroughEnv": ["DATABASE_URL", "DISCORD_TOKEN", "DISCORD_CLIENT_ID", "DISCORD_CLIENT_SECRET", "STARTGG_API_KEY", "NEXTAUTH_SECRET", "NEXTAUTH_URL"]
     },
     "test:integration": {
-      "dependsOn": ["build"],
+      "dependsOn": ["^build"],
       "cache": false,
       "passThroughEnv": ["DATABASE_URL", "REDIS_URL", "DISCORD_TOKEN", "DISCORD_CLIENT_ID", "DISCORD_CLIENT_SECRET", "STARTGG_API_KEY", "NEXTAUTH_SECRET", "NEXTAUTH_URL"]
     },

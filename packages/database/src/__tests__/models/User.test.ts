@@ -15,7 +15,7 @@ import {
 import { createUser, createLinkedUser, createRegistration } from '../utils/seeders';
 import type { User, Tournament } from '@prisma/client';
 
-describe.skip('User Model Integration Tests', () => {
+describe('User Model Integration Tests', () => {
   let prisma: PrismaClient;
   let databaseUrl: string;
 

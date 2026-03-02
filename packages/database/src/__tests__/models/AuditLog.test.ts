@@ -16,7 +16,7 @@ import {
 import { createUser, createAuditLog, createTournament, createEvent, createMatch } from '../utils/seeders';
 import type { AuditLog } from '@prisma/client';
 
-describe.skip('AuditLog Model Integration Tests', () => {
+describe('AuditLog Model Integration Tests', () => {
   let prisma: PrismaClient;
   let databaseUrl: string;
 

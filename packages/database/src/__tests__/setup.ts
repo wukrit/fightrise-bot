@@ -9,13 +9,69 @@ let prisma: PrismaClient | null = null;
 
 /**
  * Starts a PostgreSQL container for integration tests.
- * Uses Testcontainers to spin up an isolated database instance.
+ * Uses Testcontainers to spin up an isolated database instance,
+ * OR uses an existing DATABASE_URL if provided (for CI environments).
  */
 export async function setupTestDatabase(): Promise<{
   prisma: PrismaClient;
   databaseUrl: string;
 }> {
-  // Start PostgreSQL container
+  // Check if DATABASE_URL is provided (CI or external test DB)
+  const providedDatabaseUrl = process.env.DATABASE_URL;
+
+  if (providedDatabaseUrl) {
+    // Use existing database (CI environment)
+    console.log('Using existing database from DATABASE_URL');
+
+    // Determine the database package directory based on where we're running from
+    let databasePackageDir = '';
+    const cwd = process.cwd();
+
+    // First try: running from apps/web
+    const webPath = path.join(cwd, '../../packages/database');
+    if (fs.existsSync(path.join(webPath, 'prisma/schema.prisma'))) {
+      databasePackageDir = webPath;
+    }
+    // Second try: running from packages/database
+    else if (fs.existsSync(path.join(cwd, 'prisma/schema.prisma'))) {
+      databasePackageDir = cwd;
+    }
+    // Third try: running from repo root
+    else if (fs.existsSync(path.join(cwd, 'packages/database/prisma/schema.prisma'))) {
+      databasePackageDir = path.join(cwd, 'packages/database');
+    }
+
+    if (!databasePackageDir) {
+      throw new Error(`Could not find database package directory. cwd=${cwd}`);
+    }
+
+    const schemaPath = path.join(databasePackageDir, 'prisma/schema.prisma');
+    console.log('Using schema path:', schemaPath);
+
+    // Push schema to existing test database
+    execSync(`npx prisma db push --skip-generate --schema=${schemaPath}`, {
+      env: {
+        ...process.env,
+        DATABASE_URL: providedDatabaseUrl,
+      },
+      cwd: databasePackageDir,
+      stdio: 'inherit',
+    });
+
+    // Create Prisma client connected to existing database
+    prisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: providedDatabaseUrl,
+        },
+      },
+    });
+
+    await prisma.$connect();
+    return { prisma, databaseUrl: providedDatabaseUrl };
+  }
+
+  // Start PostgreSQL container (local development)
   container = await new PostgreSqlContainer('postgres:15-alpine')
     .withDatabase('fightrise_test')
     .withUsername('test')

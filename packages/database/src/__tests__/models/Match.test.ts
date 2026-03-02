@@ -15,7 +15,7 @@ import {
 import { createTournament, createEvent, createMatch, createMatchPlayer, createUser } from '../utils/seeders';
 import type { Match } from '@prisma/client';
 
-describe.skip('Match Model Integration Tests', () => {
+describe('Match Model Integration Tests', () => {
   let prisma: PrismaClient;
   let databaseUrl: string;
 
