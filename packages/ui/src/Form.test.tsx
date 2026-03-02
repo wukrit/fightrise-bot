@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Form, FormField, FormGroup, FormActions } from './Form.js';
 
-describe.skip('Form', () => {
+describe('Form', () => {
   it('renders a form element with children', () => {
     render(
       <Form>
@@ -45,7 +45,7 @@ describe.skip('Form', () => {
   });
 });
 
-describe.skip('FormField', () => {
+describe('FormField', () => {
   it('renders label when provided', () => {
     render(
       <FormField label="Email">
@@ -93,7 +93,7 @@ describe.skip('FormField', () => {
   });
 });
 
-describe.skip('FormGroup', () => {
+describe('FormGroup', () => {
   it('renders label when provided', () => {
     render(
       <FormGroup label="Personal Info">
@@ -114,7 +114,7 @@ describe.skip('FormGroup', () => {
   });
 });
 
-describe.skip('FormActions', () => {
+describe('FormActions', () => {
   it('renders children', () => {
     render(
       <FormActions>

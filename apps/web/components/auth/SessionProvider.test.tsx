@@ -8,7 +8,7 @@ vi.mock('next-auth/react', () => ({
   SessionProvider: vi.fn(({ children }) => children),
 }));
 
-describe.skip('SessionProvider', () => {
+describe('SessionProvider', () => {
   it('should render children', () => {
     const { container } = render(
       <SessionProvider>

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { PageWrapper, PageSection, PageGrid } from './PageWrapper.js';
 
-describe.skip('PageWrapper', () => {
+describe('PageWrapper', () => {
   it('renders page title', () => {
     render(<PageWrapper title="My Page">Content</PageWrapper>);
     expect(screen.getByText('My Page')).toBeInTheDocument();
@@ -55,7 +55,7 @@ describe.skip('PageWrapper', () => {
   });
 });
 
-describe.skip('PageSection', () => {
+describe('PageSection', () => {
   it('renders section title when provided', () => {
     render(
       <PageSection title="Section Title">
@@ -95,7 +95,7 @@ describe.skip('PageSection', () => {
   });
 });
 
-describe.skip('PageGrid', () => {
+describe('PageGrid', () => {
   it('renders children', () => {
     render(
       <PageGrid>

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { DiscordIcon } from './DiscordIcon.js';
 
-describe.skip('DiscordIcon', () => {
+describe('DiscordIcon', () => {
   it('renders an SVG element', () => {
     render(<DiscordIcon />);
     const svg = document.querySelector('svg');

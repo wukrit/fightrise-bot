@@ -3,34 +3,46 @@ import { GraphQLClient } from 'graphql-request';
 import { StartGGClient } from './index.js';
 
 // Mock graphql-request
-vi.mock('graphql-request', () => ({
-  GraphQLClient: vi.fn(() => ({
-    request: vi.fn(),
-  })),
-  ClientError: class ClientError extends Error {
-    response: { status: number; errors?: Array<{ message: string }> };
-    constructor(
-      response: { status: number; errors?: Array<{ message: string }> },
-      request: unknown
-    ) {
-      super('GraphQL Error');
-      this.response = response;
-    }
-  },
-}));
+vi.mock('graphql-request', () => {
+  const mockRequest = vi.fn();
+  return {
+    GraphQLClient: vi.fn(() => ({
+      request: mockRequest,
+    })),
+    ClientError: class ClientError extends Error {
+      response: { status: number; errors?: Array<{ message: string }> };
+      constructor(
+        response: { status: number; errors?: Array<{ message: string }> },
+        request: unknown
+      ) {
+        super('GraphQL Error');
+        this.response = response;
+      }
+    },
+    __mockRequest: mockRequest,
+  };
+});
 
 // Cast GraphQLClient to access mock
 const mockedGraphQLClient = GraphQLClient as ReturnType<typeof vi.fn>;
 
-describe.skip('StartGGClient', () => {
+// Get the mockRequest from the mocked module
+const getMockRequest = () => {
+  const mock = mockedGraphQLClient.mock;
+  if (mock.results.length > 0) {
+    return mock.results[0]?.value?.request;
+  }
+  return null;
+};
+
+describe('StartGGClient', () => {
   let client: StartGGClient;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let mockRequest: any;
+  let mockRequest: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     client = new StartGGClient({ apiKey: 'test-api-key' });
-    mockRequest = mockedGraphQLClient.mock.results[0].value().request;
+    mockRequest = getMockRequest() || vi.fn();
   });
 
   describe('constructor', () => {
@@ -255,17 +267,13 @@ describe.skip('StartGGClient', () => {
         cache: { enabled: true },
       });
 
-      // Use static import
-      const cachedMockRequest = (
-        GraphQLClient as unknown as ReturnType<typeof vi.fn>
-      ).mock.results[1].value.request;
-
-      cachedMockRequest.mockResolvedValue({ reportBracketSet: { id: '1', state: 3 } });
+      // Use shared mock
+      mockRequest.mockResolvedValue({ reportBracketSet: { id: '1', state: 3 } });
 
       await clientWithCache.dqEntrant('1', '2');
       await clientWithCache.dqEntrant('1', '2');
 
-      expect(cachedMockRequest).toHaveBeenCalledTimes(2);
+      expect(mockRequest).toHaveBeenCalledTimes(2);
     });
 
     it('should invalidate event sets cache after DQ', async () => {
@@ -274,34 +282,30 @@ describe.skip('StartGGClient', () => {
         cache: { enabled: true },
       });
 
-      // Use static import
-      const cachedMockRequest = (
-        GraphQLClient as unknown as ReturnType<typeof vi.fn>
-      ).mock.results[1].value.request;
-
-      cachedMockRequest.mockResolvedValue({ reportBracketSet: { id: '1', state: 3 } });
+      // Use shared mock
+      mockRequest.mockResolvedValue({ reportBracketSet: { id: '1', state: 3 } });
 
       // First, populate cache with getEventSets
-      cachedMockRequest.mockResolvedValueOnce({
+      mockRequest.mockResolvedValueOnce({
         event: { sets: { pageInfo: { total: 1 }, nodes: [] } },
       });
       await clientWithCache.getEventSets('event-1');
 
       // Verify cache is populated (1 call)
-      expect(cachedMockRequest).toHaveBeenCalledTimes(1);
+      expect(mockRequest).toHaveBeenCalledTimes(1);
 
       // Then DQ - this should invalidate cache
-      cachedMockRequest.mockResolvedValueOnce({ reportBracketSet: { id: '1', state: 3 } });
+      mockRequest.mockResolvedValueOnce({ reportBracketSet: { id: '1', state: 3 } });
       await clientWithCache.dqEntrant('1', '2');
 
       // Next getEventSets should not use cache (2 more calls: one for getEventSets and one for dqEntrant)
-      cachedMockRequest.mockResolvedValueOnce({
+      mockRequest.mockResolvedValueOnce({
         event: { sets: { pageInfo: { total: 1 }, nodes: [] } },
       });
       await clientWithCache.getEventSets('event-1');
 
       // Should have called the mock again (total: 3 calls = 1 initial + 1 dq + 1 after dq)
-      expect(cachedMockRequest).toHaveBeenCalledTimes(3);
+      expect(mockRequest).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -313,19 +317,19 @@ describe.skip('StartGGClient', () => {
       });
 
       // Use static import
-      const cachedMockRequest = (
+      const mockRequest = (
         GraphQLClient as unknown as ReturnType<typeof vi.fn>
       ).mock.results[1].value.request;
 
       const mockTournament = { id: '1', name: 'Test', events: [] };
-      cachedMockRequest.mockResolvedValue({ tournament: mockTournament });
+      mockRequest.mockResolvedValue({ tournament: mockTournament });
 
       // First call
       await clientWithCache.getTournament('test');
       // Second call should use cache
       await clientWithCache.getTournament('test');
 
-      expect(cachedMockRequest).toHaveBeenCalledTimes(1);
+      expect(mockRequest).toHaveBeenCalledTimes(1);
     });
 
     it('should not cache mutations', async () => {
@@ -334,17 +338,13 @@ describe.skip('StartGGClient', () => {
         cache: { enabled: true },
       });
 
-      // Use static import
-      const cachedMockRequest = (
-        GraphQLClient as unknown as ReturnType<typeof vi.fn>
-      ).mock.results[1].value.request;
-
-      cachedMockRequest.mockResolvedValue({ reportBracketSet: { id: '1', state: 3 } });
+      // Use shared mock
+      mockRequest.mockResolvedValue({ reportBracketSet: { id: '1', state: 3 } });
 
       await clientWithCache.reportSet('1', '2');
       await clientWithCache.reportSet('1', '2');
 
-      expect(cachedMockRequest).toHaveBeenCalledTimes(2);
+      expect(mockRequest).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -366,18 +366,14 @@ describe.skip('StartGGClient', () => {
         cache: { enabled: true },
       });
 
-      // Use static import
-      const cachedMockRequest = (
-        GraphQLClient as unknown as ReturnType<typeof vi.fn>
-      ).mock.results[1].value.request;
-
-      cachedMockRequest.mockResolvedValue({ tournament: { id: '1' } });
+      // Use shared mock
+      mockRequest.mockResolvedValue({ tournament: { id: '1' } });
 
       await clientWithCache.getTournament('test');
       clientWithCache.invalidateCache('getTournament');
       await clientWithCache.getTournament('test');
 
-      expect(cachedMockRequest).toHaveBeenCalledTimes(2);
+      expect(mockRequest).toHaveBeenCalledTimes(2);
     });
   });
 });

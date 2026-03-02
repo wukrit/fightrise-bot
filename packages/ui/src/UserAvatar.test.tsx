@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import { UserAvatar } from './UserAvatar.js';
 
-describe.skip('UserAvatar', () => {
+describe('UserAvatar', () => {
   it('renders an img element with src and alt', () => {
     const { container } = render(
       <UserAvatar src="https://example.com/avatar.png" alt="User avatar" />
