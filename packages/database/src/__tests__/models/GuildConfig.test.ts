@@ -7,13 +7,9 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { PrismaClient } from '@prisma/client';
-import {
-  setupTestDatabase,
-  teardownTestDatabase,
-  clearTestDatabase,
-} from '../setup';
 import { createGuildConfig } from '../utils/seeders';
-import { getTestDatabaseUrl } from '../utils/test-env';
+import { createTestPrisma, clearDatabase } from '../utils/test-setup';
+
 import type { GuildConfig } from '@prisma/client';
 
 describe('GuildConfig Model Integration Tests', () => {
@@ -21,17 +17,17 @@ describe('GuildConfig Model Integration Tests', () => {
   let databaseUrl: string;
 
   beforeAll(async () => {
-    const setup = await setupTestDatabase(getTestDatabaseUrl());
+    const setup = await createTestPrisma();
     prisma = setup.prisma;
     databaseUrl = setup.databaseUrl;
   });
 
   afterAll(async () => {
-    await teardownTestDatabase();
+    await prisma?.$disconnect();
   });
 
   beforeEach(async () => {
-    await clearTestDatabase(prisma);
+    await clearDatabase(prisma);
   });
 
   describe('GuildConfig Create Operations', () => {

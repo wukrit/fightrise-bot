@@ -7,13 +7,9 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { PrismaClient, AdminRole } from '@prisma/client';
-import {
-  setupTestDatabase,
-  teardownTestDatabase,
-  clearTestDatabase,
-} from '../setup';
+import { createTestPrisma, clearDatabase } from '../utils/test-setup';
 import { createUser, createTournament, createTournamentAdmin } from '../utils/seeders';
-import { getTestDatabaseUrl } from '../utils/test-env';
+import { createTestPrisma, clearDatabase } from '../utils/test-setup';
 import type { TournamentAdmin } from '@prisma/client';
 
 describe('TournamentAdmin Model Integration Tests', () => {
@@ -21,17 +17,17 @@ describe('TournamentAdmin Model Integration Tests', () => {
   let databaseUrl: string;
 
   beforeAll(async () => {
-    const setup = await setupTestDatabase(getTestDatabaseUrl());
+    const setup = await createTestPrisma();
     prisma = setup.prisma;
     databaseUrl = setup.databaseUrl;
   });
 
   afterAll(async () => {
-    await teardownTestDatabase();
+    await prisma?.$disconnect();
   });
 
   beforeEach(async () => {
-    await clearTestDatabase(prisma);
+    await clearDatabase(prisma);
   });
 
   describe('TournamentAdmin Create Operations', () => {
