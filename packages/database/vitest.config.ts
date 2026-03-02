@@ -6,6 +6,7 @@ export default defineConfig({
     include: ['src/**/*.test.ts'],
     exclude: ['src/__tests__/integration/**', 'src/__tests__/smoke/**'],
     globals: true,
+    pool: 'vmForks',
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

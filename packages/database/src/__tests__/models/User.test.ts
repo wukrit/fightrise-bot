@@ -7,11 +7,7 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { PrismaClient } from '@prisma/client';
-import {
-  setupTestDatabase,
-  teardownTestDatabase,
-  clearTestDatabase,
-} from '../setup';
+import { createTestPrisma, clearDatabase } from '../utils/test-setup';
 import { createUser, createLinkedUser, createRegistration } from '../utils/seeders';
 import type { User, Tournament } from '@prisma/client';
 
@@ -20,17 +16,17 @@ describe('User Model Integration Tests', () => {
   let databaseUrl: string;
 
   beforeAll(async () => {
-    const setup = await setupTestDatabase();
+    const setup = await createTestPrisma();
     prisma = setup.prisma;
     databaseUrl = setup.databaseUrl;
   });
 
   afterAll(async () => {
-    await teardownTestDatabase();
+    await prisma?.$disconnect();
   });
 
   beforeEach(async () => {
-    await clearTestDatabase(prisma);
+    await clearDatabase(prisma);
   });
 
   describe('User Create Operations', () => {

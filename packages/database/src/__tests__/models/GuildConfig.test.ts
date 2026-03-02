@@ -13,6 +13,7 @@ import {
   clearTestDatabase,
 } from '../setup';
 import { createGuildConfig } from '../utils/seeders';
+import { getTestDatabaseUrl } from '../utils/test-env';
 import type { GuildConfig } from '@prisma/client';
 
 describe('GuildConfig Model Integration Tests', () => {
@@ -20,7 +21,7 @@ describe('GuildConfig Model Integration Tests', () => {
   let databaseUrl: string;
 
   beforeAll(async () => {
-    const setup = await setupTestDatabase();
+    const setup = await setupTestDatabase(getTestDatabaseUrl());
     prisma = setup.prisma;
     databaseUrl = setup.databaseUrl;
   });

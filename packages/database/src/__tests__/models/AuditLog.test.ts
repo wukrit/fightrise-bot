@@ -14,6 +14,7 @@ import {
   clearTestDatabase,
 } from '../setup';
 import { createUser, createAuditLog, createTournament, createEvent, createMatch } from '../utils/seeders';
+import { getTestDatabaseUrl } from '../utils/test-env';
 import type { AuditLog } from '@prisma/client';
 
 describe('AuditLog Model Integration Tests', () => {
@@ -21,7 +22,7 @@ describe('AuditLog Model Integration Tests', () => {
   let databaseUrl: string;
 
   beforeAll(async () => {
-    const setup = await setupTestDatabase();
+    const setup = await setupTestDatabase(getTestDatabaseUrl());
     prisma = setup.prisma;
     databaseUrl = setup.databaseUrl;
   });

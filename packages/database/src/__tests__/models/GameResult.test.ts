@@ -20,6 +20,7 @@ import {
   createMatchPlayer,
   createGameResult,
 } from '../utils/seeders';
+import { getTestDatabaseUrl } from '../utils/test-env';
 import type { GameResult } from '@prisma/client';
 
 describe('GameResult Model Integration Tests', () => {
@@ -27,7 +28,7 @@ describe('GameResult Model Integration Tests', () => {
   let databaseUrl: string;
 
   beforeAll(async () => {
-    const setup = await setupTestDatabase();
+    const setup = await setupTestDatabase(getTestDatabaseUrl());
     prisma = setup.prisma;
     databaseUrl = setup.databaseUrl;
   });

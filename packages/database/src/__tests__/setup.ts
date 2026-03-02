@@ -11,15 +11,21 @@ let prisma: PrismaClient | null = null;
  * Starts a PostgreSQL container for integration tests.
  * Uses Testcontainers to spin up an isolated database instance,
  * OR uses an existing DATABASE_URL if provided (for CI environments).
+ *
+ * @param overrideUrl - Optional DATABASE_URL to use (useful when env var isn't passed to worker)
  */
-export async function setupTestDatabase(): Promise<{
+export async function setupTestDatabase(overrideUrl?: string): Promise<{
   prisma: PrismaClient;
   databaseUrl: string;
 }> {
-  // Check if DATABASE_URL is provided (CI or external test DB)
-  const providedDatabaseUrl = process.env.DATABASE_URL;
+  // IMMEDIATE LOG - this should appear first
+  process.stderr.write('[setupTestDatabase] FUNCTION STARTED\n');
+
+  // Check for override or environment variable
+  const providedDatabaseUrl = overrideUrl || process.env.DATABASE_URL;
 
   if (providedDatabaseUrl) {
+    process.stderr.write('[setupTestDatabase] URL FOUND, using it\n');
     // Use existing database (CI environment)
     console.log('Using existing database from DATABASE_URL');
 

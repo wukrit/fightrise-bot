@@ -13,6 +13,7 @@ import {
   clearTestDatabase,
 } from '../setup';
 import { createTournament, createEvent } from '../utils/seeders';
+import { getTestDatabaseUrl } from '../utils/test-env';
 import type { Event } from '@prisma/client';
 
 describe('Event Model Integration Tests', () => {
@@ -20,7 +21,7 @@ describe('Event Model Integration Tests', () => {
   let databaseUrl: string;
 
   beforeAll(async () => {
-    const setup = await setupTestDatabase();
+    const setup = await setupTestDatabase(getTestDatabaseUrl());
     prisma = setup.prisma;
     databaseUrl = setup.databaseUrl;
   });

@@ -13,6 +13,7 @@ import {
   clearTestDatabase,
 } from '../setup';
 import { createUser, createTournament, createEvent, createMatch, createDispute } from '../utils/seeders';
+import { getTestDatabaseUrl } from '../utils/test-env';
 import type { Dispute } from '@prisma/client';
 
 describe('Dispute Model Integration Tests', () => {
@@ -20,7 +21,7 @@ describe('Dispute Model Integration Tests', () => {
   let databaseUrl: string;
 
   beforeAll(async () => {
-    const setup = await setupTestDatabase();
+    const setup = await setupTestDatabase(getTestDatabaseUrl());
     prisma = setup.prisma;
     databaseUrl = setup.databaseUrl;
   });

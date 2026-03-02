@@ -20,6 +20,7 @@ import {
   createMatchPlayer,
   createCheckedInPlayer,
 } from '../utils/seeders';
+import { getTestDatabaseUrl } from '../utils/test-env';
 import type { MatchPlayer } from '@prisma/client';
 
 describe('MatchPlayer Model Integration Tests', () => {
@@ -27,7 +28,7 @@ describe('MatchPlayer Model Integration Tests', () => {
   let databaseUrl: string;
 
   beforeAll(async () => {
-    const setup = await setupTestDatabase();
+    const setup = await setupTestDatabase(getTestDatabaseUrl());
     prisma = setup.prisma;
     databaseUrl = setup.databaseUrl;
   });
