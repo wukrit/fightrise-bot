@@ -155,7 +155,12 @@ jobs:
           DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
 
       - name: Run unit tests
-        run: npx turbo test --filter='!@fightrise/ui'
+        run: |
+          npm run test --workspace=@fightrise/database
+          npm run test --workspace=@fightrise/shared
+          npm run test --workspace=@fightrise/startgg-client
+          npm run test --workspace=@fightrise/bot
+          npm run test --workspace=@fightrise/web
         env:
           CI: 'true'
           DATABASE_URL: 'postgresql://test:test@localhost:5432/test'
