@@ -107,7 +107,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Start services
-        run: docker compose --env-file .env -f docker/docker-compose.dev.yml up -d infra
+        run: docker compose --env-file .env -f docker/docker-compose.dev.yml up -d postgres redis
 
       - name: Run unit tests
         run: docker compose --env-file .env -f docker/docker-compose.dev.yml exec web npm run test
@@ -129,7 +129,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Start services
-        run: docker compose --env-file .env -f docker/docker-compose.dev.yml up -d infra
+        run: docker compose --env-file .env -f docker/docker-compose.dev.yml up -d postgres redis
 
       - name: Run integration tests
         run: docker compose --env-file .env -f docker/docker-compose.dev.yml exec web npm run test:integration
