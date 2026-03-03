@@ -33,7 +33,7 @@ export const defaultMockUser: MockSession['user'] = {
   discordUsername: 'TestPlayer',
   discordAvatar: null,
   name: 'TestPlayer',
-  email: null,
+  email: 'testplayer@example.com',
   image: null,
 };
 
