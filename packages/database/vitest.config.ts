@@ -6,7 +6,15 @@ export default defineConfig({
     include: ['src/**/*.test.ts'],
     exclude: ['src/__tests__/integration/**', 'src/__tests__/smoke/**'],
     globals: true,
-    pool: 'vmForks',
+    // Disable file parallelism to avoid database deadlocks
+    // Multiple parallel tests truncating tables simultaneously causes race conditions
+    fileParallelism: false,
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

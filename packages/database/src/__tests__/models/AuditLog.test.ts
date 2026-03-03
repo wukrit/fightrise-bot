@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-} from '../utils/test-setup';
+import { PrismaClient, AuditAction, AuditSource } from '@prisma/client';
 import { createUser, createAuditLog, createTournament, createEvent, createMatch } from '../utils/seeders';
 import { createTestPrisma, clearDatabase } from '../utils/test-setup';
 
