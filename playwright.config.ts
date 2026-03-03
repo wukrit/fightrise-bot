@@ -86,6 +86,7 @@ export default defineConfig({
         stderr: 'pipe',
         env: {
           NODE_ENV: 'test',
+          E2E_AUTH_BYPASS: 'true',
           NEXTAUTH_SECRET: 'test-nextauth-secret',
           NEXTAUTH_URL: 'http://localhost:3000',
           DISCORD_CLIENT_ID: 'dummy-client-id',
