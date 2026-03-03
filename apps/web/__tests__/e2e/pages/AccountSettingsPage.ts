@@ -127,6 +127,13 @@ export class AccountSettingsPage extends BasePage {
   }
 
   /**
+   * Check if Disconnect Discord button is visible (already connected).
+   */
+  async hasDisconnectDiscordButton(): Promise<boolean> {
+    return await this.discordDisconnectButton.isVisible().catch(() => false);
+  }
+
+  /**
    * Click Connect Discord button.
    */
   async clickConnectDiscord(): Promise<void> {
