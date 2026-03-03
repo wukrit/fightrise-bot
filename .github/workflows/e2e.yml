@@ -101,7 +101,6 @@ jobs:
   e2e-web:
     name: E2E Tests (Web)
     runs-on: ubuntu-latest
-    if: false  # Skip - tests timeout in CI, need investigation
     timeout-minutes: 30
     services:
       postgres:
