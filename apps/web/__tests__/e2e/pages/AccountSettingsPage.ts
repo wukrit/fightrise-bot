@@ -91,7 +91,7 @@ export class AccountSettingsPage extends BasePage {
    * Navigate to account settings page.
    */
   async goto(): Promise<void> {
-    await this.goto('/account');
+    await super.goto('/account');
     await this.waitForLoad();
   }
 
