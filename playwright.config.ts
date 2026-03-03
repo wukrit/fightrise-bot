@@ -91,7 +91,7 @@ export default defineConfig({
           NEXTAUTH_URL: 'http://localhost:3000',
           DISCORD_CLIENT_ID: 'dummy-client-id',
           DISCORD_CLIENT_SECRET: 'dummy-client-secret',
-          DATABASE_URL: 'postgresql://fightrise:devpassword@localhost:5432/fightrise',
+          DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
           REDIS_URL: 'redis://localhost:6379',
         },
       },
