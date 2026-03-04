@@ -222,10 +222,12 @@ export function createAuthTestContext(page: Page): AuthTestContext {
  */
 export async function generateNextAuthToken(
   session: MockSession,
-  secret = 'test-nextauth-secret'
+  secret?: string
 ): Promise<string> {
+  // Use environment variable if available, otherwise fall back to test secret
+  const effectiveSecret = secret || process.env.NEXTAUTH_SECRET || 'test-nextauth-secret';
   const encoder = new TextEncoder();
-  const secretKey = encoder.encode(secret);
+  const secretKey = encoder.encode(effectiveSecret);
 
   const now = Math.floor(Date.now() / 1000);
   const exp = Math.floor(new Date(session.expires).getTime() / 1000);
@@ -265,9 +267,11 @@ export async function generateNextAuthToken(
 export async function setSessionCookie(
   page: Page,
   session: MockSession = createMockSession(),
-  secret = 'test-nextauth-secret'
+  secret?: string
 ): Promise<void> {
-  const token = await generateNextAuthToken(session, secret);
+  // Use environment variable if available, otherwise fall back to test secret
+  const effectiveSecret = secret || process.env.NEXTAUTH_SECRET || 'test-nextauth-secret';
+  const token = await generateNextAuthToken(session, effectiveSecret);
 
   const cookie: Cookie = {
     name: 'next-auth.session-token',
