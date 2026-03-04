@@ -88,6 +88,8 @@ function LinkedAccount({
   avatar,
   action,
   actionLabel,
+  disconnectAction,
+  disconnectLabel,
 }: {
   provider: string;
   connected: boolean;
@@ -95,6 +97,8 @@ function LinkedAccount({
   avatar?: string | null;
   action?: () => void;
   actionLabel?: string;
+  disconnectAction?: () => void;
+  disconnectLabel?: string;
 }) {
   return (
     <div className="flex items-center justify-between py-3">
@@ -114,7 +118,18 @@ function LinkedAccount({
         </div>
       </div>
       {connected ? (
-        <span className="text-xs text-emerald-400 font-medium">Connected</span>
+        disconnectAction && disconnectLabel ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={disconnectAction}
+            style={{ padding: '6px 12px', fontSize: '12px' }}
+          >
+            {disconnectLabel}
+          </Button>
+        ) : (
+          <span className="text-xs text-emerald-400 font-medium">Connected</span>
+        )
       ) : action && actionLabel ? (
         <Button
           variant="secondary"
@@ -487,6 +502,8 @@ export function AccountContent({ user: initialUser, tournaments: initialTourname
                   connected={true}
                   username={user.discordUsername}
                   avatar={user.discordAvatar}
+                  disconnectLabel="Disconnect"
+                  disconnectAction={() => console.log('Disconnect Discord')}
                 />
                 <LinkedAccount
                   provider="Start.gg"
@@ -494,6 +511,8 @@ export function AccountContent({ user: initialUser, tournaments: initialTourname
                   username={user.startggGamerTag || undefined}
                   actionLabel="Connect"
                   action={() => console.log('Link Start.gg')}
+                  disconnectLabel="Disconnect"
+                  disconnectAction={() => console.log('Disconnect Start.gg')}
                 />
               </div>
             </SectionCard>

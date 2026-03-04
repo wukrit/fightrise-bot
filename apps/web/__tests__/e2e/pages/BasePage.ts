@@ -9,16 +9,27 @@ export abstract class BasePage {
   protected page: Page;
   protected baseURL: string;
 
-  constructor(page: Page, baseURL = 'http://localhost:3000') {
+  constructor(page: Page, baseURL?: string) {
     this.page = page;
-    this.baseURL = baseURL;
+    this.baseURL = baseURL || 'http://localhost:3000'; // Will be resolved at runtime in goto()
+  }
+
+  /**
+   * Get the effective base URL at runtime.
+   */
+  protected getEffectiveBaseURL(): string {
+    // Check if provided in constructor first, then environment variable, then default
+    if (this.baseURL !== 'http://localhost:3000') {
+      return this.baseURL;
+    }
+    return process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
   }
 
   /**
    * Navigate to a path within the app.
    */
   async goto(path: string): Promise<void> {
-    const url = path.startsWith('http') ? path : `${this.baseURL}${path}`;
+    const url = path.startsWith('http') ? path : `${this.getEffectiveBaseURL()}${path}`;
     await this.page.goto(url);
   }
 
