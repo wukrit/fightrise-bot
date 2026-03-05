@@ -7,6 +7,9 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './apps/web/__tests__/e2e',
 
+  // Global setup runs before any tests
+  globalSetup: './apps/web/__tests__/e2e/global-setup.ts',
+
   // Run tests in parallel
   fullyParallel: true,
 
@@ -28,7 +31,8 @@ export default defineConfig({
   // Shared settings for all projects
   use: {
     // Base URL to use in actions like `await page.goto('/')`
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
+    // Default to localhost:4000 which is where the Docker web container runs
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:4000',
 
     // Collect trace when retrying the failed test
     trace: 'on-first-retry',
@@ -38,61 +42,34 @@ export default defineConfig({
   },
 
   // Configure projects for major browsers
-  // Use --project=chromium (or CI environment variable) to run specific browsers
-  projects: process.env.CI
-    ? [
-        {
-          name: 'chromium',
-          use: { ...devices['Desktop Chrome'] },
-        },
-      ]
-    : [
-        {
-          name: 'chromium',
-          use: { ...devices['Desktop Chrome'] },
-        },
-        {
-          name: 'firefox',
-          use: { ...devices['Desktop Firefox'] },
-        },
-        {
-          name: 'webkit',
-          use: { ...devices['Desktop Safari'] },
-        },
-        // Mobile viewports
-        {
-          name: 'Mobile Chrome',
-          use: { ...devices['Pixel 5'] },
-        },
-        {
-          name: 'Mobile Safari',
-          use: { ...devices['iPhone 12'] },
-        },
-      ],
+  // Only chromium is installed in the Docker container
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+  ],
 
   // Run local dev server before starting the tests
-  webServer: process.env.USE_EXISTING_SERVER
-    ? undefined
-    : {
-        // Use production mode in CI (already built), dev mode locally
-        command: process.env.CI
-          ? 'npm run start --prefix apps/web'
-          : 'cd apps/web && npx next dev -p 3000',
+  // Only start a server if USE_EXISTING_SERVER is explicitly set to false
+  webServer: process.env.USE_EXISTING_SERVER === 'false'
+    ? {
+        command: 'cd apps/web && npx next dev -p 3000',
         url: 'http://localhost:3000',
-        reuseExistingServer: !process.env.CI,
-        timeout: 120 * 1000, // 2 minutes for Next.js to start
-        // Capture stdout/stderr for debugging
+        reuseExistingServer: false,
+        timeout: 120 * 1000,
         stdout: 'pipe',
         stderr: 'pipe',
         env: {
           NODE_ENV: 'test',
           E2E_AUTH_BYPASS: 'true',
-          NEXTAUTH_SECRET: 'test-nextauth-secret',
+          NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || 'test-nextauth-secret',
           NEXTAUTH_URL: 'http://localhost:3000',
-          DISCORD_CLIENT_ID: 'dummy-client-id',
-          DISCORD_CLIENT_SECRET: 'dummy-client-secret',
-          DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
-          REDIS_URL: 'redis://localhost:6379',
+          DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID || 'dummy-client-id',
+          DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET || 'dummy-client-secret',
+          DATABASE_URL: process.env.DATABASE_URL,
+          REDIS_URL: process.env.REDIS_URL,
         },
-      },
+      }
+    : undefined,
 });

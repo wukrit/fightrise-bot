@@ -111,7 +111,8 @@ services:
     container_name: fightrise-web
     environment:
       DATABASE_URL: postgresql://fightrise:${DB_PASSWORD:-devpassword}@postgres:5432/fightrise
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:4000}
+      # Always use localhost for dev - E2E tests depend on this
+      NEXTAUTH_URL: http://localhost:4000
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-dev-secret-change-in-production}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
       DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}

@@ -273,11 +273,13 @@ export async function setSessionCookie(
   const effectiveSecret = secret || process.env.NEXTAUTH_SECRET || 'test-nextauth-secret';
   const token = await generateNextAuthToken(session, effectiveSecret);
 
+  // Use URL to automatically set domain/path - required by Playwright
+  // The baseURL from test config determines the cookie scope
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
   const cookie: Cookie = {
     name: 'next-auth.session-token',
     value: token,
-    domain: 'localhost',
-    path: '/',
+    url: baseURL,
     expires: Math.floor(new Date(session.expires).getTime() / 1000),
     httpOnly: true,
     secure: false, // localhost is not secure
