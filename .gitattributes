@@ -1,0 +1,5 @@
+# Environment files - exclude from language stats, mark as generated
+.env               linguist-generated
+.env.*             linguist-generated
+*.env              linguist-generated
+*.env.*            linguist-generated

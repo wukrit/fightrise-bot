@@ -1,0 +1,65 @@
+#!/bin/sh
+# Run basic secret detection before commit
+# This is a simple check - for more thorough scanning, install detect-secrets
+
+echo "Running pre-commit secret detection..."
+
+# Get list of staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+# Check each staged file for potential secrets
+FOUND_SECRET=0
+for file in $STAGED_FILES; do
+    # Skip binary files and generated files
+    if file "$file" | grep -q "binary"; then
+        continue
+    fi
+
+    # Skip .env files (they're in gitignore but just in case)
+    if echo "$file" | grep -qE "^\.env"; then
+        echo "WARNING: Attempting to commit .env file: $file"
+        FOUND_SECRET=1
+    fi
+
+    # Check for secret patterns in text files
+    # Skip .husky files (the hook itself contains patterns for detection)
+    if echo "$file" | grep -qE "^\.husky"; then
+        continue
+    fi
+
+    # Use grep to check for various secret patterns
+    if grep -qE "-----BEGIN.*PRIVATE KEY" "$file" 2>/dev/null; then
+        echo "WARNING: Potential private key found in $file"
+        FOUND_SECRET=1
+    fi
+    if grep -qE "AKIA[0-9A-Z]{16}" "$file" 2>/dev/null; then
+        echo "WARNING: Potential AWS key found in $file"
+        FOUND_SECRET=1
+    fi
+    if grep -qE "sk-[a-zA-Z0-9]{20,}" "$file" 2>/dev/null; then
+        echo "WARNING: Potential API key found in $file"
+        FOUND_SECRET=1
+    fi
+    if grep -qE "ghp_[a-zA-Z0-9]{36}" "$file" 2>/dev/null; then
+        echo "WARNING: Potential GitHub token found in $file"
+        FOUND_SECRET=1
+    fi
+    if grep -qE "gho_[a-zA-Z0-9]{36}" "$file" 2>/dev/null; then
+        echo "WARNING: Potential GitHub OAuth token found in $file"
+        FOUND_SECRET=1
+    fi
+    if grep -qE "glpat-[a-zA-Z0-9\-]{20,}" "$file" 2>/dev/null; then
+        echo "WARNING: Potential GitLab token found in $file"
+        FOUND_SECRET=1
+    fi
+done
+
+if [ $FOUND_SECRET -eq 1 ]; then
+    echo ""
+    echo "ERROR: Potential secrets detected in staged files!"
+    echo "Please review and remove any secrets before committing."
+    exit 1
+fi
+
+echo "No obvious secrets detected in staged files."
+exit 0
