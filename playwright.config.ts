@@ -51,25 +51,23 @@ export default defineConfig({
   ],
 
   // Run local dev server before starting the tests
-  // Only start a server if USE_EXISTING_SERVER is explicitly set to false
-  webServer: process.env.USE_EXISTING_SERVER === 'false'
-    ? {
-        command: 'cd apps/web && npx next dev -p 3000',
-        url: 'http://localhost:3000',
-        reuseExistingServer: false,
-        timeout: 120 * 1000,
-        stdout: 'pipe',
-        stderr: 'pipe',
-        env: {
-          NODE_ENV: 'test',
-          E2E_AUTH_BYPASS: 'true',
-          NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || 'test-nextauth-secret',
-          NEXTAUTH_URL: 'http://localhost:3000',
-          DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID || 'dummy-client-id',
-          DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET || 'dummy-client-secret',
-          DATABASE_URL: process.env.DATABASE_URL,
-          REDIS_URL: process.env.REDIS_URL,
-        },
-      }
-    : undefined,
+  // Starts by default, use USE_EXISTING_SERVER=true to reuse an existing server
+  webServer: {
+    command: 'cd apps/web && npx next dev -p 3000',
+    url: 'http://localhost:3000',
+    reuseExistingServer: process.env.USE_EXISTING_SERVER === 'true',
+    timeout: 120 * 1000,
+    stdout: 'pipe',
+    stderr: 'pipe',
+    env: {
+      NODE_ENV: 'test',
+      E2E_AUTH_BYPASS: 'true',
+      NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || 'test-nextauth-secret',
+      NEXTAUTH_URL: 'http://localhost:3000',
+      DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID || 'dummy-client-id',
+      DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET || 'dummy-client-secret',
+      DATABASE_URL: process.env.DATABASE_URL,
+      REDIS_URL: process.env.REDIS_URL,
+    },
+  },
 });
