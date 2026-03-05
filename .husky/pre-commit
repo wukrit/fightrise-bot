@@ -16,7 +16,8 @@ for file in $STAGED_FILES; do
     fi
 
     # Skip .env files (they're in gitignore but just in case)
-    if echo "$file" | grep -qE "^\.env"; then
+    # Allow .env.example as it's a template without real secrets
+    if echo "$file" | grep -qE "^\.env$"; then
         echo "WARNING: Attempting to commit .env file: $file"
         FOUND_SECRET=1
     fi

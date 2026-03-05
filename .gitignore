@@ -19,6 +19,13 @@ out/
 .env.test.local
 .env.production.local
 
+# DMNO config
+# Allow the config file to be tracked, ignore everything else in .dmno/
+.dmno/*
+!.dmno/config.mts
+.dmno.env.local
+.dmno.env.*.local
+
 # IDE
 .idea/
 .vscode/

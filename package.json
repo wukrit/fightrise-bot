@@ -7,11 +7,11 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "start": "turbo start",
-    "start:bot": "turbo start --filter=@fightrise/bot",
-    "start:web": "turbo start --filter=@fightrise/web",
+    "dev": "dmno run -- turbo dev",
+    "build": "dmno run -- turbo build",
+    "start": "dmno run -- turbo start",
+    "start:bot": "dmno run -- turbo start --filter=@fightrise/bot",
+    "start:web": "dmno run -- turbo start --filter=@fightrise/web",
     "lint": "turbo lint",
     "test": "turbo test",
     "test:integration": "turbo test:integration",
@@ -51,9 +51,11 @@
     "qa:smoke": "dotenv -e .env -- npx tsx .claude/skills/qa/src/index.ts smoke"
   },
   "devDependencies": {
+    "@dmno/bitwarden-plugin": "^0.0.3",
     "@playwright/test": "^1.58.0",
     "@vitest/coverage-v8": "^1.6.1",
     "detect-secrets": "^1.0.6",
+    "dmno": "^0.0.41",
     "dotenv-cli": "^11.0.0",
     "husky": "^9.1.7",
     "jose": "^6.1.3",
