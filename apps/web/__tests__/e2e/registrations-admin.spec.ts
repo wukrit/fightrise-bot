@@ -6,108 +6,98 @@
 import { test, expect, Page } from '@playwright/test';
 import { mockAuthEndpoints, setupAuthenticatedState, createMockSession } from './utils/auth';
 import { TournamentRegistrationsAdminPage } from './pages/TournamentRegistrationsAdminPage';
+import { seedTestData, clearTestData, TEST_TOURNAMENTS, TEST_USERS } from './utils/seed';
+import { PrismaClient, RegistrationStatus, RegistrationSource } from '@prisma/client';
 
-// Test tournament ID
-const TOURNAMENT_ID = 'tournament-123';
+// Test tournament ID - use the seeded tournament ID
+const TOURNAMENT_ID = TEST_TOURNAMENTS.upcoming.id;
+
+const prisma = new PrismaClient();
 
 /**
- * Mock registration data
+ * Helper to seed additional registrations with different statuses for tests.
  */
-const mockRegistrations = [
-  {
-    id: 'reg-1',
-    userId: 'user-1',
-    discordUsername: 'PlayerOne',
-    discordId: '111111111111111111',
-    eventId: 'event-1',
-    status: 'pending',
-    source: 'discord',
-    createdAt: '2024-03-10T10:00:00Z',
-  },
-  {
-    id: 'reg-2',
-    userId: 'user-2',
-    discordUsername: 'PlayerTwo',
-    discordId: '222222222222222222',
-    eventId: 'event-1',
-    status: 'confirmed',
-    source: 'startgg',
-    createdAt: '2024-03-:00:0009T15Z',
-    confirmedAt: '2024-03-09T16:00:00Z',
-  },
-  {
-    id: 'reg-3',
-    userId: 'user-3',
-    discordUsername: 'PlayerThree',
-    discordId: '333333333333333333',
-    eventId: 'event-1',
-    status: 'pending',
-    source: 'discord',
-    createdAt: '2024-03-11T09:00:00Z',
-  },
-  {
-    id: 'reg-4',
-    userId: 'user-4',
-    discordUsername: 'PlayerFour',
-    discordId: '444444444444444444',
-    eventId: 'event-1',
-    status: 'cancelled',
-    source: 'discord',
-    createdAt: '2024-03-08T12:00:00Z',
-  },
-];
+async function seedRegistrationsForTests() {
+  const event = await prisma.event.findFirst({
+    where: { tournamentId: TOURNAMENT_ID },
+  });
+
+  if (!event) {
+    throw new Error('No event found for tournament');
+  }
+
+  // Create additional test users with different registration statuses
+  const testUsers = [
+    { id: 'test-reg-user-1', discordId: '111111111111111111', username: 'PlayerOne' },
+    { id: 'test-reg-user-2', discordId: '222222222222222222', username: 'PlayerTwo' },
+    { id: 'test-reg-user-3', discordId: '333333333333333333', username: 'PlayerThree' },
+    { id: 'test-reg-user-4', discordId: '444444444444444444', username: 'PlayerFour' },
+  ];
+
+  // Create users
+  for (const user of testUsers) {
+    await prisma.user.upsert({
+      where: { id: user.id },
+      update: { discordId: user.discordId, discordUsername: user.username },
+      create: { id: user.id, discordId: user.discordId, discordUsername: user.username },
+    });
+  }
+
+  // Create registrations with different statuses
+  const registrations = [
+    { userId: 'test-reg-user-1', status: RegistrationStatus.PENDING, source: RegistrationSource.DISCORD },
+    { userId: 'test-reg-user-2', status: RegistrationStatus.CONFIRMED, source: RegistrationSource.STARTGG },
+    { userId: 'test-reg-user-3', status: RegistrationStatus.PENDING, source: RegistrationSource.DISCORD },
+    { userId: 'test-reg-user-4', status: RegistrationStatus.CANCELLED, source: RegistrationSource.DISCORD },
+  ];
+
+  for (const reg of registrations) {
+    await prisma.registration.upsert({
+      where: {
+        userId_eventId: {
+          userId: reg.userId,
+          eventId: event.id,
+        },
+      },
+      update: { status: reg.status, source: reg.source },
+      create: {
+        userId: reg.userId,
+        tournamentId: TOURNAMENT_ID,
+        eventId: event.id,
+        status: reg.status,
+        source: reg.source,
+      },
+    });
+  }
+}
 
 /**
  * Admin user session
  */
 const adminSession = createMockSession({
-  id: 'admin-user-123',
-  discordId: '999999999999999999',
-  discordUsername: 'TournamentAdmin',
-  name: 'TournamentAdmin',
+  id: TEST_USERS.tournamentAdmin.id,
+  discordId: TEST_USERS.tournamentAdmin.discordId,
+  discordUsername: TEST_USERS.tournamentAdmin.discordUsername,
+  name: TEST_USERS.tournamentAdmin.discordUsername,
 });
 
 /**
- * Helper to mock registrations API endpoint.
+ * Helper to seed registrations before each test.
+ * Note: Server Components fetch data from DB directly, no mocking needed.
  */
-async function mockRegistrationsApi(page: Page, registrations = mockRegistrations) {
-  await page.route('**/api/tournaments/**/registrations**', async (route) => {
-    const url = route.request().url();
-
-    // Return registrations list
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        items: registrations,
-        total: registrations.length,
-      }),
-    });
-  });
-}
-
-/**
- * Helper to mock unauthorized access.
- */
-async function mockUnauthorizedApi(page: Page) {
-  await page.route('**/api/tournaments/**/registrations**', async (route) => {
-    await route.fulfill({
-      status: 403,
-      contentType: 'application/json',
-      body: JSON.stringify({ error: 'Forbidden' }),
-    });
-  });
+async function setupRegistrationsData(page: Page) {
+  // Seed additional registrations for testing
+  await seedRegistrationsForTests();
 }
 
 test.describe('Tournament Registrations Admin', () => {
   test.beforeEach(async ({ page }) => {
     await mockAuthEndpoints(page, { session: adminSession });
+    // Seed test data for each test
+    await setupRegistrationsData(page);
   });
 
   test.describe('Page Loading', () => {
-    test.beforeEach(async ({ page }) => {
-      await mockRegistrationsApi(page);
-    });
 
     test('should load registrations page', async ({ page }) => {
       const adminPage = new TournamentRegistrationsAdminPage(page);
@@ -337,8 +327,15 @@ test.describe('Tournament Registrations Admin', () => {
 
   test.describe('Empty State', () => {
     test('should show empty state when no registrations', async ({ page }) => {
-      // Mock empty registrations
-      await mockRegistrationsApi(page, []);
+      // Clear seeded registrations to test empty state
+      // Delete registrations for the test users we created
+      await prisma.registration.deleteMany({
+        where: {
+          userId: {
+            in: ['test-reg-user-1', 'test-reg-user-2', 'test-reg-user-3', 'test-reg-user-4'],
+          },
+        },
+      });
 
       const adminPage = new TournamentRegistrationsAdminPage(page);
       await adminPage.goto(TOURNAMENT_ID);

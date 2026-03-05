@@ -107,8 +107,13 @@ async function mockMatchesApi(page: Page, matches = mockMatches) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        items: matches,
-        total: matches.length,
+        matches,
+        pagination: {
+          page: 1,
+          limit: 50,
+          total: matches.length,
+          totalPages: 1,
+        },
       }),
     });
   });

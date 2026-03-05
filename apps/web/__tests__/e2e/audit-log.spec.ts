@@ -85,10 +85,13 @@ async function mockAuditLogApi(page: Page, logs = mockAuditLogs) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        items: logs,
-        total: logs.length,
-        page: 1,
-        totalPages: 1,
+        auditLogs: logs,
+        pagination: {
+          page: 1,
+          limit: 20,
+          total: logs.length,
+          totalPages: 1,
+        },
       }),
     });
   });

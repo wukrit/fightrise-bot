@@ -74,7 +74,7 @@ test.describe('Dashboard Page', () => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ tournaments: [] }),
+          body: JSON.stringify({ items: [], nextCursor: null, hasMore: false, total: 0 }),
         });
       });
 
@@ -102,7 +102,7 @@ test.describe('Dashboard Page', () => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ matches: [] }),
+          body: JSON.stringify({ matches: [], pagination: { page: 1, limit: 50, total: 0, totalPages: 0 } }),
         });
       });
 

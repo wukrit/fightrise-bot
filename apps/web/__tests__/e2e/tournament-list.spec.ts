@@ -7,7 +7,8 @@ import { test, expect } from '@playwright/test';
 import { setupAuthenticatedState, createMockSession } from './utils/auth';
 import { TournamentListPage } from './pages/TournamentListPage';
 import { asAdmin, asPlayer } from './utils/fixtures';
-import { createTournament, MockTournament } from './utils/mockData';
+import { TournamentState } from '@prisma/client';
+import { createTournamentsListResponse, createMockTournamentAPIResponse } from './utils/apiMocks';
 
 test.describe('Tournament List Page', () => {
   test.beforeEach(async ({ page }) => {
@@ -35,18 +36,18 @@ test.describe('Tournament List Page', () => {
 
   test.describe('Tournament Display', () => {
     test('should display list of tournaments', async ({ page }) => {
-      // Mock tournaments API response
+      // Mock tournaments API response with correct format
       const tournaments = [
-        createTournament({ name: 'Weekly Tournament 1', status: 'upcoming' }),
-        createTournament({ name: 'Monthly Championship', status: 'ongoing' }),
-        createTournament({ name: 'Past Tournament', status: 'completed' }),
+        createMockTournamentAPIResponse({ name: 'Weekly Tournament 1', state: TournamentState.REGISTRATION_OPEN }),
+        createMockTournamentAPIResponse({ name: 'Monthly Championship', state: TournamentState.IN_PROGRESS }),
+        createMockTournamentAPIResponse({ name: 'Past Tournament', state: TournamentState.COMPLETED }),
       ];
 
       await page.route('**/api/tournaments', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ tournaments }),
+          body: JSON.stringify(createTournamentsListResponse(tournaments)),
         });
       });
 
@@ -59,10 +60,10 @@ test.describe('Tournament List Page', () => {
     });
 
     test('should display tournament card with correct information', async ({ page }) => {
-      const tournament = createTournament({
+      const tournament = createMockTournamentAPIResponse({
         name: 'Test Tournament',
-        status: 'upcoming',
-        game: 'Street Fighter 6',
+        state: TournamentState.REGISTRATION_OPEN,
+        startggSlug: 'test-tournament',
         numEntrants: 32,
       });
 
@@ -70,7 +71,7 @@ test.describe('Tournament List Page', () => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ tournaments: [tournament] }),
+          body: JSON.stringify(createTournamentsListResponse([tournament])),
         });
       });
 
@@ -83,16 +84,16 @@ test.describe('Tournament List Page', () => {
     });
 
     test('should show tournament name, date, and state', async ({ page }) => {
-      const tournament = createTournament({
+      const tournament = createMockTournamentAPIResponse({
         name: 'Test Tournament',
-        status: 'ongoing',
+        state: TournamentState.IN_PROGRESS,
       });
 
       await page.route('**/api/tournaments', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ tournaments: [tournament] }),
+          body: JSON.stringify(createTournamentsListResponse([tournament])),
         });
       });
 
@@ -107,13 +108,16 @@ test.describe('Tournament List Page', () => {
 
   test.describe('Navigation', () => {
     test('should click tournament and navigate to detail page', async ({ page }) => {
-      const tournament = createTournament({ name: 'Clickable Tournament' });
+      const tournament = createMockTournamentAPIResponse({
+        name: 'Clickable Tournament',
+        startggSlug: 'clickable-tournament',
+      });
 
       await page.route('**/api/tournaments', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ tournaments: [tournament] }),
+          body: JSON.stringify(createTournamentsListResponse([tournament])),
         });
       });
 
@@ -131,12 +135,12 @@ test.describe('Tournament List Page', () => {
 
   test.describe('Empty State', () => {
     test('should show empty state when no tournaments exist', async ({ page }) => {
-      // Mock empty tournaments response
+      // Mock empty tournaments response with correct format
       await page.route('**/api/tournaments', async (route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ tournaments: [] }),
+          body: JSON.stringify(createTournamentsListResponse([])),
         });
       });
 
