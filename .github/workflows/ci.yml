@@ -47,7 +47,7 @@ jobs:
             ${{ runner.os }}-turbo-
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Generate Prisma Client
         run: npm run db:generate
@@ -86,7 +86,7 @@ jobs:
             ${{ runner.os }}-turbo-
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Generate Prisma Client
         run: npm run db:generate
@@ -124,7 +124,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Cache node_modules
         uses: actions/cache@v5
@@ -200,7 +200,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Cache node_modules
         uses: actions/cache@v5
@@ -257,7 +257,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Cache node_modules
         uses: actions/cache@v5
