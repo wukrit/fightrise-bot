@@ -10,7 +10,7 @@ import { asAdmin, asPlayer } from './utils/fixtures';
 import { TournamentState } from '@prisma/client';
 import { createTournamentsListResponse, createMockTournamentAPIResponse } from './utils/apiMocks';
 
-test.skip.describe('Tournament List Page', () => {
+test.describe('Tournament List Page', () => {
   test.beforeEach(async ({ page }) => {
     await setupAuthenticatedState(page);
   });

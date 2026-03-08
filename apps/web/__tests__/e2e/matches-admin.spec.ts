@@ -132,7 +132,7 @@ async function mockUnauthorizedApi(page: Page) {
   });
 }
 
-test.skip.describe('Tournament Matches Admin', () => {
+test.describe('Tournament Matches Admin', () => {
   test.beforeEach(async ({ page }) => {
     await mockAuthEndpoints(page, { session: adminSession });
   });

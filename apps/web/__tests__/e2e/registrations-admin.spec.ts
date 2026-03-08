@@ -90,7 +90,7 @@ async function setupRegistrationsData(page: Page) {
   await seedRegistrationsForTests();
 }
 
-test.skip.describe('Tournament Registrations Admin', () => {
+test.describe('Tournament Registrations Admin', () => {
   test.beforeEach(async ({ page }) => {
     await mockAuthEndpoints(page, { session: adminSession });
     // Seed test data for each test

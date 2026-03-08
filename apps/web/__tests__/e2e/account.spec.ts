@@ -8,7 +8,7 @@ import { setupAuthenticatedState, createMockSession, mockAuthEndpoints } from '.
 import { AccountSettingsPage } from './pages/AccountSettingsPage';
 import { asPlayer } from './utils/fixtures';
 
-test.skip.describe('Account Settings Page', () => {
+test.describe('Account Settings Page', () => {
   test.beforeEach(async ({ page }) => {
     await setupAuthenticatedState(page);
   });

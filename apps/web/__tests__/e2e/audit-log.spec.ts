@@ -110,7 +110,7 @@ async function mockUnauthorizedApi(page: Page) {
   });
 }
 
-test.skip.describe('Tournament Audit Log', () => {
+test.describe('Tournament Audit Log', () => {
   test.beforeEach(async ({ page }) => {
     await mockAuthEndpoints(page, { session: adminSession });
   });
