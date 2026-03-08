@@ -67,7 +67,7 @@ async function mockTournamentApi(page: Page) {
     const url = route.request().url();
 
     // List tournaments - exact path
-    if (url === 'http://localhost:4000/api/tournaments' || url.endsWith('/api/tournaments')) {
+    if (url === 'http://localhost:3000/api/tournaments' || url.endsWith('/api/tournaments')) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

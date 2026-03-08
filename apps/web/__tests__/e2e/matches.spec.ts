@@ -143,7 +143,7 @@ test.describe('Match Reporting', () => {
       const originalFetch = window.fetch;
       window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = typeof input === 'string' ? input : input.toString();
-        const urlObj = new URL(url, 'http://localhost:4000'); // Use base URL
+        const urlObj = new URL(url, 'http://localhost:3000'); // Use base URL
         const pathname = urlObj.pathname;
 
         // Match API endpoint - check for /api/matches/
