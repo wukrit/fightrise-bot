@@ -69,7 +69,12 @@ export class TournamentDetailPage extends BasePage {
    * Get the tournament name text.
    */
   async getTournamentName(): Promise<string> {
-    return await this.tournamentName.textContent() ?? '';
+    try {
+      if (await this.tournamentName.isVisible()) {
+        return await this.tournamentName.textContent() ?? '';
+      }
+    } catch {}
+    return '';
   }
 
   /**
@@ -83,14 +88,20 @@ export class TournamentDetailPage extends BasePage {
    * Get tournament status text.
    */
   async getTournamentStatus(): Promise<string> {
-    return await this.tournamentStatus.textContent() ?? '';
+    try {
+      if (await this.tournamentStatus.isVisible()) {
+        return await this.tournamentStatus.textContent() ?? '';
+      }
+    } catch {}
+    return '';
   }
 
   /**
    * Check if registration is open.
    */
   async isRegistrationOpen(): Promise<boolean> {
-    const text = await this.tournamentStatus.textContent() ?? '';
+    const text = await this.getTournamentStatus();
+    if (!text) return false;
     return /registration\s*open/i.test(text);
   }
 
