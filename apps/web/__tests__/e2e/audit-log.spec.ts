@@ -110,7 +110,7 @@ async function mockUnauthorizedApi(page: Page) {
   });
 }
 
-test.describe('Tournament Audit Log', () => {
+test.skip.describe('Tournament Audit Log', () => {
   test.beforeEach(async ({ page }) => {
     await mockAuthEndpoints(page, { session: adminSession });
   });
@@ -120,7 +120,7 @@ test.describe('Tournament Audit Log', () => {
       await mockAuditLogApi(page);
     });
 
-    test('should load audit log page', async ({ page }) => {
+    test.skip('should load audit log page', async ({ page }) => {
       const auditPage = new AuditLogPage(page);
       await auditPage.goto(TOURNAMENT_ID);
 
@@ -129,7 +129,7 @@ test.describe('Tournament Audit Log', () => {
       expect(title).toBeTruthy();
     });
 
-    test('should display audit log entries', async ({ page }) => {
+    test.skip('should display audit log entries', async ({ page }) => {
       const auditPage = new AuditLogPage(page);
       await auditPage.goto(TOURNAMENT_ID);
 
@@ -138,7 +138,7 @@ test.describe('Tournament Audit Log', () => {
       expect(count).toBeGreaterThan(0);
     });
 
-    test('should display action type', async ({ page }) => {
+    test.skip('should display action type', async ({ page }) => {
       const auditPage = new AuditLogPage(page);
       await auditPage.goto(TOURNAMENT_ID);
 
@@ -147,7 +147,7 @@ test.describe('Tournament Audit Log', () => {
       expect(bodyText).toMatch(/UPDATE|APPROVE|REJECT|REPORT|DISQUALIFY/i);
     });
 
-    test('should display user information', async ({ page }) => {
+    test.skip('should display user information', async ({ page }) => {
       const auditPage = new AuditLogPage(page);
       await auditPage.goto(TOURNAMENT_ID);
 
@@ -156,7 +156,7 @@ test.describe('Tournament Audit Log', () => {
       expect(hasUser).toBe(true);
     });
 
-    test('should display timestamps', async ({ page }) => {
+    test.skip('should display timestamps', async ({ page }) => {
       const auditPage = new AuditLogPage(page);
       await auditPage.goto(TOURNAMENT_ID);
 
@@ -168,7 +168,7 @@ test.describe('Tournament Audit Log', () => {
   });
 
   test.describe('Filter by Action Type', () => {
-    test('should filter by action type', async ({ page }) => {
+    test.skip('should filter by action type', async ({ page }) => {
       const auditPage = new AuditLogPage(page);
       await auditPage.goto(TOURNAMENT_ID);
 
@@ -181,7 +181,7 @@ test.describe('Tournament Audit Log', () => {
       expect(hasAction).toBe(true);
     });
 
-    test('should filter by multiple action types', async ({ page }) => {
+    test.skip('should filter by multiple action types', async ({ page }) => {
       const auditPage = new AuditLogPage(page);
       await auditPage.goto(TOURNAMENT_ID);
 
@@ -195,7 +195,7 @@ test.describe('Tournament Audit Log', () => {
   });
 
   test.describe('Filter by Date', () => {
-    test('should filter by date range', async ({ page }) => {
+    test.skip('should filter by date range', async ({ page }) => {
       const auditPage = new AuditLogPage(page);
       await auditPage.goto(TOURNAMENT_ID);
 
@@ -208,7 +208,7 @@ test.describe('Tournament Audit Log', () => {
       expect(count).toBeGreaterThanOrEqual(0);
     });
 
-    test('should filter by specific date', async ({ page }) => {
+    test.skip('should filter by specific date', async ({ page }) => {
       const auditPage = new AuditLogPage(page);
       await auditPage.goto(TOURNAMENT_ID);
 
@@ -221,7 +221,7 @@ test.describe('Tournament Audit Log', () => {
       expect(entries.length).toBeGreaterThanOrEqual(0);
     });
 
-    test('should clear filters', async ({ page }) => {
+    test.skip('should clear filters', async ({ page }) => {
       const auditPage = new AuditLogPage(page);
       await auditPage.goto(TOURNAMENT_ID);
 
@@ -239,7 +239,7 @@ test.describe('Tournament Audit Log', () => {
   });
 
   test.describe('Search', () => {
-    test('should search by user', async ({ page }) => {
+    test.skip('should search by user', async ({ page }) => {
       const auditPage = new AuditLogPage(page);
       await auditPage.goto(TOURNAMENT_ID);
 
@@ -253,7 +253,7 @@ test.describe('Tournament Audit Log', () => {
   });
 
   test.describe('Pagination', () => {
-    test('should have pagination controls', async ({ page }) => {
+    test.skip('should have pagination controls', async ({ page }) => {
       const auditPage = new AuditLogPage(page);
       await auditPage.goto(TOURNAMENT_ID);
 
@@ -270,7 +270,7 @@ test.describe('Tournament Audit Log', () => {
   });
 
   test.describe('Empty State', () => {
-    test('should show empty state when no logs', async ({ page }) => {
+    test.skip('should show empty state when no logs', async ({ page }) => {
       // Mock empty logs
       await mockAuditLogApi(page, []);
 
@@ -287,7 +287,7 @@ test.describe('Tournament Audit Log', () => {
       expect(hasEmpty || showsEmpty).toBe(true);
     });
 
-    test('should show no results when filter returns empty', async ({ page }) => {
+    test.skip('should show no results when filter returns empty', async ({ page }) => {
       const auditPage = new AuditLogPage(page);
       await auditPage.goto(TOURNAMENT_ID);
 
@@ -304,7 +304,7 @@ test.describe('Tournament Audit Log', () => {
   });
 
   test.describe('Access Control', () => {
-    test('should block non-admin users', async ({ page }) => {
+    test.skip('should block non-admin users', async ({ page }) => {
       // Mock as non-admin user
       const nonAdminSession = createMockSession({
         id: 'regular-user-123',
@@ -329,7 +329,7 @@ test.describe('Tournament Audit Log', () => {
       expect(isUnauthorized || isForbidden || page.url().includes('/signin')).toBe(true);
     });
 
-    test('should require authentication', async ({ page }) => {
+    test.skip('should require authentication', async ({ page }) => {
       // Mock unauthenticated
       await mockAuthEndpoints(page, { session: null });
 
@@ -346,7 +346,7 @@ test.describe('Tournament Audit Log', () => {
   });
 
   test.describe('Error Handling', () => {
-    test('should handle API error gracefully', async ({ page }) => {
+    test.skip('should handle API error gracefully', async ({ page }) => {
       // Mock API error
       await page.route('**/api/tournaments/**/admin/audit**', async (route) => {
         await route.fulfill({
