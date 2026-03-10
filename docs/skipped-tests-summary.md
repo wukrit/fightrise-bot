@@ -4,22 +4,24 @@ This document catalogs all skipped tests in the codebase and explains why they a
 
 ---
 
-## E2E Tests (Web)
+## E2E Tests (Playwright)
 
-### 1. Dashboard Page Tests
-- **File**: `apps/web/__tests__/e2e/dashboard.spec.ts`
-- **Status**: `test.describe.skip('Dashboard Page')`
-- **Reason**: The `/dashboard` page does not exist yet. These tests verify dashboard page loading and error handling, but the page needs to be implemented first.
+### Running Tests (pages exist)
+| File | Status | Notes |
+|------|--------|-------|
+| `dashboard.spec.ts` | ✅ Running | Dashboard page exists |
+| `matches.spec.ts` | ✅ Running | Matches page exists |
+| `auth.spec.ts` | ⚠️ 1 test skipped | One auth test fails due to session mocking issue |
 
-### 2. Tournament Flow Tests
-- **File**: `apps/web/__tests__/e2e/tournaments.spec.ts`
-- **Status**: `test.describe.skip('Tournament Flow')`
-- **Reason**: The pages being tested do not exist yet. Specifically: `/tournaments`, `/matches`, `/dashboard`, and `/my-matches` need to be implemented.
-
-### 3. Match Reporting Tests
-- **File**: `apps/web/__tests__/e2e/matches.spec.ts`
-- **Status**: `test.describe.skip('Match Reporting')`
-- **Reason**: The `/matches` page does not exist yet. These tests verify match details viewing, score reporting, and result confirmation.
+### Skipped Tests (pages don't exist yet)
+| File | Status | Reason |
+|------|--------|--------|
+| `account.spec.ts` | Skipped | `/account` page not implemented |
+| `tournaments.spec.ts` | Skipped | Tournament pages not fully implemented |
+| `tournament-list.spec.ts` | Skipped | Tournament list page not implemented |
+| `registrations-admin.spec.ts` | Skipped | Admin registrations page not implemented |
+| `matches-admin.spec.ts` | Skipped | Admin matches page not implemented |
+| `audit-log.spec.ts` | Skipped | Audit log page not implemented |
 
 ---
 
@@ -27,61 +29,57 @@ This document catalogs all skipped tests in the codebase and explains why they a
 
 Smoke tests are skipped when required credentials are not provided in environment variables. They are designed to run against real APIs in controlled environments.
 
-### 4. Discord OAuth Smoke Tests
-- **File**: `apps/web/__tests__/smoke/oauth.smoke.spec.ts`
-- **Status**: `test.skip(SKIP_SMOKE_TESTS, ...)`
-- **Skip Condition**: `!process.env.SMOKE_DISCORD_CLIENT_ID`
-- **Reason**: Requires real Discord OAuth credentials (`SMOKE_DISCORD_CLIENT_ID`, `SMOKE_DISCORD_CLIENT_SECRET`, `SMOKE_OAUTH_REDIRECT_URI`). Should only run manually before releases or in controlled test environments - NOT on public CI to protect secrets.
+| File | Status | Skip Condition | Reason |
+|------|--------|----------------|--------|
+| `oauth.smoke.spec.ts` | Skipped | `!SMOKE_DISCORD_CLIENT_ID` | Requires Discord OAuth credentials |
+| `discord-api.smoke.test.ts` | Skipped | `!SMOKE_DISCORD_TOKEN` | Requires Discord bot token |
+| `redis.smoke.test.ts` | Skipped | `!REDIS_URL` | Requires Redis connection |
+| `database.smoke.test.ts` | Skipped | `!DATABASE_URL` | Requires PostgreSQL connection |
+| `startgg-api.smoke.test.ts` | Skipped | `!SMOKE_STARTGG_API_KEY` | Requires Start.gg API key |
 
-### 5. Discord API Smoke Tests
-- **File**: `apps/bot/src/__tests__/smoke/discord-api.smoke.test.ts`
-- **Status**: `describe.skipIf(SKIP_SMOKE_TESTS)(...)`
-- **Skip Condition**: `!process.env.SMOKE_DISCORD_TOKEN`
-- **Reason**: Requires real Discord bot token (`SMOKE_DISCORD_TOKEN`, `SMOKE_DISCORD_GUILD_ID`, `SMOKE_DISCORD_CHANNEL_ID`). Tests verify Discord API connectivity.
+---
 
-### 6. Redis Connection Smoke Tests
-- **File**: `apps/bot/src/__tests__/smoke/redis.smoke.test.ts`
-- **Status**: `describe.skipIf(SKIP_SMOKE_TESTS)(...)`
-- **Skip Condition**: `!process.env.REDIS_URL`
-- **Reason**: Requires Redis connection (`REDIS_URL`). Tests verify Redis connectivity for BullMQ job queues.
+## Load Tests
 
-### 7. Database Connection Smoke Tests
-- **File**: `packages/database/src/__tests__/smoke/database.smoke.test.ts`
-- **Status**: `describe.skipIf(SKIP_SMOKE_TESTS)(...)`
-- **Skip Condition**: `!process.env.DATABASE_URL`
-- **Reason**: Requires database connection (`DATABASE_URL`). Tests verify PostgreSQL connectivity and schema.
-
-### 8. Start.gg API Smoke Tests
-- **File**: `packages/startgg-client/src/__tests__/smoke/startgg-api.smoke.test.ts`
-- **Status**: `describe.skipIf(SKIP_SMOKE_TESTS)(...)`
-- **Skip Condition**: `!process.env.SMOKE_STARTGG_API_KEY`
-- **Reason**: Requires real Start.gg API key (`SMOKE_STARTGG_API_KEY`, optional `SMOKE_STARTGG_TOURNAMENT_SLUG`). Tests verify Start.gg GraphQL API connectivity.
+| File | Status | Reason |
+|------|--------|--------|
+| `pollingLoad.test.ts` | Skipped | Load test - runs manually, not in CI |
 
 ---
 
 ## Unit Tests
 
-### 9. TournamentService Tests (Pre-existing failures)
-- **File**: `apps/bot/src/services/__tests__/tournamentService.test.ts`
-- **Status**: `it.skip(...)`
-- **Skipped Tests**:
-  1. `should successfully create tournament when all validations pass`
-  2. `should mark as update when tournament already exists`
-- **Reason**: These tests have incomplete mock setup. The `auditLog.create` mock was missing, and the transaction mock setup doesn't properly simulate the service's expected behavior. These failures pre-date the integration testing PR and need proper mock setup to fix.
+### Bot Services
+| File | Status | Skipped Tests | Reason |
+|------|--------|---------------|--------|
+| `tournamentService.test.ts` | 2 tests skipped | `should successfully create tournament...`, `should mark as update...` | Broken mocks (pre-existing issue) |
 
 ---
 
 ## Summary
 
-| Category | Count | Reason |
+| Category | Count | Status |
 |----------|-------|--------|
-| E2E (Pages not implemented) | 3 | Pages don't exist yet |
-| Smoke Tests (Missing credentials) | 5 | Real API credentials not available in CI |
-| Unit Tests (Broken mocks) | 2 | Incomplete mock setup (pre-existing) |
-| **Total** | **10** | |
+| E2E Running | 2 files + 1 partial | ✅ Working |
+| E2E Skipped (pages missing) | 6 files | Pages not implemented |
+| E2E Skipped (auth issue) | 1 test | Session mocking broken |
+| Smoke Tests | 5 files | Missing credentials |
+| Load Tests | 1 file | Manual only |
+| Unit Tests | 2 tests | Broken mocks |
+| **Total Skipped** | **~90+ tests** | |
+
+---
 
 ## Recommendations
 
-1. **E2E Tests**: Implement the missing pages (`/dashboard`, `/tournaments`, `/matches`) to enable these tests
-2. **Smoke Tests**: Already correctly configured - should only run in controlled environments with proper credentials
-3. **Unit Tests**: Fix the mock setup in `tournamentService.test.ts` to make these tests pass
+1. **E2E Tests**: The pages for skipped tests need to be implemented. Priority order:
+   - `/account` - User account settings
+   - `/tournaments` - Tournament list/detail
+   - `/tournaments/[id]/admin/*` - Admin pages
+   - `/audit` - Audit log
+
+2. **Auth Test**: Fix the session mocking in `auth.spec.ts` to enable the skipped authenticated user test
+
+3. **Unit Tests**: Fix the mock setup in `tournamentService.test.ts`
+
+4. **Smoke Tests**: Already correctly configured - should only run in controlled environments with proper credentials
