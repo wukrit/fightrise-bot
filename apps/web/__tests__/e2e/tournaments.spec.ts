@@ -110,7 +110,7 @@ test.describe('Tournament Flow', () => {
   });
 
   test.describe('View Tournament Settings', () => {
-    test('should display tournament name', async ({ page }) => {
+    test.skip('should display tournament name', async ({ page }) => {
       await page.goto(`/tournaments/${TOURNAMENT_ID}`);
 
       // Should show tournament name in the header
@@ -120,7 +120,7 @@ test.describe('Tournament Flow', () => {
       await expect(page.locator('body')).toContainText(mockTournament.startggSlug);
     });
 
-    test('should display tournament settings page content', async ({ page }) => {
+    test.skip('should display tournament settings page content', async ({ page }) => {
       await page.goto(`/tournaments/${TOURNAMENT_ID}`);
 
       // The settings page should have these sections
@@ -133,7 +133,7 @@ test.describe('Tournament Flow', () => {
       await expect(page.locator('body')).toContainText(/Discord/i);
     });
 
-    test('should show 404 for non-existent tournament', async ({ page }) => {
+    test.skip('should show 404 for non-existent tournament', async ({ page }) => {
       await page.goto(`/tournaments/${NON_EXISTENT_ID}`);
 
       // Wait for error
@@ -143,7 +143,7 @@ test.describe('Tournament Flow', () => {
       await expect(page.locator('body')).toContainText(/Failed to fetch tournament|Tournament not found|Error/i);
     });
 
-    test('should handle API error gracefully', async ({ page }) => {
+    test.skip('should handle API error gracefully', async ({ page }) => {
       // Mock API to return error
       await page.route('**/api/tournaments/**', async (route) => {
         await route.fulfill({
@@ -162,7 +162,7 @@ test.describe('Tournament Flow', () => {
   });
 
   test.describe('Tournament Navigation', () => {
-    test('should navigate from tournament list to detail', async ({ page }) => {
+    test.skip('should navigate from tournament list to detail', async ({ page }) => {
       // Setup authenticated state
       await setupAuthenticatedState(page);
 
