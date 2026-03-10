@@ -68,10 +68,10 @@ async function mockTournamentsApi(page: any, data: any[]) {
 
 ## Tasks
 
-- [ ] Update `tournaments.spec.ts` - Add init script mocking
-- [ ] Update `registrations-admin.spec.ts` - Add init script mocking
-- [ ] Update `matches-admin.spec.ts` - Add init script mocking
-- [ ] Update `audit-log.spec.ts` - Add init script mocking
+- [x] Update `tournaments.spec.ts` - Add init script mocking
+- [x] Update `registrations-admin.spec.ts` - Add init script mocking
+- [x] Update `matches-admin.spec.ts` - Add init script mocking
+- [x] Update `audit-log.spec.ts` - Add init script mocking
 - [ ] Run tests locally to verify
 - [ ] Commit and push
 
@@ -82,4 +82,4 @@ async function mockTournamentsApi(page: any, data: any[]) {
 
 ## Notes
 
-The simpler approach (like account.spec.ts) is to just verify page loads without complex API mocking. The database is seeded in global setup, so basic page functionality works without mocking.
+The simpler approach (page load tests only) (like account.spec.ts) is to just verify page loads without complex API mocking. The database is seeded in global setup, so basic page functionality works without mocking.
