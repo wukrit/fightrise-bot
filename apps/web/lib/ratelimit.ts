@@ -76,10 +76,10 @@ export interface RateLimitResult {
 export async function checkRateLimit(key: string, config: RateLimitConfig): Promise<RateLimitResult> {
   const r = getRedisConnection();
 
-  // Fail open if Redis isn't available
+  // Fail closed if Redis isn't available - block for security
   if (!r) {
     return {
-      allowed: true,
+      allowed: false,
       limit: config.limit,
       remaining: config.limit,
       resetTime: Date.now() + config.windowMs,
@@ -109,9 +109,9 @@ export async function checkRateLimit(key: string, config: RateLimitConfig): Prom
     const results = await pipeline.exec();
 
     if (!results) {
-      // Fallback: allow request if Redis fails
+      // Fallback: block request if Redis fails
       return {
-        allowed: true,
+        allowed: false,
         limit: config.limit,
         remaining: config.limit - 1,
         resetTime: now + config.windowMs,
@@ -133,16 +133,16 @@ export async function checkRateLimit(key: string, config: RateLimitConfig): Prom
     }
 
     return {
-      allowed: true,
+      allowed: false,
       limit: config.limit,
       remaining: config.limit - currentCount - 1,
       resetTime,
     };
   } catch (error) {
     console.error('[RateLimit] Error checking rate limit:', error);
-    // Fail open - allow request if Redis fails
+    // Fail closed - block request if Redis fails
     return {
-      allowed: true,
+      allowed: false,
       limit: config.limit,
       remaining: config.limit - 1,
       resetTime: now + config.windowMs,

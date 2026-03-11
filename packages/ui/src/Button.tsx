@@ -53,8 +53,15 @@ const baseStyles: React.CSSProperties = {
   fontWeight: tokens.typography.fontWeight.medium,
   cursor: 'pointer',
   transition: tokens.transitions.fast,
-  outline: 'none',
 };
+
+// Focus styles for accessibility - using CSS :focus-visible in stylesheet
+const focusVisibleStyles = `
+  button:focus-visible, [role="button"]:focus-visible {
+    outline: 2px solid ${tokens.colors.primary};
+    outline-offset: 2px;
+  }
+`;
 
 export function Button({
   children,
@@ -81,19 +88,23 @@ export function Button({
   };
 
   return (
-    <Comp
-      style={combinedStyles}
-      disabled={isDisabled && !asChild}
-      onFocus={onFocus}
-      onBlur={onBlur}
-      {...props}
-    >
-      {loading && !asChild && (
-        <span style={{ display: 'inline-block', width: tokens.spacing.md, height: tokens.spacing.md, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        </span>
-      )}
-      {children}
-    </Comp>
+    <>
+      <style>{focusVisibleStyles}</style>
+      <Comp
+        style={combinedStyles}
+        disabled={isDisabled && !asChild}
+        aria-disabled={isDisabled && asChild}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        {...props}
+      >
+        {loading && !asChild && (
+          <span style={{ display: 'inline-block', width: tokens.spacing.md, height: tokens.spacing.md, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </span>
+        )}
+        {children}
+      </Comp>
+    </>
   );
 }

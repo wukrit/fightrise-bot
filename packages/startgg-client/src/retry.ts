@@ -29,6 +29,43 @@ function isRateLimitError(error: unknown): boolean {
   return false;
 }
 
+function isServerError(error: unknown): boolean {
+  if (error && typeof error === 'object' && 'response' in error) {
+    const response = (error as { response?: { status?: number } }).response;
+    const status = response?.status;
+    if (typeof status === 'number' && status >= 500 && status < 600) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function isNetworkError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    return (
+      message.includes('timeout') ||
+      message.includes('econnreset') ||
+      message.includes('enotfound') ||
+      message.includes('ECONNREFUSED') ||
+      message.includes('network') ||
+      message.includes('socket')
+    );
+  }
+  return false;
+}
+
+/**
+ * Determine if an error is retryable.
+ * Retryable errors include:
+ * - Rate limit errors (429)
+ * - Server errors (5xx)
+ * - Network errors (timeouts, connection issues)
+ */
+function isRetryableError(error: unknown): boolean {
+  return isRateLimitError(error) || isServerError(error) || isNetworkError(error);
+}
+
 function calculateDelay(
   attempt: number,
   baseDelayMs: number,
@@ -61,15 +98,15 @@ export async function withRetry<T>(
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
 
-      // Don't retry on non-rate-limit errors (only retry rate limits)
-      if (!isRateLimitError(lastError)) {
+      // Don't retry on non-retryable errors
+      if (!isRetryableError(lastError)) {
         throw lastError;
       }
 
       // Don't retry if we've exhausted attempts
       if (attempt > maxRetries) {
         throw new RateLimitError(
-          `Rate limit exceeded after ${maxRetries} retries: ${lastError.message}`
+          `Retryable error after ${maxRetries} retries: ${lastError.message}`
         );
       }
 

@@ -18,9 +18,9 @@ async function isRateLimited(userId: string): Promise<boolean> {
   try {
     const redis = getRedisConnection();
 
-    // Fail open if Redis isn't available
+    // Fail closed if Redis isn't available - block for security
     if (!redis) {
-      return false;
+      return true; // Fail closed
     }
 
     const key = `ratelimit:user:${userId}`;
@@ -37,7 +37,7 @@ async function isRateLimited(userId: string): Promise<boolean> {
     const results = await pipeline.exec();
 
     if (!results) {
-      return false;
+      return true; // Fail closed
     }
 
     const count = results[2][1] as number;
@@ -48,7 +48,7 @@ async function isRateLimited(userId: string): Promise<boolean> {
   } catch (error) {
     logger.error({ err: error, userId }, 'Rate limit check failed');
     // Fail open - allow the action if rate limiting fails
-    return false;
+    return true; // Fail closed
   }
 }
 
