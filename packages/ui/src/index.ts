@@ -24,8 +24,17 @@ export type { TextareaProps } from './Textarea.js';
 export { Badge } from './Badge.js';
 export type { BadgeProps, BadgeVariant } from './Badge.js';
 
+export { StatusBadge } from './StatusBadge.js';
+export type { StatusBadgeProps, TournamentState } from './StatusBadge.js';
+
 export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './Card.js';
 export type { CardProps, CardHeaderProps, CardTitleProps, CardDescriptionProps, CardContentProps, CardFooterProps } from './Card.js';
+
+export { Toggle } from './Toggle.js';
+export type { ToggleProps } from './Toggle.js';
+
+export { StatCard } from './StatCard.js';
+export type { StatCardProps } from './StatCard.js';
 
 export { Modal, ModalContent, ModalFooter } from './Modal.js';
 export type { ModalProps, ModalContentProps, ModalFooterProps } from './Modal.js';

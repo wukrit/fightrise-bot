@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { StatusBadge, Toggle, Input } from '@fightrise/ui';
+import type { TournamentState } from '@fightrise/ui';
+import { formatDateTime } from '@fightrise/shared';
 
 // Types
-type TournamentState = 'CREATED' | 'REGISTRATION_OPEN' | 'REGISTRATION_CLOSED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-
 interface Tournament {
   id: string;
   name: string;
@@ -34,7 +35,7 @@ interface DiscordChannel {
   type: number;
 }
 
-// Utility components
+// Section card component
 function SectionCard({
   title,
   description,
@@ -60,6 +61,7 @@ function SectionCard({
   );
 }
 
+// Form field component
 function FormField({
   label,
   description,
@@ -78,37 +80,7 @@ function FormField({
   );
 }
 
-function Toggle({
-  checked,
-  onChange,
-  label,
-}: {
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  label?: string;
-}) {
-  return (
-    <label className="flex items-center gap-3 cursor-pointer group">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-          checked ? 'bg-emerald-500' : 'bg-zinc-700 group-hover:bg-zinc-600'
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
-            checked ? 'translate-x-5' : 'translate-x-0'
-          }`}
-        />
-      </button>
-      {label && <span className="text-sm text-zinc-300">{label}</span>}
-    </label>
-  );
-}
-
+// Custom select component using Tailwind
 function Select({
   value,
   onChange,
@@ -137,50 +109,6 @@ function Select({
         </option>
       ))}
     </select>
-  );
-}
-
-function Input({
-  value,
-  onChange,
-  type = 'text',
-  placeholder,
-}: {
-  value: string | number;
-  onChange: (value: string) => void;
-  type?: string;
-  placeholder?: string;
-}) {
-  return (
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="w-full bg-zinc-800/50 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-600 focus:border-transparent transition-all"
-    />
-  );
-}
-
-function StatusBadge({ state }: { state: TournamentState }) {
-  const statusConfig: Record<TournamentState, { label: string; className: string }> = {
-    CREATED: { label: 'Draft', className: 'bg-zinc-800 text-zinc-400 border-zinc-700' },
-    REGISTRATION_OPEN: { label: 'Registration Open', className: 'bg-emerald-900/50 text-emerald-400 border-emerald-700/50' },
-    REGISTRATION_CLOSED: { label: 'Registration Closed', className: 'bg-amber-900/50 text-amber-400 border-amber-700/50' },
-    IN_PROGRESS: { label: 'Live', className: 'bg-rose-900/50 text-rose-400 border-rose-700/50 animate-pulse' },
-    COMPLETED: { label: 'Completed', className: 'bg-slate-800 text-slate-400 border-slate-700' },
-    CANCELLED: { label: 'Cancelled', className: 'bg-red-900/30 text-red-400 border-red-800/50' },
-  };
-
-  const config = statusConfig[state];
-
-  return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${config.className}`}>
-      {state === 'IN_PROGRESS' && (
-        <span className="w-1.5 h-1.5 bg-rose-400 rounded-full mr-1.5 animate-ping" />
-      )}
-      {config.label}
-    </span>
   );
 }
 
@@ -285,17 +213,6 @@ function TournamentSettingsForm({ tournament }: { tournament: Tournament }) {
     }
   };
 
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return 'TBD';
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  };
-
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -313,11 +230,11 @@ function TournamentSettingsForm({ tournament }: { tournament: Tournament }) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-xs text-zinc-500">Start Time</p>
-            <p className="text-sm text-zinc-200 mt-0.5">{formatDate(tournament.startAt)}</p>
+            <p className="text-sm text-zinc-200 mt-0.5">{formatDateTime(tournament.startAt)}</p>
           </div>
           <div>
             <p className="text-xs text-zinc-500">End Time</p>
-            <p className="text-sm text-zinc-200 mt-0.5">{formatDate(tournament.endAt)}</p>
+            <p className="text-sm text-zinc-200 mt-0.5">{formatDateTime(tournament.endAt)}</p>
           </div>
         </div>
       </div>
@@ -368,8 +285,9 @@ function TournamentSettingsForm({ tournament }: { tournament: Tournament }) {
             <div className="flex items-center gap-2">
               <Input
                 type="number"
-                value={formData.checkInWindowMinutes}
-                onChange={(v) => setFormData({ ...formData, checkInWindowMinutes: parseInt(v) || 10 })}
+                value={formData.checkInWindowMinutes.toString()}
+                onChange={(e) => setFormData({ ...formData, checkInWindowMinutes: parseInt(e.target.value) || 10 })}
+                className="w-full bg-zinc-800/50 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-600 focus:border-transparent transition-all"
               />
               <span className="text-sm text-zinc-500">minutes</span>
             </div>

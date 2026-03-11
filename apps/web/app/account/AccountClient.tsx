@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Card, CardContent, CardHeader, Select } from '@fightrise/ui';
+import { Button, Card, CardContent, CardHeader, Select, Toggle, StatCard } from '@fightrise/ui';
 import { DiscordIcon } from '@fightrise/ui';
 
 // Types
@@ -50,9 +50,9 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <Card style={{ backgroundColor: 'rgba(24, 24, 27, 0.3)', border: '1px solid rgba(63, 63, 70, 0.5)', borderRadius: '12px', padding: '24px' }}>
+    <Card className="bg-zinc-900/30 border border-zinc-800/50 rounded-xl p-6">
       <CardHeader>
-        <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#f4f4f5', margin: 0, marginBottom: '16px' }}>{title}</h3>
+        <h3 className="text-lg font-semibold text-zinc-100 mb-4">{title}</h3>
       </CardHeader>
       <CardContent>
         {children}
@@ -61,25 +61,6 @@ function SectionCard({
   );
 }
 
-function StatCard({
-  label,
-  value,
-  trend,
-  accent,
-}: {
-  label: string;
-  value: string | number;
-  trend?: string;
-  accent?: string;
-}) {
-  return (
-    <Card style={{ backgroundColor: 'rgba(24, 24, 27, 0.3)', border: '1px solid rgba(63, 63, 70, 0.5)', borderRadius: '8px', padding: '16px' }}>
-      <p style={{ fontSize: '12px', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>{label}</p>
-      <p style={{ fontSize: '24px', fontWeight: 700, marginTop: '4px', color: accent || '#f4f4f5' }}>{value}</p>
-      {trend && <p style={{ fontSize: '12px', color: '#71717a', marginTop: '4px' }}>{trend}</p>}
-    </Card>
-  );
-}
 
 function LinkedAccount({
   provider,
@@ -123,7 +104,7 @@ function LinkedAccount({
             variant="secondary"
             size="sm"
             onClick={disconnectAction}
-            style={{ padding: '6px 12px', fontSize: '12px' }}
+            className="px-3 py-1.5 text-xs"
           >
             {disconnectLabel}
           </Button>
@@ -135,7 +116,7 @@ function LinkedAccount({
           variant="secondary"
           size="sm"
           onClick={action}
-          style={{ padding: '6px 12px', fontSize: '12px' }}
+          className="px-3 py-1.5 text-xs"
         >
           {actionLabel}
         </Button>
@@ -206,35 +187,6 @@ interface NotificationPreferences {
   timezone: string;
 }
 
-// Toggle component
-function Toggle({
-  checked,
-  onChange,
-  label,
-}: {
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  label: string;
-}) {
-  return (
-    <label className="flex items-center justify-between cursor-pointer group">
-      <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">{label}</span>
-      <button
-        type="button"
-        onClick={() => onChange(!checked)}
-        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-          checked ? 'bg-emerald-500' : 'bg-zinc-700 group-hover:bg-zinc-600'
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
-            checked ? 'translate-x-5' : 'translate-x-0'
-          }`}
-        />
-      </button>
-    </label>
-  );
-}
 
 // Time select component
 function TimeSelect({
@@ -264,7 +216,7 @@ function TimeSelect({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         options={timeOptions}
-        style={{ backgroundColor: 'rgba(63, 63, 70, 0.5)', border: '1px solid #3f3f46', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#f4f4f5' }}
+        className="bg-zinc-800/50 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200"
       />
     </div>
   );
@@ -290,7 +242,7 @@ function ReminderSelect({
       value={value.toString()}
       onChange={(e) => onChange(parseInt(e.target.value))}
       options={options}
-      style={{ backgroundColor: 'rgba(63, 63, 70, 0.5)', border: '1px solid #3f3f46', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#f4f4f5', marginLeft: 'auto' }}
+      className="bg-zinc-800/50 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 ml-auto"
     />
   );
 }
@@ -389,7 +341,7 @@ function NotificationSection({
                     { value: 'Europe/Paris', label: 'Paris' },
                     { value: 'Asia/Tokyo', label: 'Tokyo' },
                   ]}
-                  style={{ backgroundColor: 'rgba(63, 63, 70, 0.5)', border: '1px solid #3f3f46', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#f4f4f5' }}
+                  className="bg-zinc-800/50 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200"
                 />
               </div>
             </div>
@@ -524,7 +476,7 @@ export function AccountContent({ user: initialUser, tournaments: initialTourname
                 onChange={setNotifications}
               />
               <div className="mt-6 pt-4 border-t border-zinc-800/50">
-                <Button variant="primary" size="md" style={{ padding: '8px 16px', fontSize: '14px' }}>
+                <Button variant="primary" size="md" className="px-4 py-2 text-sm">
                   Save Preferences
                 </Button>
               </div>
@@ -532,7 +484,7 @@ export function AccountContent({ user: initialUser, tournaments: initialTourname
 
             {/* Danger Zone */}
             <SectionCard title="Account">
-              <Button variant="danger" size="md" style={{ width: '100%', padding: '8px 16px', fontSize: '14px', color: '#f87171', border: '1px solid rgba(127, 29, 29, 0.5)' }}>
+              <Button variant="danger" size="md" className="w-full px-4 py-2 text-sm text-red-400 border border-red-800/50">
                 Delete Account
               </Button>
               <p className="text-xs text-zinc-500 mt-2">

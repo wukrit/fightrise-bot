@@ -55,6 +55,7 @@ export function Badge({
   variant = 'default',
   size = 'md',
   style,
+  className,
   ...props
 }: BadgeProps) {
   const combinedStyles: React.CSSProperties = {
@@ -65,7 +66,7 @@ export function Badge({
   };
 
   return (
-    <span style={combinedStyles} {...props}>
+    <span style={combinedStyles} className={className} {...props}>
       {children}
     </span>
   );
