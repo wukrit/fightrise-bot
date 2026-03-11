@@ -20,6 +20,9 @@ import interactionCreateEvent from '../../events/interactionCreate.js';
 import readyEvent from '../../events/ready.js';
 import errorEvent from '../../events/error.js';
 
+// Import Redis for rate limiter cleanup
+import { getRedisConnection } from '../../lib/redis.js';
+
 // Import commands and handlers
 import tournamentCommand from '../../commands/tournament.js';
 import checkinCommand from '../../commands/checkin.js';
@@ -49,7 +52,13 @@ function createMockClient(commands: Map<string, unknown>): Client {
 describe('interactionCreate Event Handler', () => {
   let testClient: DiscordTestClient;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    // Clear rate limiter before each test to prevent rate limit blocking
+    const redis = getRedisConnection();
+    if (redis) {
+      await redis.flushdb();
+    }
+
     testClient = createDiscordTestClient({
       userId: 'test-user-123',
       username: 'TestUser',
