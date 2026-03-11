@@ -133,7 +133,7 @@ export async function checkRateLimit(key: string, config: RateLimitConfig): Prom
     }
 
     return {
-      allowed: false,
+      allowed: true,
       limit: config.limit,
       remaining: config.limit - currentCount - 1,
       resetTime,
