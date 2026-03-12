@@ -82,6 +82,7 @@ services:
       - ../packages/shared/src:/app/packages/shared/src
       - ../packages/startgg-client/src:/app/packages/startgg-client/src
       - ../packages/database/src:/app/packages/database/src
+      - ../packages/database/prisma:/app/packages/database/prisma:ro
       # Mount test configs for smoke, integration, and e2e tests
       - ../apps/bot/vitest.smoke.config.ts:/app/apps/bot/vitest.smoke.config.ts:ro
       - ../apps/bot/vitest.integration.config.ts:/app/apps/bot/vitest.integration.config.ts:ro
@@ -138,6 +139,7 @@ services:
       - ../packages/ui/vitest.setup.ts:/app/packages/ui/vitest.setup.ts:ro
       - ../packages/startgg-client/src:/app/packages/startgg-client/src:ro
       - ../packages/database/src:/app/packages/database/src:ro
+      - ../packages/database/prisma:/app/packages/database/prisma:ro
       # Preserve container node_modules
       - /app/node_modules
       - /app/apps/web/node_modules
