@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from '@/lib/ratelimit';
 import { createErrorResponse, createRateLimitResponse, createSuccessResponse, HttpStatus } from '@/lib/api-response';
+import { PartialTournamentConfigSchema } from '@fightrise/shared';
 
 /**
  * GET /api/tournaments/[id]
@@ -30,6 +31,26 @@ export async function GET(
     }
 
     const { id } = await params;
+
+    // Check if user has relationship to tournament (admin or participant)
+    const [isAdmin, isParticipant] = await Promise.all([
+      prisma.tournamentAdmin.findFirst({
+        where: {
+          tournamentId: id,
+          user: { discordId: session.user.discordId },
+        },
+      }),
+      prisma.registration.findFirst({
+        where: {
+          tournamentId: id,
+          user: { discordId: session.user.discordId },
+        },
+      }),
+    ]);
+
+    if (!isAdmin && !isParticipant) {
+      return createErrorResponse('Forbidden', HttpStatus.FORBIDDEN, { rateLimitHeaders: headers });
+    }
 
     const tournament = await prisma.tournament.findUnique({
       where: { id },
@@ -77,6 +98,16 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
+
+    // Validate input using Zod schema
+    const validationResult = PartialTournamentConfigSchema.safeParse(body);
+    if (!validationResult.success) {
+      return createErrorResponse(
+        'Invalid input',
+        HttpStatus.BAD_REQUEST,
+        { rateLimitHeaders: headers, details: validationResult.error.flatten().fieldErrors }
+      );
+    }
 
     // Check if user is admin of this tournament
     const admin = await prisma.tournamentAdmin.findFirst({
