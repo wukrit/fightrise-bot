@@ -455,16 +455,13 @@ export function AccountContent({ user: initialUser, tournaments: initialTourname
                   username={user.discordUsername}
                   avatar={user.discordAvatar}
                   disconnectLabel="Disconnect"
-                  disconnectAction={() => console.log('Disconnect Discord')}
                 />
                 <LinkedAccount
                   provider="Start.gg"
                   connected={!!user.startggId}
                   username={user.startggGamerTag || undefined}
                   actionLabel="Connect"
-                  action={() => console.log('Link Start.gg')}
                   disconnectLabel="Disconnect"
-                  disconnectAction={() => console.log('Disconnect Start.gg')}
                 />
               </div>
             </SectionCard>

@@ -63,6 +63,12 @@ export function Toggle({
         aria-checked={checked}
         id={toggleId}
         onClick={() => onChange?.(!checked)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onChange?.(!checked);
+          }
+        }}
         disabled={disabled}
         className={`
           relative rounded-full transition-colors duration-200

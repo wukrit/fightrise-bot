@@ -17,19 +17,12 @@ export function StatCard({
   accent,
   icon,
   className,
-  style,
   ...props
 }: StatCardProps) {
   const trendColors: Record<string, string> = {
     up: 'text-emerald-400',
     down: 'text-red-400',
     neutral: 'text-zinc-500',
-  };
-
-  const trendBgColors: Record<string, string> = {
-    up: 'bg-emerald-900/30',
-    down: 'bg-red-900/30',
-    neutral: 'bg-zinc-800/30',
   };
 
   return (
@@ -40,7 +33,6 @@ export function StatCard({
         border: '1px solid rgba(63, 63, 70, 0.5)',
         borderRadius: '8px',
         padding: '16px',
-        ...style,
       }}
       {...props}
     >

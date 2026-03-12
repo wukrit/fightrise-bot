@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { StatusBadge, Toggle, Input } from '@fightrise/ui';
+import { StatusBadge, Toggle, Input, Select } from '@fightrise/ui';
 import type { TournamentState } from '@fightrise/ui';
 import { formatDateTime } from '@fightrise/shared';
 
@@ -80,38 +80,6 @@ function FormField({
   );
 }
 
-// Custom select component using Tailwind
-function Select({
-  value,
-  onChange,
-  options,
-  placeholder,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-  placeholder?: string;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full bg-zinc-800/50 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-600 focus:border-transparent transition-all"
-    >
-      {placeholder && (
-        <option value="" disabled>
-          {placeholder}
-        </option>
-      )}
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
-  );
-}
-
 // Icons
 const ServerIcon = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -160,22 +128,32 @@ function TournamentSettingsForm({ tournament }: { tournament: Tournament }) {
   const [guilds, setGuilds] = useState<DiscordGuild[]>([]);
   const [channels, setChannels] = useState<DiscordChannel[]>([]);
 
+  // Auto-clear success message after 3 seconds
+  useEffect(() => {
+    if (!saveSuccess) return;
+
+    const timer = setTimeout(() => setSaveSuccess(false), 3000);
+    return () => clearTimeout(timer);
+  }, [saveSuccess]);
+
   // Fetch Discord guilds and channels
   useEffect(() => {
+    const controller = new AbortController();
+
     async function fetchDiscordData() {
       try {
-        const response = await fetch('/api/discord/guilds');
+        const response = await fetch('/api/discord/guilds', { signal: controller.signal });
         if (response.ok) {
           const data = await response.json();
           setGuilds(
-            (data.guilds || []).map((g: any) => ({
+            (data.guilds || []).map((g: DiscordGuild) => ({
               id: g.id,
               name: g.name,
               icon: g.icon || null,
             }))
           );
           setChannels(
-            (data.channels || []).map((c: any) => ({
+            (data.channels || []).map((c: DiscordChannel) => ({
               id: c.id,
               name: c.name,
               type: 0,
@@ -183,11 +161,15 @@ function TournamentSettingsForm({ tournament }: { tournament: Tournament }) {
           );
         }
       } catch (err) {
-        console.error('Failed to fetch Discord data:', err);
+        if (err instanceof Error && err.name !== 'AbortError') {
+          console.error('Failed to fetch Discord data:', err);
+        }
       }
     }
 
     fetchDiscordData();
+
+    return () => controller.abort();
   }, []);
 
   const handleSave = async () => {
@@ -205,7 +187,6 @@ function TournamentSettingsForm({ tournament }: { tournament: Tournament }) {
       }
 
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
       console.error('Failed to save settings:', error);
     } finally {
@@ -249,7 +230,7 @@ function TournamentSettingsForm({ tournament }: { tournament: Tournament }) {
           <FormField label="Discord Server" description="Select the server where this tournament will run">
             <Select
               value={formData.discordGuildId}
-              onChange={(v) => setFormData({ ...formData, discordGuildId: v })}
+              onValueChange={(v) => setFormData({ ...formData, discordGuildId: v })}
               options={guilds.map((g) => ({ value: g.id, label: g.name }))}
               placeholder="Select a server..."
             />
@@ -258,7 +239,7 @@ function TournamentSettingsForm({ tournament }: { tournament: Tournament }) {
           <FormField label="Announcement Channel" description="Channel for match thread announcements">
             <Select
               value={formData.discordChannelId}
-              onChange={(v) => setFormData({ ...formData, discordChannelId: v })}
+              onValueChange={(v) => setFormData({ ...formData, discordChannelId: v })}
               options={channels.map((c) => ({ value: c.id, label: `#${c.name}` }))}
               placeholder="Select a channel..."
             />
@@ -374,9 +355,11 @@ export default function TournamentSettingsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     async function fetchTournament() {
       try {
-        const response = await fetch(`/api/tournaments/${tournamentId}`);
+        const response = await fetch(`/api/tournaments/${tournamentId}`, { signal: controller.signal });
         if (!response.ok) {
           throw new Error('Failed to fetch tournament');
         }
@@ -396,7 +379,9 @@ export default function TournamentSettingsPage() {
           allowSelfReporting: data.settings?.allowSelfReporting ?? true,
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setError(err instanceof Error ? err.message : 'Unknown error');
+        }
       } finally {
         setLoading(false);
       }
@@ -405,6 +390,8 @@ export default function TournamentSettingsPage() {
     if (tournamentId) {
       fetchTournament();
     }
+
+    return () => controller.abort();
   }, [tournamentId]);
 
   if (loading) {
