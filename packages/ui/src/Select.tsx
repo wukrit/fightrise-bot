@@ -20,6 +20,7 @@ export interface SelectProps {
   disabled?: boolean;
   id?: string;
   style?: React.CSSProperties;
+  className?: string;
 }
 
 const triggerStyles: React.CSSProperties = {
@@ -140,6 +141,7 @@ export function Select({
   disabled = false,
   id,
   style,
+  className,
 }: SelectProps) {
   const generatedId = React.useId();
   const selectId = id || generatedId;
@@ -171,6 +173,7 @@ export function Select({
         <SelectPrimitive.Trigger
           id={selectId}
           style={getTriggerStyle(style)}
+          className={className}
         >
           <SelectPrimitive.Value placeholder={placeholder} />
           <SelectPrimitive.Icon>

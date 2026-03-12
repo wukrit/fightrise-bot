@@ -31,6 +31,7 @@ export function Card({
   children,
   variant = 'default',
   style,
+  className,
   ...props
 }: CardProps) {
   const combinedStyles: React.CSSProperties = {
@@ -40,7 +41,7 @@ export function Card({
   };
 
   return (
-    <div style={combinedStyles} {...props}>
+    <div style={combinedStyles} className={className} {...props}>
       {children}
     </div>
   );

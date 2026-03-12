@@ -58,6 +58,7 @@ export function Input({
   error,
   helperText,
   style,
+  className,
   onFocus,
   onBlur,
   id,
@@ -91,6 +92,7 @@ export function Input({
       <input
         id={inputId}
         style={inputStyles}
+        className={className}
         onFocus={handleFocus}
         onBlur={handleBlur}
         {...props}

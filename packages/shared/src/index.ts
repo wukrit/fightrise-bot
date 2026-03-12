@@ -62,6 +62,8 @@ export {
   formatTournamentDate,
   formatTournamentDateTz,
   formatDuration,
+  formatDate,
+  formatDateTime,
   isWithinWindow,
   getWindowRemaining,
   getRelativeTime,

@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { StatusBadge, Toggle, Input, Select } from '@fightrise/ui';
+import type { TournamentState } from '@fightrise/ui';
+import { formatDateTime } from '@fightrise/shared';
 
 // Types
-type TournamentState = 'CREATED' | 'REGISTRATION_OPEN' | 'REGISTRATION_CLOSED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-
 interface Tournament {
   id: string;
   name: string;
@@ -34,7 +35,7 @@ interface DiscordChannel {
   type: number;
 }
 
-// Utility components
+// Section card component
 function SectionCard({
   title,
   description,
@@ -60,6 +61,7 @@ function SectionCard({
   );
 }
 
+// Form field component
 function FormField({
   label,
   description,
@@ -75,112 +77,6 @@ function FormField({
       {description && <p className="text-xs text-zinc-500">{description}</p>}
       {children}
     </div>
-  );
-}
-
-function Toggle({
-  checked,
-  onChange,
-  label,
-}: {
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  label?: string;
-}) {
-  return (
-    <label className="flex items-center gap-3 cursor-pointer group">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-          checked ? 'bg-emerald-500' : 'bg-zinc-700 group-hover:bg-zinc-600'
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
-            checked ? 'translate-x-5' : 'translate-x-0'
-          }`}
-        />
-      </button>
-      {label && <span className="text-sm text-zinc-300">{label}</span>}
-    </label>
-  );
-}
-
-function Select({
-  value,
-  onChange,
-  options,
-  placeholder,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-  placeholder?: string;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full bg-zinc-800/50 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-600 focus:border-transparent transition-all"
-    >
-      {placeholder && (
-        <option value="" disabled>
-          {placeholder}
-        </option>
-      )}
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-function Input({
-  value,
-  onChange,
-  type = 'text',
-  placeholder,
-}: {
-  value: string | number;
-  onChange: (value: string) => void;
-  type?: string;
-  placeholder?: string;
-}) {
-  return (
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="w-full bg-zinc-800/50 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-600 focus:border-transparent transition-all"
-    />
-  );
-}
-
-function StatusBadge({ state }: { state: TournamentState }) {
-  const statusConfig: Record<TournamentState, { label: string; className: string }> = {
-    CREATED: { label: 'Draft', className: 'bg-zinc-800 text-zinc-400 border-zinc-700' },
-    REGISTRATION_OPEN: { label: 'Registration Open', className: 'bg-emerald-900/50 text-emerald-400 border-emerald-700/50' },
-    REGISTRATION_CLOSED: { label: 'Registration Closed', className: 'bg-amber-900/50 text-amber-400 border-amber-700/50' },
-    IN_PROGRESS: { label: 'Live', className: 'bg-rose-900/50 text-rose-400 border-rose-700/50 animate-pulse' },
-    COMPLETED: { label: 'Completed', className: 'bg-slate-800 text-slate-400 border-slate-700' },
-    CANCELLED: { label: 'Cancelled', className: 'bg-red-900/30 text-red-400 border-red-800/50' },
-  };
-
-  const config = statusConfig[state];
-
-  return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${config.className}`}>
-      {state === 'IN_PROGRESS' && (
-        <span className="w-1.5 h-1.5 bg-rose-400 rounded-full mr-1.5 animate-ping" />
-      )}
-      {config.label}
-    </span>
   );
 }
 
@@ -232,22 +128,32 @@ function TournamentSettingsForm({ tournament }: { tournament: Tournament }) {
   const [guilds, setGuilds] = useState<DiscordGuild[]>([]);
   const [channels, setChannels] = useState<DiscordChannel[]>([]);
 
+  // Auto-clear success message after 3 seconds
+  useEffect(() => {
+    if (!saveSuccess) return;
+
+    const timer = setTimeout(() => setSaveSuccess(false), 3000);
+    return () => clearTimeout(timer);
+  }, [saveSuccess]);
+
   // Fetch Discord guilds and channels
   useEffect(() => {
+    const controller = new AbortController();
+
     async function fetchDiscordData() {
       try {
-        const response = await fetch('/api/discord/guilds');
+        const response = await fetch('/api/discord/guilds', { signal: controller.signal });
         if (response.ok) {
           const data = await response.json();
           setGuilds(
-            (data.guilds || []).map((g: any) => ({
+            (data.guilds || []).map((g: DiscordGuild) => ({
               id: g.id,
               name: g.name,
               icon: g.icon || null,
             }))
           );
           setChannels(
-            (data.channels || []).map((c: any) => ({
+            (data.channels || []).map((c: DiscordChannel) => ({
               id: c.id,
               name: c.name,
               type: 0,
@@ -255,11 +161,15 @@ function TournamentSettingsForm({ tournament }: { tournament: Tournament }) {
           );
         }
       } catch (err) {
-        console.error('Failed to fetch Discord data:', err);
+        if (err instanceof Error && err.name !== 'AbortError') {
+          console.error('Failed to fetch Discord data:', err);
+        }
       }
     }
 
     fetchDiscordData();
+
+    return () => controller.abort();
   }, []);
 
   const handleSave = async () => {
@@ -277,23 +187,11 @@ function TournamentSettingsForm({ tournament }: { tournament: Tournament }) {
       }
 
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
       console.error('Failed to save settings:', error);
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return 'TBD';
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
   };
 
   return (
@@ -313,11 +211,11 @@ function TournamentSettingsForm({ tournament }: { tournament: Tournament }) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-xs text-zinc-500">Start Time</p>
-            <p className="text-sm text-zinc-200 mt-0.5">{formatDate(tournament.startAt)}</p>
+            <p className="text-sm text-zinc-200 mt-0.5">{formatDateTime(tournament.startAt)}</p>
           </div>
           <div>
             <p className="text-xs text-zinc-500">End Time</p>
-            <p className="text-sm text-zinc-200 mt-0.5">{formatDate(tournament.endAt)}</p>
+            <p className="text-sm text-zinc-200 mt-0.5">{formatDateTime(tournament.endAt)}</p>
           </div>
         </div>
       </div>
@@ -332,7 +230,7 @@ function TournamentSettingsForm({ tournament }: { tournament: Tournament }) {
           <FormField label="Discord Server" description="Select the server where this tournament will run">
             <Select
               value={formData.discordGuildId}
-              onChange={(v) => setFormData({ ...formData, discordGuildId: v })}
+              onValueChange={(v) => setFormData({ ...formData, discordGuildId: v })}
               options={guilds.map((g) => ({ value: g.id, label: g.name }))}
               placeholder="Select a server..."
             />
@@ -341,7 +239,7 @@ function TournamentSettingsForm({ tournament }: { tournament: Tournament }) {
           <FormField label="Announcement Channel" description="Channel for match thread announcements">
             <Select
               value={formData.discordChannelId}
-              onChange={(v) => setFormData({ ...formData, discordChannelId: v })}
+              onValueChange={(v) => setFormData({ ...formData, discordChannelId: v })}
               options={channels.map((c) => ({ value: c.id, label: `#${c.name}` }))}
               placeholder="Select a channel..."
             />
@@ -368,8 +266,9 @@ function TournamentSettingsForm({ tournament }: { tournament: Tournament }) {
             <div className="flex items-center gap-2">
               <Input
                 type="number"
-                value={formData.checkInWindowMinutes}
-                onChange={(v) => setFormData({ ...formData, checkInWindowMinutes: parseInt(v) || 10 })}
+                value={formData.checkInWindowMinutes.toString()}
+                onChange={(e) => setFormData({ ...formData, checkInWindowMinutes: parseInt(e.target.value) || 10 })}
+                className="w-full bg-zinc-800/50 border border-zinc-700 rounded-lg px-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-600 focus:border-transparent transition-all"
               />
               <span className="text-sm text-zinc-500">minutes</span>
             </div>
@@ -456,9 +355,11 @@ export default function TournamentSettingsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     async function fetchTournament() {
       try {
-        const response = await fetch(`/api/tournaments/${tournamentId}`);
+        const response = await fetch(`/api/tournaments/${tournamentId}`, { signal: controller.signal });
         if (!response.ok) {
           throw new Error('Failed to fetch tournament');
         }
@@ -478,7 +379,9 @@ export default function TournamentSettingsPage() {
           allowSelfReporting: data.settings?.allowSelfReporting ?? true,
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setError(err instanceof Error ? err.message : 'Unknown error');
+        }
       } finally {
         setLoading(false);
       }
@@ -487,6 +390,8 @@ export default function TournamentSettingsPage() {
     if (tournamentId) {
       fetchTournament();
     }
+
+    return () => controller.abort();
   }, [tournamentId]);
 
   if (loading) {

@@ -198,3 +198,41 @@ export function toUnixSeconds(date: Date | number): number {
 export function fromUnixSeconds(unixSeconds: number): number {
   return unixSeconds * 1000;
 }
+
+/**
+ * Format an ISO date string for display
+ * @param dateStr ISO date string (e.g., from database)
+ * @param options Intl.DateTimeFormat options
+ * @returns Formatted date string or 'TBD' if null/undefined
+ */
+export function formatDate(
+  dateStr: string | null | undefined,
+  options: Intl.DateTimeFormatOptions = {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }
+): string {
+  if (!dateStr) return 'TBD';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', options);
+}
+
+/**
+ * Format an ISO date string with time for display
+ * @param dateStr ISO date string (e.g., from database)
+ * @returns Formatted date and time string or 'TBD' if null/undefined
+ */
+export function formatDateTime(
+  dateStr: string | null | undefined
+): string {
+  if (!dateStr) return 'TBD';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}

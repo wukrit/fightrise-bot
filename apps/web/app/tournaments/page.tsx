@@ -1,10 +1,11 @@
 export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { prisma } from '@fightrise/database';
+import { StatusBadge } from '@fightrise/ui';
+import type { TournamentState } from '@fightrise/ui';
+import { formatDate } from '@fightrise/shared';
 
 // Types
-type TournamentState = 'CREATED' | 'REGISTRATION_OPEN' | 'REGISTRATION_CLOSED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-
 interface Tournament {
   id: string;
   name: string;
@@ -15,36 +16,6 @@ interface Tournament {
   _count?: {
     registrations: number;
   };
-}
-
-// Status badge component
-function StatusBadge({ state }: { state: TournamentState }) {
-  const statusConfig: Record<TournamentState, { label: string; className: string }> = {
-    CREATED: { label: 'Draft', className: 'bg-zinc-800 text-zinc-400 border-zinc-700' },
-    REGISTRATION_OPEN: { label: 'Registration Open', className: 'bg-emerald-900/50 text-emerald-400 border-emerald-700/50' },
-    REGISTRATION_CLOSED: { label: 'Registration Closed', className: 'bg-amber-900/50 text-amber-400 border-amber-700/50' },
-    IN_PROGRESS: { label: 'Live', className: 'bg-rose-900/50 text-rose-400 border-rose-700/50 animate-pulse' },
-    COMPLETED: { label: 'Completed', className: 'bg-slate-800 text-slate-400 border-slate-700' },
-    CANCELLED: { label: 'Cancelled', className: 'bg-red-900/30 text-red-400 border-red-800/50' },
-  };
-
-  const config = statusConfig[state];
-
-  return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${config.className}`}>
-      {state === 'IN_PROGRESS' && (
-        <span className="w-1.5 h-1.5 bg-rose-400 rounded-full mr-1.5 animate-ping" />
-      )}
-      {config.label}
-    </span>
-  );
-}
-
-// Format date
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return 'TBD';
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 // Tournament card

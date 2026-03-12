@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enable standalone output for Docker
+  output: 'standalone',
   // Enable trust proxy for proper IP detection behind reverse proxies
   // This allows Next.js to correctly parse X-Forwarded-For header
   trustProxy: true,
