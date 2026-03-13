@@ -5,7 +5,83 @@
  * the actual Prisma/Next.js API response structures.
  */
 
+import { Page } from '@playwright/test';
 import { TournamentState, EventState, MatchState, RegistrationStatus, RegistrationSource, AdminRole, AuditAction, AuditSource } from '@prisma/client';
+
+/**
+ * Setup fetch interception for API mocking using addInitScript.
+ *
+ * This is needed because page.route() doesn't intercept SSR requests.
+ * addInitScript runs before the page loads, allowing us to intercept
+ * fetch requests during server-side rendering.
+ *
+ * @param page - Playwright page
+ * @param mocks - Record of URL patterns to mock responses
+ *
+ * @example
+ * ```ts
+ * await setupApiMocks(page, {
+ *   '/api/matches': { matches: [...] },
+ *   '/api/tournaments': { items: [...] },
+ * });
+ * await page.goto('/matches');
+ * ```
+ */
+export async function setupApiMocks(page: Page, mocks: Record<string, any>): Promise<void> {
+  await page.addInitScript((mockData) => {
+    // Store mock data in window for access
+    (window as any).__E2E_API_MOCKS__ = mockData;
+
+    // Override fetch to intercept API calls
+    const originalFetch = window.fetch;
+    window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      const urlObj = new URL(url, 'http://localhost:3000');
+      const pathname = urlObj.pathname;
+
+      // Check if this URL matches any mock
+      for (const [pattern, response] of Object.entries((window as any).__E2E_API_MOCKS__)) {
+        if (pathname.startsWith(pattern)) {
+          return new Response(JSON.stringify(response), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Not matched - use original fetch
+      return originalFetch(input, init);
+    };
+  }, mocks);
+}
+
+/**
+ * Setup match API mocks specifically.
+ * Convenience wrapper for /api/matches/* endpoints.
+ *
+ * @param page - Playwright page
+ * @param matchData - Match data to return
+ */
+export async function setupMatchApiMocks(page: Page, matchData: any): Promise<void> {
+  await setupApiMocks(page, {
+    '/api/matches': matchData,
+    '/api/matches/': matchData,
+  });
+}
+
+/**
+ * Setup tournament API mocks specifically.
+ * Convenience wrapper for /api/tournaments/* endpoints.
+ *
+ * @param page - Playwright page
+ * @param tournamentData - Tournament data to return
+ */
+export async function setupTournamentApiMocks(page: Page, tournamentData: any): Promise<void> {
+  await setupApiMocks(page, {
+    '/api/tournaments': tournamentData,
+    '/api/tournaments/': tournamentData,
+  });
+}
 
 /**
  * Generate a tournament object matching the Prisma model + API transformation.

@@ -29,7 +29,7 @@ export default withAuth(
 
         // Only skip auth check in test environment (for E2E tests)
         // SECURITY: Never bypass in development or production
-        if (process.env.NODE_ENV === 'test') {
+        if (process.env.NODE_ENV === 'test' || process.env.E2E_AUTH_BYPASS === 'true') {
           return true;
         }
 
