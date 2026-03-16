@@ -1,0 +1,550 @@
+<!DOCTYPE html><html><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width"/><meta name="next-head-count" content="2"/><noscript data-n-css=""></noscript><script defer="" nomodule="" src="/fightrise-bot/_next/static/chunks/polyfills-78c92fac7aa8fdd8.js"></script><script src="/fightrise-bot/_next/static/chunks/webpack-1a64f5c80bb82e92.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/framework-6dd3bf7463386647.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/main-31102c233e8a53a2.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/pages/_app-1d9f5a60019541c0.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/pages/%5B%5B...slug%5D%5D-f39751a4822b6454.js" defer=""></script><script src="/fightrise-bot/_next/static/acF89I3zldAHDa3e-tMVc/_buildManifest.js" defer=""></script><script src="/fightrise-bot/_next/static/acF89I3zldAHDa3e-tMVc/_ssgManifest.js" defer=""></script></head><body><div id="__next"><div style="display:flex;min-height:100vh"><aside style="width:260px;border-right:1px solid #e5e5e5;padding:1.5rem;background:#fafafa;flex-shrink:0"><h2 style="margin-top:0;margin-bottom:1rem;font-size:1.25rem"><a style="text-decoration:none;color:#333" href="/fightrise-bot/">FightRise</a></h2><nav><div style="margin-bottom:1rem"><a style="font-weight:600;color:#666;text-decoration:none" href="/fightrise-bot/">Getting Started</a></div><div style="margin-bottom:1rem"><div style="font-weight:600;color:#666;margin-bottom:0.5rem">Guides</div><a style="display:block;padding:0.25rem 0;color:#333;text-decoration:none;font-size:0.9rem" href="/fightrise-bot/guides/player-quickstart/">Player Quickstart</a><a style="display:block;padding:0.25rem 0;color:#333;text-decoration:none;font-size:0.9rem" href="/fightrise-bot/guides/to-quickstart/">TO Quickstart</a><a style="display:block;padding:0.25rem 0;color:#333;text-decoration:none;font-size:0.9rem" href="/fightrise-bot/guides/discord-setup/">Discord Setup</a><a style="display:block;padding:0.25rem 0;color:#333;text-decoration:none;font-size:0.9rem" href="/fightrise-bot/guides/startgg-setup/">Start.gg Setup</a><a style="display:block;padding:0.25rem 0;color:#333;text-decoration:none;font-size:0.9rem" href="/fightrise-bot/guides/tunnel-setup/">Tunnel Setup</a></div><div><div style="font-weight:600;color:#666;margin-bottom:0.5rem">Reference</div><a style="display:block;padding:0.25rem 0;color:#333;text-decoration:none;font-size:0.9rem" href="/fightrise-bot/reference/architecture/">Architecture</a><a style="display:block;padding:0.25rem 0;color:#333;text-decoration:none;font-size:0.9rem" href="/fightrise-bot/reference/codebase-reference/">Codebase Reference</a><a style="display:block;padding:0.25rem 0;color:#333;text-decoration:none;font-size:0.9rem" href="/fightrise-bot/reference/api-reference/">API Reference</a></div></nav></aside><main style="flex:1;padding:2rem;max-width:800px"><article style="line-height:1.7"><hr>
+<h2>layout: default
+title: &quot;Start.gg API Setup Guide&quot;</h2>
+<h1>Start.gg API Setup Guide</h1>
+<p>This guide walks you through setting up Start.gg API access for FightRise.</p>
+<h2>Prerequisites</h2>
+<p>Before you begin, make sure you have:</p>
+<ul>
+<li><strong>Start.gg account</strong> at <a href="https://start.gg">start.gg</a></li>
+<li><strong>Text editor</strong> for managing <code>.env</code> files</li>
+<li><strong>curl or API client</strong> (optional, for testing)</li>
+</ul>
+<p><strong>Estimated time:</strong> 10-15 minutes</p>
+<h2>Related Documentation</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="./Discord-Setup">Discord Setup</a></td>
+<td>Discord bot configuration</td>
+</tr>
+<tr>
+<td><strong>Start.gg Setup</strong> (this doc)</td>
+<td>Start.gg API setup</td>
+</tr>
+<tr>
+<td><a href="./Tunnel-Setup">Tunnel Setup</a></td>
+<td>Cloudflare Tunnel for OAuth</td>
+</tr>
+<tr>
+<td><a href="./Implementation-Status">Implementation Status</a></td>
+<td>Current progress</td>
+</tr>
+<tr>
+<td><a href="./Architecture">Architecture</a></td>
+<td>System architecture overview</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Table of Contents</h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#getting-an-api-token">Getting an API Token</a></li>
+<li><a href="#api-basics">API Basics</a></li>
+<li><a href="#rate-limits">Rate Limits</a></li>
+<li><a href="#oauth2-setup-advanced">OAuth2 Setup (Advanced)</a></li>
+<li><a href="#environment-variables">Environment Variables</a></li>
+<li><a href="#testing-your-setup">Testing Your Setup</a></li>
+</ol>
+<hr>
+<h2>Overview</h2>
+<p>Start.gg (formerly Smash.gg) provides a GraphQL API for accessing tournament data. FightRise uses this API to:</p>
+<ul>
+<li>Fetch tournament information and brackets</li>
+<li>Retrieve match/set data and player standings</li>
+<li>Report match results</li>
+<li>Sync registrations</li>
+</ul>
+<h3>API Type</h3>
+<ul>
+<li><strong>Protocol</strong>: GraphQL</li>
+<li><strong>Endpoint</strong>: <code>https://api.start.gg/gql/alpha</code></li>
+<li><strong>Authentication</strong>: Bearer token</li>
+</ul>
+<hr>
+<h2>Getting an API Token</h2>
+<h3>Step 1: Access Developer Settings</h3>
+<ol>
+<li>Log in to <a href="https://start.gg">Start.gg</a></li>
+<li>Click your profile icon in the top right</li>
+<li>Select <strong>&quot;Developer Settings&quot;</strong> or go directly to:
+<code>https://start.gg/admin/profile/developer</code></li>
+</ol>
+<h3>Step 2: Create a New Token</h3>
+<ol>
+<li>Click <strong>&quot;Create new token&quot;</strong></li>
+<li>Enter a descriptive name (e.g., &quot;FightRise Bot - Production&quot;)</li>
+<li>Click <strong>&quot;Save&quot;</strong></li>
+</ol>
+<h3>Step 3: Copy Your Token</h3>
+<blockquote>
+<p><strong>CRITICAL</strong>: Copy your token immediately after creation. You <strong>cannot view it again</strong> once you leave the page.</p>
+</blockquote>
+<p>The token will look something like:</p>
+<pre><code>d4f7a8b3c2e1f0...
+</code></pre>
+<p>This is your <code>STARTGG_API_KEY</code> environment variable.</p>
+<hr>
+<h2>API Basics</h2>
+<h3>Making Requests</h3>
+<p>All API requests must include the <code>Authorization</code> header:</p>
+<pre><code>Authorization: Bearer YOUR_TOKEN_HERE
+</code></pre>
+<h3>GraphQL Endpoint</h3>
+<p>Send all queries and mutations to:</p>
+<pre><code>POST https://api.start.gg/gql/alpha
+</code></pre>
+<h3>Example Query</h3>
+<pre><code class="language-graphql">query GetTournament($slug: String!) {
+  tournament(slug: $slug) {
+    id
+    name
+    startAt
+    endAt
+    events {
+      id
+      name
+      numEntrants
+    }
+  }
+}
+</code></pre>
+<h3>Example Request (curl)</h3>
+<pre><code class="language-bash">curl -X POST https://api.start.gg/gql/alpha \
+  -H &quot;Authorization: Bearer YOUR_TOKEN&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{
+    &quot;query&quot;: &quot;query { currentUser { id } }&quot;
+  }&#39;
+</code></pre>
+<hr>
+<h2>Rate Limits</h2>
+<p>Start.gg enforces strict rate limits to prevent abuse:</p>
+<h3>Request Limits</h3>
+<table>
+<thead>
+<tr>
+<th>Limit Type</th>
+<th>Threshold</th>
+<th>Time Window</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Request frequency</td>
+<td>80 requests</td>
+<td>60 seconds</td>
+</tr>
+<tr>
+<td>Objects per request</td>
+<td>1,000 objects</td>
+<td>Per request</td>
+</tr>
+</tbody></table>
+<h3>What Counts as an Object?</h3>
+<p>The 1,000 object limit includes all returned data, including nested objects. For example:</p>
+<ul>
+<li>A tournament with 50 events and 20 entrants each = 1,050 objects (exceeds limit)</li>
+<li>Use pagination to stay under limits</li>
+</ul>
+<h3>Rate Limit Response</h3>
+<p>When you exceed limits, you&#39;ll receive:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: false,
+  &quot;message&quot;: &quot;Rate limit exceeded - api-token&quot;
+}
+</code></pre>
+<h3>Best Practices</h3>
+<ol>
+<li><strong>Implement caching</strong> - Don&#39;t fetch the same data repeatedly</li>
+<li><strong>Use pagination</strong> - Fetch large datasets in smaller chunks</li>
+<li><strong>Add delays</strong> - Space out requests during polling</li>
+<li><strong>Implement exponential backoff</strong> - Back off when rate limited</li>
+</ol>
+<p>FightRise&#39;s <code>@fightrise/startgg-client</code> package handles these automatically with:</p>
+<ul>
+<li>Response caching with TTL</li>
+<li>Automatic retry with exponential backoff</li>
+<li>Request queuing</li>
+</ul>
+<hr>
+<h2>OAuth2 Setup (Advanced)</h2>
+<p>OAuth2 allows users to authorize FightRise to access their personal Start.gg data and perform actions on their behalf. This is required for:</p>
+<ul>
+<li>Verifying tournament admin status</li>
+<li>Registering players on behalf of users</li>
+<li>Reporting scores as authenticated users</li>
+</ul>
+<h3>Step 1: Create OAuth Application</h3>
+<ol>
+<li>Go to <a href="https://start.gg/admin/profile/developer">Start.gg Developer Settings</a></li>
+<li>Navigate to <strong>&quot;OAuth Applications&quot;</strong></li>
+<li>Click <strong>&quot;Create Application&quot;</strong></li>
+<li>Fill in the required fields:<ul>
+<li><strong>Name</strong>: FightRise</li>
+<li><strong>Redirect URIs</strong>: Your callback URLs</li>
+</ul>
+</li>
+</ol>
+<h3>Step 2: Configure Redirect URIs</h3>
+<p>Add these redirect URIs:</p>
+<pre><code># Development (local only - won&#39;t work for OAuth testing)
+http://localhost:3000/api/auth/callback/startgg
+
+# Development (with Cloudflare Tunnel - recommended for OAuth)
+https://fightrise-dev.yourdomain.com/api/auth/callback/startgg
+
+# Production
+https://your-domain.com/api/auth/callback/startgg
+</code></pre>
+<blockquote>
+<p><strong>Note:</strong> OAuth callbacks require publicly accessible URLs. For local development with OAuth, use <a href="./Tunnel-Setup">Cloudflare Tunnel</a> to expose your local server.</p>
+</blockquote>
+<h3>Step 3: Note OAuth Credentials</h3>
+<p>After creating the application, you&#39;ll receive:</p>
+<ul>
+<li><strong>Client ID</strong> - Your OAuth application ID</li>
+<li><strong>Client Secret</strong> - Keep this secure</li>
+</ul>
+<h3>OAuth Scopes</h3>
+<table>
+<thead>
+<tr>
+<th>Scope</th>
+<th>Description</th>
+<th>When Needed</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>user.identity</code></td>
+<td>Access user&#39;s basic profile</td>
+<td>Always</td>
+</tr>
+<tr>
+<td><code>user.email</code></td>
+<td>Access user&#39;s email</td>
+<td>Optional</td>
+</tr>
+<tr>
+<td><code>tournament.manager</code></td>
+<td>Manage tournament seeding and brackets</td>
+<td>Admin verification</td>
+</tr>
+<tr>
+<td><code>tournament.reporter</code></td>
+<td>Report match results</td>
+<td>Score reporting</td>
+</tr>
+</tbody></table>
+<h3>OAuth Flow</h3>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant U as User
+    participant F as FightRise
+    participant S as Start.gg
+
+    U-&gt;&gt;F: Click &quot;Connect Start.gg&quot;
+    F-&gt;&gt;S: Redirect to authorize endpoint
+    S-&gt;&gt;U: Show permission prompt
+    U-&gt;&gt;S: Approve scopes
+    S-&gt;&gt;F: Redirect with auth code
+    F-&gt;&gt;S: POST /oauth/access_token
+    S-&gt;&gt;F: Access token + refresh token
+    F-&gt;&gt;F: Store encrypted token
+    F-&gt;&gt;U: Account linked
+</code></pre>
+<h4>Step-by-Step</h4>
+<ol>
+<li><p><strong>Authorization URL</strong>:</p>
+<pre><code>https://start.gg/oauth/authorize?response_type=code&amp;client_id=YOUR_CLIENT_ID&amp;scope=user.identity&amp;redirect_uri=YOUR_REDIRECT_URI&amp;state=RANDOM_STATE
+</code></pre>
+</li>
+<li><p><strong>Token Exchange</strong>: POST to <code>https://api.start.gg/oauth/access_token</code></p>
+<pre><code class="language-json">{
+  &quot;grant_type&quot;: &quot;authorization_code&quot;,
+  &quot;code&quot;: &quot;AUTHORIZATION_CODE&quot;,
+  &quot;client_id&quot;: &quot;YOUR_CLIENT_ID&quot;,
+  &quot;client_secret&quot;: &quot;YOUR_CLIENT_SECRET&quot;,
+  &quot;redirect_uri&quot;: &quot;YOUR_REDIRECT_URI&quot;
+}
+</code></pre>
+</li>
+<li><p><strong>Refresh Token</strong>: POST to <code>https://api.start.gg/oauth/refresh</code></p>
+<pre><code class="language-json">{
+  &quot;grant_type&quot;: &quot;refresh_token&quot;,
+  &quot;refresh_token&quot;: &quot;YOUR_REFRESH_TOKEN&quot;,
+  &quot;client_id&quot;: &quot;YOUR_CLIENT_ID&quot;,
+  &quot;client_secret&quot;: &quot;YOUR_CLIENT_SECRET&quot;
+}
+</code></pre>
+</li>
+</ol>
+<hr>
+<h2>Environment Variables</h2>
+<p>Add these to your <code>.env</code> file:</p>
+<pre><code class="language-bash"># Start.gg API (Required)
+STARTGG_API_KEY=&quot;your-api-token-from-developer-settings&quot;
+
+# Start.gg OAuth (Optional - for user authentication)
+STARTGG_CLIENT_ID=&quot;your-oauth-client-id&quot;
+STARTGG_CLIENT_SECRET=&quot;your-oauth-client-secret&quot;
+STARTGG_REDIRECT_URI=&quot;http://localhost:3000/api/auth/callback/startgg&quot;
+</code></pre>
+<h3>Where to Find Each Value</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Location</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>STARTGG_API_KEY</code></td>
+<td>Developer Settings → Tokens → Create New Token</td>
+</tr>
+<tr>
+<td><code>STARTGG_CLIENT_ID</code></td>
+<td>Developer Settings → OAuth Applications → Your App</td>
+</tr>
+<tr>
+<td><code>STARTGG_CLIENT_SECRET</code></td>
+<td>Developer Settings → OAuth Applications → Your App</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Testing Your Setup</h2>
+<h3>Quick Test with curl</h3>
+<pre><code class="language-bash"># Test your API token
+curl -X POST https://api.start.gg/gql/alpha \
+  -H &quot;Authorization: Bearer $STARTGG_API_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#39;{&quot;query&quot;: &quot;{ currentUser { id } }&quot;}&#39;
+</code></pre>
+<p>Expected response:</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: {
+    &quot;currentUser&quot;: {
+      &quot;id&quot;: &quot;12345&quot;
+    }
+  }
+}
+</code></pre>
+<h3>Test with FightRise Client</h3>
+<p>Run the smoke tests:</p>
+<pre><code class="language-bash">npm run test:smoke -- --filter=@fightrise/startgg-client
+</code></pre>
+<h3>API Explorer</h3>
+<p>Use Start.gg&#39;s interactive API Explorer to test queries:</p>
+<ul>
+<li><a href="https://developer.start.gg/explorer">Start.gg API Explorer</a></li>
+</ul>
+<p>You&#39;ll need to authenticate with your token in the explorer settings.</p>
+<hr>
+<h2>Common Queries</h2>
+<h3>Get Tournament by Slug</h3>
+<pre><code class="language-graphql">query GetTournament($slug: String!) {
+  tournament(slug: $slug) {
+    id
+    name
+    slug
+    startAt
+    endAt
+    events {
+      id
+      name
+      numEntrants
+      state
+    }
+  }
+}
+</code></pre>
+<p>Variables:</p>
+<pre><code class="language-json">{
+  &quot;slug&quot;: &quot;tournament/my-tournament-2024&quot;
+}
+</code></pre>
+<h3>Get Event Sets (Matches)</h3>
+<pre><code class="language-graphql">query GetEventSets($eventId: ID!, $page: Int!, $perPage: Int!) {
+  event(id: $eventId) {
+    sets(page: $page, perPage: $perPage, sortType: STANDARD) {
+      pageInfo {
+        total
+        totalPages
+      }
+      nodes {
+        id
+        state
+        fullRoundText
+        identifier
+        slots {
+          entrant {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+}
+</code></pre>
+<h3>Report Match Result</h3>
+<pre><code class="language-graphql">mutation ReportSet($setId: ID!, $winnerId: ID!) {
+  reportBracketSet(setId: $setId, winnerId: $winnerId) {
+    id
+    state
+  }
+}
+</code></pre>
+<hr>
+<h2>Security Best Practices</h2>
+<h3>Token Security</h3>
+<ol>
+<li><p><strong>Never commit tokens to version control</strong></p>
+<ul>
+<li>Use <code>.env</code> files and ensure <code>.env</code> is in <code>.gitignore</code></li>
+</ul>
+</li>
+<li><p><strong>Use environment variables</strong></p>
+<ul>
+<li>Never hardcode tokens in source code</li>
+</ul>
+</li>
+<li><p><strong>Limit token access</strong></p>
+<ul>
+<li>Only share tokens with trusted team members through secure channels</li>
+</ul>
+</li>
+</ol>
+<h3>Token Rotation</h3>
+<p>Regular token rotation reduces the risk of compromised credentials.</p>
+<p><strong>Rotation Schedule:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Token Type</th>
+<th>Recommended Interval</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>API Token</td>
+<td>Every 90 days</td>
+</tr>
+<tr>
+<td>OAuth Client Secret</td>
+<td>Every 90 days</td>
+</tr>
+</tbody></table>
+<p><strong>When to Rotate Immediately:</strong></p>
+<ul>
+<li>A team member with token access leaves the project</li>
+<li>You suspect the token may have been exposed</li>
+<li>After a security incident</li>
+<li>Unusual API activity detected (check Developer Settings usage logs)</li>
+</ul>
+<p><strong>How to Rotate:</strong></p>
+<ol>
+<li><strong>API Token</strong>: Developer Settings → Create new token → Update <code>.env</code> → Test → Delete old token</li>
+<li><strong>OAuth Secret</strong>: OAuth Applications → Your App → Regenerate secret → Update <code>.env</code></li>
+</ol>
+<p><strong>Best Practice:</strong> Create the new token and verify it works before deleting the old one.</p>
+<h3>OAuth Token Storage</h3>
+<p>User OAuth tokens (access and refresh tokens) should be:</p>
+<ul>
+<li>Encrypted at rest using AES-256 or equivalent</li>
+<li>Never logged or exposed in error messages</li>
+<li>Stored with minimal retention (refresh as needed)</li>
+</ul>
+<h3>Production Secrets Management</h3>
+<p>For production deployments, use a dedicated secrets manager instead of <code>.env</code> files:</p>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Best For</th>
+<th>Key Features</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>AWS Secrets Manager</strong></td>
+<td>AWS-hosted apps</td>
+<td>Automatic rotation, IAM integration</td>
+</tr>
+<tr>
+<td><strong>HashiCorp Vault</strong></td>
+<td>Multi-cloud, K8s</td>
+<td>Open-source, highly configurable</td>
+</tr>
+<tr>
+<td><strong>Azure Key Vault</strong></td>
+<td>Azure-hosted apps</td>
+<td>Azure AD integration</td>
+</tr>
+<tr>
+<td><strong>Google Secret Manager</strong></td>
+<td>GCP-hosted apps</td>
+<td>IAM integration, versioning</td>
+</tr>
+<tr>
+<td><strong>Railway/Render Secrets</strong></td>
+<td>Smaller deployments</td>
+<td>Built-in, easy setup</td>
+</tr>
+</tbody></table>
+<p><strong>Benefits over <code>.env</code> files:</strong></p>
+<ul>
+<li>Automatic token rotation</li>
+<li>Audit logging (who accessed what, when)</li>
+<li>Encryption at rest</li>
+<li>Fine-grained access control</li>
+<li>Version history and rollback</li>
+</ul>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>&quot;Authentication failed&quot;</h3>
+<ol>
+<li><strong>Token expired or invalid</strong> - Create a new token in Developer Settings</li>
+<li><strong>Wrong header format</strong> - Ensure it&#39;s <code>Authorization: Bearer TOKEN</code> (note the space)</li>
+<li><strong>Token not copied correctly</strong> - Tokens can be long; ensure you copied the full string</li>
+</ol>
+<h3>&quot;Rate limit exceeded&quot;</h3>
+<ol>
+<li><strong>Too many requests</strong> - Add delays between requests (wait at least 750ms)</li>
+<li><strong>Request too large</strong> - Reduce the number of objects requested via pagination</li>
+<li><strong>Implement caching</strong> - Cache responses to avoid duplicate requests</li>
+</ol>
+<h3>&quot;Object limit exceeded&quot;</h3>
+<ol>
+<li><strong>Paginate your queries</strong> - Use <code>page</code> and <code>perPage</code> parameters</li>
+<li><strong>Reduce nested depth</strong> - Only request fields you need</li>
+<li><strong>Split into multiple queries</strong> - Break up large requests</li>
+</ol>
+<h3>Tournament Not Found</h3>
+<ol>
+<li><strong>Check the slug format</strong> - Should be <code>tournament/slug-name</code> or just <code>slug-name</code></li>
+<li><strong>Tournament may be private</strong> - Some tournaments require authentication</li>
+<li><strong>Tournament may be deleted</strong> - Verify it exists on start.gg</li>
+</ol>
+<hr>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="https://developer.start.gg/">Start.gg Developer Portal</a></li>
+<li><a href="https://developer.start.gg/docs/intro/">Start.gg API Introduction</a></li>
+<li><a href="https://smashgg-schema.netlify.app/">GraphQL Schema Reference</a></li>
+<li><a href="https://developer.start.gg/explorer">Start.gg API Explorer</a></li>
+<li><a href="https://developer.start.gg/docs/intro-to-gql/">GraphQL Introduction</a></li>
+</ul>
+<hr>
+<h2>Next Steps</h2>
+<p>Now that Start.gg is configured:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Complete <a href="./Discord-Setup">Discord Setup</a> if you haven&#39;t already</li>
+<li><input disabled="" type="checkbox"> Run <code>npm install</code> at the repository root</li>
+<li><input disabled="" type="checkbox"> Copy <code>.env.example</code> to <code>.env</code> and add your credentials</li>
+<li><input disabled="" type="checkbox"> Run <code>npm run test:smoke -- --filter=@fightrise/startgg-client</code> to verify API access</li>
+<li><input disabled="" type="checkbox"> Run <code>npm run dev</code> to start the full application</li>
+</ul>
+<p>See <a href="./Implementation-Status">Implementation Status</a> to track progress or find ways to contribute.</p>
+</article></main></div></div><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"content":"\u003chr\u003e\n\u003ch2\u003elayout: default\ntitle: \u0026quot;Start.gg API Setup Guide\u0026quot;\u003c/h2\u003e\n\u003ch1\u003eStart.gg API Setup Guide\u003c/h1\u003e\n\u003cp\u003eThis guide walks you through setting up Start.gg API access for FightRise.\u003c/p\u003e\n\u003ch2\u003ePrerequisites\u003c/h2\u003e\n\u003cp\u003eBefore you begin, make sure you have:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e\u003cstrong\u003eStart.gg account\u003c/strong\u003e at \u003ca href=\"https://start.gg\"\u003estart.gg\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eText editor\u003c/strong\u003e for managing \u003ccode\u003e.env\u003c/code\u003e files\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003ecurl or API client\u003c/strong\u003e (optional, for testing)\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e\u003cstrong\u003eEstimated time:\u003c/strong\u003e 10-15 minutes\u003c/p\u003e\n\u003ch2\u003eRelated Documentation\u003c/h2\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eDocument\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003e\u003ca href=\"./Discord-Setup\"\u003eDiscord Setup\u003c/a\u003e\u003c/td\u003e\n\u003ctd\u003eDiscord bot configuration\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003cstrong\u003eStart.gg Setup\u003c/strong\u003e (this doc)\u003c/td\u003e\n\u003ctd\u003eStart.gg API setup\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ca href=\"./Tunnel-Setup\"\u003eTunnel Setup\u003c/a\u003e\u003c/td\u003e\n\u003ctd\u003eCloudflare Tunnel for OAuth\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ca href=\"./Implementation-Status\"\u003eImplementation Status\u003c/a\u003e\u003c/td\u003e\n\u003ctd\u003eCurrent progress\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ca href=\"./Architecture\"\u003eArchitecture\u003c/a\u003e\u003c/td\u003e\n\u003ctd\u003eSystem architecture overview\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003chr\u003e\n\u003ch2\u003eTable of Contents\u003c/h2\u003e\n\u003col\u003e\n\u003cli\u003e\u003ca href=\"#overview\"\u003eOverview\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"#getting-an-api-token\"\u003eGetting an API Token\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"#api-basics\"\u003eAPI Basics\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"#rate-limits\"\u003eRate Limits\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"#oauth2-setup-advanced\"\u003eOAuth2 Setup (Advanced)\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"#environment-variables\"\u003eEnvironment Variables\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"#testing-your-setup\"\u003eTesting Your Setup\u003c/a\u003e\u003c/li\u003e\n\u003c/ol\u003e\n\u003chr\u003e\n\u003ch2\u003eOverview\u003c/h2\u003e\n\u003cp\u003eStart.gg (formerly Smash.gg) provides a GraphQL API for accessing tournament data. FightRise uses this API to:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eFetch tournament information and brackets\u003c/li\u003e\n\u003cli\u003eRetrieve match/set data and player standings\u003c/li\u003e\n\u003cli\u003eReport match results\u003c/li\u003e\n\u003cli\u003eSync registrations\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3\u003eAPI Type\u003c/h3\u003e\n\u003cul\u003e\n\u003cli\u003e\u003cstrong\u003eProtocol\u003c/strong\u003e: GraphQL\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eEndpoint\u003c/strong\u003e: \u003ccode\u003ehttps://api.start.gg/gql/alpha\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eAuthentication\u003c/strong\u003e: Bearer token\u003c/li\u003e\n\u003c/ul\u003e\n\u003chr\u003e\n\u003ch2\u003eGetting an API Token\u003c/h2\u003e\n\u003ch3\u003eStep 1: Access Developer Settings\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003eLog in to \u003ca href=\"https://start.gg\"\u003eStart.gg\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003eClick your profile icon in the top right\u003c/li\u003e\n\u003cli\u003eSelect \u003cstrong\u003e\u0026quot;Developer Settings\u0026quot;\u003c/strong\u003e or go directly to:\n\u003ccode\u003ehttps://start.gg/admin/profile/developer\u003c/code\u003e\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3\u003eStep 2: Create a New Token\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003eClick \u003cstrong\u003e\u0026quot;Create new token\u0026quot;\u003c/strong\u003e\u003c/li\u003e\n\u003cli\u003eEnter a descriptive name (e.g., \u0026quot;FightRise Bot - Production\u0026quot;)\u003c/li\u003e\n\u003cli\u003eClick \u003cstrong\u003e\u0026quot;Save\u0026quot;\u003c/strong\u003e\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3\u003eStep 3: Copy Your Token\u003c/h3\u003e\n\u003cblockquote\u003e\n\u003cp\u003e\u003cstrong\u003eCRITICAL\u003c/strong\u003e: Copy your token immediately after creation. You \u003cstrong\u003ecannot view it again\u003c/strong\u003e once you leave the page.\u003c/p\u003e\n\u003c/blockquote\u003e\n\u003cp\u003eThe token will look something like:\u003c/p\u003e\n\u003cpre\u003e\u003ccode\u003ed4f7a8b3c2e1f0...\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eThis is your \u003ccode\u003eSTARTGG_API_KEY\u003c/code\u003e environment variable.\u003c/p\u003e\n\u003chr\u003e\n\u003ch2\u003eAPI Basics\u003c/h2\u003e\n\u003ch3\u003eMaking Requests\u003c/h3\u003e\n\u003cp\u003eAll API requests must include the \u003ccode\u003eAuthorization\u003c/code\u003e header:\u003c/p\u003e\n\u003cpre\u003e\u003ccode\u003eAuthorization: Bearer YOUR_TOKEN_HERE\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003eGraphQL Endpoint\u003c/h3\u003e\n\u003cp\u003eSend all queries and mutations to:\u003c/p\u003e\n\u003cpre\u003e\u003ccode\u003ePOST https://api.start.gg/gql/alpha\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003eExample Query\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-graphql\"\u003equery GetTournament($slug: String!) {\n  tournament(slug: $slug) {\n    id\n    name\n    startAt\n    endAt\n    events {\n      id\n      name\n      numEntrants\n    }\n  }\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003eExample Request (curl)\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003ecurl -X POST https://api.start.gg/gql/alpha \\\n  -H \u0026quot;Authorization: Bearer YOUR_TOKEN\u0026quot; \\\n  -H \u0026quot;Content-Type: application/json\u0026quot; \\\n  -d \u0026#39;{\n    \u0026quot;query\u0026quot;: \u0026quot;query { currentUser { id } }\u0026quot;\n  }\u0026#39;\n\u003c/code\u003e\u003c/pre\u003e\n\u003chr\u003e\n\u003ch2\u003eRate Limits\u003c/h2\u003e\n\u003cp\u003eStart.gg enforces strict rate limits to prevent abuse:\u003c/p\u003e\n\u003ch3\u003eRequest Limits\u003c/h3\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eLimit Type\u003c/th\u003e\n\u003cth\u003eThreshold\u003c/th\u003e\n\u003cth\u003eTime Window\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003eRequest frequency\u003c/td\u003e\n\u003ctd\u003e80 requests\u003c/td\u003e\n\u003ctd\u003e60 seconds\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003eObjects per request\u003c/td\u003e\n\u003ctd\u003e1,000 objects\u003c/td\u003e\n\u003ctd\u003ePer request\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003ch3\u003eWhat Counts as an Object?\u003c/h3\u003e\n\u003cp\u003eThe 1,000 object limit includes all returned data, including nested objects. For example:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eA tournament with 50 events and 20 entrants each = 1,050 objects (exceeds limit)\u003c/li\u003e\n\u003cli\u003eUse pagination to stay under limits\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3\u003eRate Limit Response\u003c/h3\u003e\n\u003cp\u003eWhen you exceed limits, you\u0026#39;ll receive:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e{\n  \u0026quot;success\u0026quot;: false,\n  \u0026quot;message\u0026quot;: \u0026quot;Rate limit exceeded - api-token\u0026quot;\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003eBest Practices\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003e\u003cstrong\u003eImplement caching\u003c/strong\u003e - Don\u0026#39;t fetch the same data repeatedly\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eUse pagination\u003c/strong\u003e - Fetch large datasets in smaller chunks\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eAdd delays\u003c/strong\u003e - Space out requests during polling\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eImplement exponential backoff\u003c/strong\u003e - Back off when rate limited\u003c/li\u003e\n\u003c/ol\u003e\n\u003cp\u003eFightRise\u0026#39;s \u003ccode\u003e@fightrise/startgg-client\u003c/code\u003e package handles these automatically with:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eResponse caching with TTL\u003c/li\u003e\n\u003cli\u003eAutomatic retry with exponential backoff\u003c/li\u003e\n\u003cli\u003eRequest queuing\u003c/li\u003e\n\u003c/ul\u003e\n\u003chr\u003e\n\u003ch2\u003eOAuth2 Setup (Advanced)\u003c/h2\u003e\n\u003cp\u003eOAuth2 allows users to authorize FightRise to access their personal Start.gg data and perform actions on their behalf. This is required for:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eVerifying tournament admin status\u003c/li\u003e\n\u003cli\u003eRegistering players on behalf of users\u003c/li\u003e\n\u003cli\u003eReporting scores as authenticated users\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3\u003eStep 1: Create OAuth Application\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003eGo to \u003ca href=\"https://start.gg/admin/profile/developer\"\u003eStart.gg Developer Settings\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003eNavigate to \u003cstrong\u003e\u0026quot;OAuth Applications\u0026quot;\u003c/strong\u003e\u003c/li\u003e\n\u003cli\u003eClick \u003cstrong\u003e\u0026quot;Create Application\u0026quot;\u003c/strong\u003e\u003c/li\u003e\n\u003cli\u003eFill in the required fields:\u003cul\u003e\n\u003cli\u003e\u003cstrong\u003eName\u003c/strong\u003e: FightRise\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eRedirect URIs\u003c/strong\u003e: Your callback URLs\u003c/li\u003e\n\u003c/ul\u003e\n\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3\u003eStep 2: Configure Redirect URIs\u003c/h3\u003e\n\u003cp\u003eAdd these redirect URIs:\u003c/p\u003e\n\u003cpre\u003e\u003ccode\u003e# Development (local only - won\u0026#39;t work for OAuth testing)\nhttp://localhost:3000/api/auth/callback/startgg\n\n# Development (with Cloudflare Tunnel - recommended for OAuth)\nhttps://fightrise-dev.yourdomain.com/api/auth/callback/startgg\n\n# Production\nhttps://your-domain.com/api/auth/callback/startgg\n\u003c/code\u003e\u003c/pre\u003e\n\u003cblockquote\u003e\n\u003cp\u003e\u003cstrong\u003eNote:\u003c/strong\u003e OAuth callbacks require publicly accessible URLs. For local development with OAuth, use \u003ca href=\"./Tunnel-Setup\"\u003eCloudflare Tunnel\u003c/a\u003e to expose your local server.\u003c/p\u003e\n\u003c/blockquote\u003e\n\u003ch3\u003eStep 3: Note OAuth Credentials\u003c/h3\u003e\n\u003cp\u003eAfter creating the application, you\u0026#39;ll receive:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e\u003cstrong\u003eClient ID\u003c/strong\u003e - Your OAuth application ID\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eClient Secret\u003c/strong\u003e - Keep this secure\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3\u003eOAuth Scopes\u003c/h3\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eScope\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003cth\u003eWhen Needed\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003euser.identity\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eAccess user\u0026#39;s basic profile\u003c/td\u003e\n\u003ctd\u003eAlways\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003euser.email\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eAccess user\u0026#39;s email\u003c/td\u003e\n\u003ctd\u003eOptional\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003etournament.manager\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eManage tournament seeding and brackets\u003c/td\u003e\n\u003ctd\u003eAdmin verification\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003etournament.reporter\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eReport match results\u003c/td\u003e\n\u003ctd\u003eScore reporting\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003ch3\u003eOAuth Flow\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-mermaid\"\u003esequenceDiagram\n    participant U as User\n    participant F as FightRise\n    participant S as Start.gg\n\n    U-\u0026gt;\u0026gt;F: Click \u0026quot;Connect Start.gg\u0026quot;\n    F-\u0026gt;\u0026gt;S: Redirect to authorize endpoint\n    S-\u0026gt;\u0026gt;U: Show permission prompt\n    U-\u0026gt;\u0026gt;S: Approve scopes\n    S-\u0026gt;\u0026gt;F: Redirect with auth code\n    F-\u0026gt;\u0026gt;S: POST /oauth/access_token\n    S-\u0026gt;\u0026gt;F: Access token + refresh token\n    F-\u0026gt;\u0026gt;F: Store encrypted token\n    F-\u0026gt;\u0026gt;U: Account linked\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch4\u003eStep-by-Step\u003c/h4\u003e\n\u003col\u003e\n\u003cli\u003e\u003cp\u003e\u003cstrong\u003eAuthorization URL\u003c/strong\u003e:\u003c/p\u003e\n\u003cpre\u003e\u003ccode\u003ehttps://start.gg/oauth/authorize?response_type=code\u0026amp;client_id=YOUR_CLIENT_ID\u0026amp;scope=user.identity\u0026amp;redirect_uri=YOUR_REDIRECT_URI\u0026amp;state=RANDOM_STATE\n\u003c/code\u003e\u003c/pre\u003e\n\u003c/li\u003e\n\u003cli\u003e\u003cp\u003e\u003cstrong\u003eToken Exchange\u003c/strong\u003e: POST to \u003ccode\u003ehttps://api.start.gg/oauth/access_token\u003c/code\u003e\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e{\n  \u0026quot;grant_type\u0026quot;: \u0026quot;authorization_code\u0026quot;,\n  \u0026quot;code\u0026quot;: \u0026quot;AUTHORIZATION_CODE\u0026quot;,\n  \u0026quot;client_id\u0026quot;: \u0026quot;YOUR_CLIENT_ID\u0026quot;,\n  \u0026quot;client_secret\u0026quot;: \u0026quot;YOUR_CLIENT_SECRET\u0026quot;,\n  \u0026quot;redirect_uri\u0026quot;: \u0026quot;YOUR_REDIRECT_URI\u0026quot;\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003c/li\u003e\n\u003cli\u003e\u003cp\u003e\u003cstrong\u003eRefresh Token\u003c/strong\u003e: POST to \u003ccode\u003ehttps://api.start.gg/oauth/refresh\u003c/code\u003e\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e{\n  \u0026quot;grant_type\u0026quot;: \u0026quot;refresh_token\u0026quot;,\n  \u0026quot;refresh_token\u0026quot;: \u0026quot;YOUR_REFRESH_TOKEN\u0026quot;,\n  \u0026quot;client_id\u0026quot;: \u0026quot;YOUR_CLIENT_ID\u0026quot;,\n  \u0026quot;client_secret\u0026quot;: \u0026quot;YOUR_CLIENT_SECRET\u0026quot;\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003c/li\u003e\n\u003c/ol\u003e\n\u003chr\u003e\n\u003ch2\u003eEnvironment Variables\u003c/h2\u003e\n\u003cp\u003eAdd these to your \u003ccode\u003e.env\u003c/code\u003e file:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003e# Start.gg API (Required)\nSTARTGG_API_KEY=\u0026quot;your-api-token-from-developer-settings\u0026quot;\n\n# Start.gg OAuth (Optional - for user authentication)\nSTARTGG_CLIENT_ID=\u0026quot;your-oauth-client-id\u0026quot;\nSTARTGG_CLIENT_SECRET=\u0026quot;your-oauth-client-secret\u0026quot;\nSTARTGG_REDIRECT_URI=\u0026quot;http://localhost:3000/api/auth/callback/startgg\u0026quot;\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003eWhere to Find Each Value\u003c/h3\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eVariable\u003c/th\u003e\n\u003cth\u003eLocation\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003eSTARTGG_API_KEY\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eDeveloper Settings → Tokens → Create New Token\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003eSTARTGG_CLIENT_ID\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eDeveloper Settings → OAuth Applications → Your App\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003eSTARTGG_CLIENT_SECRET\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eDeveloper Settings → OAuth Applications → Your App\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003chr\u003e\n\u003ch2\u003eTesting Your Setup\u003c/h2\u003e\n\u003ch3\u003eQuick Test with curl\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003e# Test your API token\ncurl -X POST https://api.start.gg/gql/alpha \\\n  -H \u0026quot;Authorization: Bearer $STARTGG_API_KEY\u0026quot; \\\n  -H \u0026quot;Content-Type: application/json\u0026quot; \\\n  -d \u0026#39;{\u0026quot;query\u0026quot;: \u0026quot;{ currentUser { id } }\u0026quot;}\u0026#39;\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eExpected response:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e{\n  \u0026quot;data\u0026quot;: {\n    \u0026quot;currentUser\u0026quot;: {\n      \u0026quot;id\u0026quot;: \u0026quot;12345\u0026quot;\n    }\n  }\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003eTest with FightRise Client\u003c/h3\u003e\n\u003cp\u003eRun the smoke tests:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003enpm run test:smoke -- --filter=@fightrise/startgg-client\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003eAPI Explorer\u003c/h3\u003e\n\u003cp\u003eUse Start.gg\u0026#39;s interactive API Explorer to test queries:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e\u003ca href=\"https://developer.start.gg/explorer\"\u003eStart.gg API Explorer\u003c/a\u003e\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003eYou\u0026#39;ll need to authenticate with your token in the explorer settings.\u003c/p\u003e\n\u003chr\u003e\n\u003ch2\u003eCommon Queries\u003c/h2\u003e\n\u003ch3\u003eGet Tournament by Slug\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-graphql\"\u003equery GetTournament($slug: String!) {\n  tournament(slug: $slug) {\n    id\n    name\n    slug\n    startAt\n    endAt\n    events {\n      id\n      name\n      numEntrants\n      state\n    }\n  }\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eVariables:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e{\n  \u0026quot;slug\u0026quot;: \u0026quot;tournament/my-tournament-2024\u0026quot;\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003eGet Event Sets (Matches)\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-graphql\"\u003equery GetEventSets($eventId: ID!, $page: Int!, $perPage: Int!) {\n  event(id: $eventId) {\n    sets(page: $page, perPage: $perPage, sortType: STANDARD) {\n      pageInfo {\n        total\n        totalPages\n      }\n      nodes {\n        id\n        state\n        fullRoundText\n        identifier\n        slots {\n          entrant {\n            id\n            name\n          }\n        }\n      }\n    }\n  }\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003eReport Match Result\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-graphql\"\u003emutation ReportSet($setId: ID!, $winnerId: ID!) {\n  reportBracketSet(setId: $setId, winnerId: $winnerId) {\n    id\n    state\n  }\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003chr\u003e\n\u003ch2\u003eSecurity Best Practices\u003c/h2\u003e\n\u003ch3\u003eToken Security\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003e\u003cp\u003e\u003cstrong\u003eNever commit tokens to version control\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eUse \u003ccode\u003e.env\u003c/code\u003e files and ensure \u003ccode\u003e.env\u003c/code\u003e is in \u003ccode\u003e.gitignore\u003c/code\u003e\u003c/li\u003e\n\u003c/ul\u003e\n\u003c/li\u003e\n\u003cli\u003e\u003cp\u003e\u003cstrong\u003eUse environment variables\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eNever hardcode tokens in source code\u003c/li\u003e\n\u003c/ul\u003e\n\u003c/li\u003e\n\u003cli\u003e\u003cp\u003e\u003cstrong\u003eLimit token access\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eOnly share tokens with trusted team members through secure channels\u003c/li\u003e\n\u003c/ul\u003e\n\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3\u003eToken Rotation\u003c/h3\u003e\n\u003cp\u003eRegular token rotation reduces the risk of compromised credentials.\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eRotation Schedule:\u003c/strong\u003e\u003c/p\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eToken Type\u003c/th\u003e\n\u003cth\u003eRecommended Interval\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003eAPI Token\u003c/td\u003e\n\u003ctd\u003eEvery 90 days\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003eOAuth Client Secret\u003c/td\u003e\n\u003ctd\u003eEvery 90 days\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003cp\u003e\u003cstrong\u003eWhen to Rotate Immediately:\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eA team member with token access leaves the project\u003c/li\u003e\n\u003cli\u003eYou suspect the token may have been exposed\u003c/li\u003e\n\u003cli\u003eAfter a security incident\u003c/li\u003e\n\u003cli\u003eUnusual API activity detected (check Developer Settings usage logs)\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e\u003cstrong\u003eHow to Rotate:\u003c/strong\u003e\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e\u003cstrong\u003eAPI Token\u003c/strong\u003e: Developer Settings → Create new token → Update \u003ccode\u003e.env\u003c/code\u003e → Test → Delete old token\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eOAuth Secret\u003c/strong\u003e: OAuth Applications → Your App → Regenerate secret → Update \u003ccode\u003e.env\u003c/code\u003e\u003c/li\u003e\n\u003c/ol\u003e\n\u003cp\u003e\u003cstrong\u003eBest Practice:\u003c/strong\u003e Create the new token and verify it works before deleting the old one.\u003c/p\u003e\n\u003ch3\u003eOAuth Token Storage\u003c/h3\u003e\n\u003cp\u003eUser OAuth tokens (access and refresh tokens) should be:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eEncrypted at rest using AES-256 or equivalent\u003c/li\u003e\n\u003cli\u003eNever logged or exposed in error messages\u003c/li\u003e\n\u003cli\u003eStored with minimal retention (refresh as needed)\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3\u003eProduction Secrets Management\u003c/h3\u003e\n\u003cp\u003eFor production deployments, use a dedicated secrets manager instead of \u003ccode\u003e.env\u003c/code\u003e files:\u003c/p\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eService\u003c/th\u003e\n\u003cth\u003eBest For\u003c/th\u003e\n\u003cth\u003eKey Features\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003e\u003cstrong\u003eAWS Secrets Manager\u003c/strong\u003e\u003c/td\u003e\n\u003ctd\u003eAWS-hosted apps\u003c/td\u003e\n\u003ctd\u003eAutomatic rotation, IAM integration\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003cstrong\u003eHashiCorp Vault\u003c/strong\u003e\u003c/td\u003e\n\u003ctd\u003eMulti-cloud, K8s\u003c/td\u003e\n\u003ctd\u003eOpen-source, highly configurable\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003cstrong\u003eAzure Key Vault\u003c/strong\u003e\u003c/td\u003e\n\u003ctd\u003eAzure-hosted apps\u003c/td\u003e\n\u003ctd\u003eAzure AD integration\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003cstrong\u003eGoogle Secret Manager\u003c/strong\u003e\u003c/td\u003e\n\u003ctd\u003eGCP-hosted apps\u003c/td\u003e\n\u003ctd\u003eIAM integration, versioning\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003cstrong\u003eRailway/Render Secrets\u003c/strong\u003e\u003c/td\u003e\n\u003ctd\u003eSmaller deployments\u003c/td\u003e\n\u003ctd\u003eBuilt-in, easy setup\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003cp\u003e\u003cstrong\u003eBenefits over \u003ccode\u003e.env\u003c/code\u003e files:\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eAutomatic token rotation\u003c/li\u003e\n\u003cli\u003eAudit logging (who accessed what, when)\u003c/li\u003e\n\u003cli\u003eEncryption at rest\u003c/li\u003e\n\u003cli\u003eFine-grained access control\u003c/li\u003e\n\u003cli\u003eVersion history and rollback\u003c/li\u003e\n\u003c/ul\u003e\n\u003chr\u003e\n\u003ch2\u003eTroubleshooting\u003c/h2\u003e\n\u003ch3\u003e\u0026quot;Authentication failed\u0026quot;\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003e\u003cstrong\u003eToken expired or invalid\u003c/strong\u003e - Create a new token in Developer Settings\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eWrong header format\u003c/strong\u003e - Ensure it\u0026#39;s \u003ccode\u003eAuthorization: Bearer TOKEN\u003c/code\u003e (note the space)\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eToken not copied correctly\u003c/strong\u003e - Tokens can be long; ensure you copied the full string\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3\u003e\u0026quot;Rate limit exceeded\u0026quot;\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003e\u003cstrong\u003eToo many requests\u003c/strong\u003e - Add delays between requests (wait at least 750ms)\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eRequest too large\u003c/strong\u003e - Reduce the number of objects requested via pagination\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eImplement caching\u003c/strong\u003e - Cache responses to avoid duplicate requests\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3\u003e\u0026quot;Object limit exceeded\u0026quot;\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003e\u003cstrong\u003ePaginate your queries\u003c/strong\u003e - Use \u003ccode\u003epage\u003c/code\u003e and \u003ccode\u003eperPage\u003c/code\u003e parameters\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eReduce nested depth\u003c/strong\u003e - Only request fields you need\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eSplit into multiple queries\u003c/strong\u003e - Break up large requests\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3\u003eTournament Not Found\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003e\u003cstrong\u003eCheck the slug format\u003c/strong\u003e - Should be \u003ccode\u003etournament/slug-name\u003c/code\u003e or just \u003ccode\u003eslug-name\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eTournament may be private\u003c/strong\u003e - Some tournaments require authentication\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eTournament may be deleted\u003c/strong\u003e - Verify it exists on start.gg\u003c/li\u003e\n\u003c/ol\u003e\n\u003chr\u003e\n\u003ch2\u003eAdditional Resources\u003c/h2\u003e\n\u003cul\u003e\n\u003cli\u003e\u003ca href=\"https://developer.start.gg/\"\u003eStart.gg Developer Portal\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"https://developer.start.gg/docs/intro/\"\u003eStart.gg API Introduction\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"https://smashgg-schema.netlify.app/\"\u003eGraphQL Schema Reference\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"https://developer.start.gg/explorer\"\u003eStart.gg API Explorer\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"https://developer.start.gg/docs/intro-to-gql/\"\u003eGraphQL Introduction\u003c/a\u003e\u003c/li\u003e\n\u003c/ul\u003e\n\u003chr\u003e\n\u003ch2\u003eNext Steps\u003c/h2\u003e\n\u003cp\u003eNow that Start.gg is configured:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e\u003cinput disabled=\"\" type=\"checkbox\"\u003e Complete \u003ca href=\"./Discord-Setup\"\u003eDiscord Setup\u003c/a\u003e if you haven\u0026#39;t already\u003c/li\u003e\n\u003cli\u003e\u003cinput disabled=\"\" type=\"checkbox\"\u003e Run \u003ccode\u003enpm install\u003c/code\u003e at the repository root\u003c/li\u003e\n\u003cli\u003e\u003cinput disabled=\"\" type=\"checkbox\"\u003e Copy \u003ccode\u003e.env.example\u003c/code\u003e to \u003ccode\u003e.env\u003c/code\u003e and add your credentials\u003c/li\u003e\n\u003cli\u003e\u003cinput disabled=\"\" type=\"checkbox\"\u003e Run \u003ccode\u003enpm run test:smoke -- --filter=@fightrise/startgg-client\u003c/code\u003e to verify API access\u003c/li\u003e\n\u003cli\u003e\u003cinput disabled=\"\" type=\"checkbox\"\u003e Run \u003ccode\u003enpm run dev\u003c/code\u003e to start the full application\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003eSee \u003ca href=\"./Implementation-Status\"\u003eImplementation Status\u003c/a\u003e to track progress or find ways to contribute.\u003c/p\u003e\n","slug":"guides/startgg-setup"},"__N_SSG":true},"page":"/[[...slug]]","query":{"slug":["guides","startgg-setup"]},"buildId":"acF89I3zldAHDa3e-tMVc","assetPrefix":"/fightrise-bot","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html><html><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width"/><meta name="next-head-count" content="2"/><noscript data-n-css=""></noscript><script defer="" nomodule="" src="/fightrise-bot/_next/static/chunks/polyfills-78c92fac7aa8fdd8.js"></script><script src="/fightrise-bot/_next/static/chunks/webpack-1a64f5c80bb82e92.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/framework-6dd3bf7463386647.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/main-31102c233e8a53a2.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/pages/_app-1d9f5a60019541c0.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/pages/%5B%5B...slug%5D%5D-f39751a4822b6454.js" defer=""></script><script src="/fightrise-bot/_next/static/acF89I3zldAHDa3e-tMVc/_buildManifest.js" defer=""></script><script src="/fightrise-bot/_next/static/acF89I3zldAHDa3e-tMVc/_ssgManifest.js" defer=""></script></head><body><div id="__next"><div style="display:flex;min-height:100vh"><aside style="width:260px;border-right:1px solid #e5e5e5;padding:1.5rem;background:#fafafa;flex-shrink:0"><h2 style="margin-top:0;margin-bottom:1rem;font-size:1.25rem"><a style="text-decoration:none;color:#333" href="/fightrise-bot/">FightRise</a></h2><nav><div style="margin-bottom:1rem"><a style="font-weight:600;color:#666;text-decoration:none" href="/fightrise-bot/">Getting Started</a></div><div style="margin-bottom:1rem"><div style="font-weight:600;color:#666;margin-bottom:0.5rem">Guides</div><a style="display:block;padding:0.25rem 0;color:#333;text-decoration:none;font-size:0.9rem" href="/fightrise-bot/guides/player-quickstart/">Player Quickstart</a><a style="display:block;padding:0.25rem 0;color:#333;text-decoration:none;font-size:0.9rem" href="/fightrise-bot/guides/to-quickstart/">TO Quickstart</a><a style="display:block;padding:0.25rem 0;color:#333;text-decoration:none;font-size:0.9rem" href="/fightrise-bot/guides/discord-setup/">Discord Setup</a><a style="display:block;padding:0.25rem 0;color:#333;text-decoration:none;font-size:0.9rem" href="/fightrise-bot/guides/startgg-setup/">Start.gg Setup</a><a style="display:block;padding:0.25rem 0;color:#333;text-decoration:none;font-size:0.9rem" href="/fightrise-bot/guides/tunnel-setup/">Tunnel Setup</a></div><div><div style="font-weight:600;color:#666;margin-bottom:0.5rem">Reference</div><a style="display:block;padding:0.25rem 0;color:#333;text-decoration:none;font-size:0.9rem" href="/fightrise-bot/reference/architecture/">Architecture</a><a style="display:block;padding:0.25rem 0;color:#333;text-decoration:none;font-size:0.9rem" href="/fightrise-bot/reference/codebase-reference/">Codebase Reference</a><a style="display:block;padding:0.25rem 0;color:#333;text-decoration:none;font-size:0.9rem" href="/fightrise-bot/reference/api-reference/">API Reference</a></div></nav></aside><main style="flex:1;padding:2rem;max-width:800px"><article style="line-height:1.7"><hr>
+<h2>layout: default
+title: &quot;Tournament Organizer Quickstart Guide&quot;</h2>
+<h1>Tournament Organizer Quickstart Guide</h1>
+<p>This guide walks tournament organizers through setting up and running a tournament with FightRise.</p>
+<h2>Prerequisites</h2>
+<p>Before you begin, make sure you have:</p>
+<ul>
+<li><strong>Discord account</strong> with a server where you have admin permissions</li>
+<li><strong>Start.gg account</strong> with access to the tournament you want to run</li>
+<li><strong>FightRise bot</strong> invited to your server (see <a href="./Discord-Setup">Discord Setup</a>)</li>
+</ul>
+<p><strong>Estimated time:</strong> 10-15 minutes</p>
+<h2>Related Documentation</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="./Discord-Setup">Discord Setup</a></td>
+<td>Bot installation</td>
+</tr>
+<tr>
+<td><a href="./StartGG-Setup">Start.gg Setup</a></td>
+<td>Start.gg API configuration</td>
+</tr>
+<tr>
+<td><a href="./Player-Quickstart">Player Quickstart</a></td>
+<td>Guide for players</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Table of Contents</h2>
+<ol>
+<li><a href="#1-linking-your-server">Linking Your Server</a></li>
+<li><a href="#2-configuring-tournament-channels">Configuring Tournament Channels</a></li>
+<li><a href="#3-managing-registrations">Managing Registrations</a></li>
+<li><a href="#4-running-the-tournament">Running the Tournament</a></li>
+<li><a href="#5-common-issues">Common Issues</a></li>
+</ol>
+<hr>
+<h2>1. Linking Your Server</h2>
+<h3>Step 1: Run the Setup Command</h3>
+<p>In any text channel, type:</p>
+<pre><code>/tournament setup
+</code></pre>
+<p>The bot will respond with instructions to link your Start.gg tournament.</p>
+<h3>Step 2: Enter Tournament URL</h3>
+<p>Provide your Start.gg tournament URL (e.g., <code>https://start.gg/your-tournament</code>)</p>
+<p>The bot will fetch tournament details and confirm the link.</p>
+<h3>Step 3: Configure Discord Channels</h3>
+<p>The bot will ask you to configure:</p>
+<table>
+<thead>
+<tr>
+<th>Channel</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Match Threads</strong></td>
+<td>Where match threads are created</td>
+</tr>
+<tr>
+<td><strong>Announcements</strong></td>
+<td>Tournament updates and alerts</td>
+</tr>
+<tr>
+<td><strong>Check-in</strong></td>
+<td>Player check-in notifications</td>
+</tr>
+</tbody></table>
+<p>You can configure these using the <code>/tournament link-discord</code> command or during setup.</p>
+<hr>
+<h2>2. Configuring Tournament Channels</h2>
+<h3>Setting Up Match Thread Channel</h3>
+<p>Choose a category or channel where match threads will be created:</p>
+<pre><code>/tournament link-discord thread #tournament-matches
+</code></pre>
+<h3>Setting Up Announcement Channel</h3>
+<p>Configure where the bot posts updates:</p>
+<pre><code>/tournament link-discord announce #tournament-announcements
+</code></pre>
+<hr>
+<h2>3. Managing Registrations</h2>
+<h3>Viewing Registrations</h3>
+<p>See all registered players:</p>
+<pre><code>/admin registrations
+</code></pre>
+<p>This shows:</p>
+<ul>
+<li>Player names and Discord accounts</li>
+<li>Registration status (confirmed/pending)</li>
+<li>Check-in status</li>
+</ul>
+<h3>Confirming Registrations</h3>
+<p>Players can register themselves using <code>/register</code>. You can also manually add registrations:</p>
+<pre><code>/admin register @player --event &quot;Street Fighter 6&quot;
+</code></pre>
+<h3>Managing Check-in</h3>
+<p>The bot automatically handles check-in when matches are ready. You can:</p>
+<ul>
+<li>View check-in status: <code>/admin checkins</code></li>
+<li>Extend check-in window: <code>/admin extend-checkin --minutes 5</code></li>
+</ul>
+<hr>
+<h2>4. Running the Tournament</h2>
+<h3>Phase 1: Registration</h3>
+<ol>
+<li>Announce the tournament in your Discord</li>
+<li>Players run <code>/link-startgg</code> to connect their accounts</li>
+<li>Players run <code>/register</code> to sign up</li>
+<li>Monitor registrations with <code>/admin registrations</code></li>
+</ol>
+<h3>Phase 2: Check-in</h3>
+<p>When the tournament is about to start:</p>
+<ol>
+<li>The bot will post in the announcement channel</li>
+<li>Players have 10 minutes (default) to check in</li>
+<li>Use <code>/admin checkins</code> to see who&#39;s checked in</li>
+<li>Missing players can be prodded or DQ&#39;d</li>
+</ol>
+<h3>Phase 3: Match Play</h3>
+<p>For each match:</p>
+<ol>
+<li>Bot creates a thread in the match channel</li>
+<li>Both players are pinged with a check-in button</li>
+<li>Players check in using the button</li>
+<li>Once both check in, the match is ready</li>
+<li>Winner reports score with <code>/report</code></li>
+<li>Loser confirms (or auto-confirms after timeout)</li>
+<li>Results sync to Start.gg</li>
+</ol>
+<h3>Phase 4: Completion</h3>
+<p>When all matches are done:</p>
+<ul>
+<li>Bot posts final standings</li>
+<li>Thread can be archived</li>
+<li>Results are saved to Start.gg</li>
+</ul>
+<hr>
+<h2>5. Common Issues</h2>
+<h3>Bot Not Responding</h3>
+<p><strong>Solution:</strong> Check that the bot has permissions to:</p>
+<ul>
+<li>Read messages</li>
+<li>Send messages</li>
+<li>Create threads</li>
+<li>Mention @everyone (for match alerts)</li>
+</ul>
+<h3>Players Can&#39;t Register</h3>
+<p><strong>Possible causes:</strong></p>
+<ul>
+<li>Player hasn&#39;t linked Start.gg: Run <code>/link-startgg</code> first</li>
+<li>Registration not open: Check tournament status</li>
+<li>Player already registered: Show error message</li>
+</ul>
+<h3>Match Thread Not Created</h3>
+<p><strong>Check:</strong></p>
+<ul>
+<li>Tournament is in progress state on Start.gg</li>
+<li>Both players have linked accounts</li>
+<li>Bot has thread creation permissions</li>
+</ul>
+<h3>Score Not Reporting to Start.gg</h3>
+<p><strong>Common causes:</strong></p>
+<ul>
+<li>Wrong winner reported (must be confirmed by loser)</li>
+<li>API issues with Start.gg</li>
+<li>Check bot logs for errors</li>
+</ul>
+<h3>Need Help</h3>
+<p>If you encounter issues:</p>
+<ol>
+<li>Check <code>/tournament status</code> for current state</li>
+<li>Review bot logs in Discord server settings</li>
+<li>Report issues in the support channel or GitHub</li>
+</ol>
+<hr>
+<h2>Admin Commands Reference</h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/tournament setup</code></td>
+<td>Configure tournament</td>
+</tr>
+<tr>
+<td><code>/tournament status</code></td>
+<td>View tournament status</td>
+</tr>
+<tr>
+<td><code>/admin registrations</code></td>
+<td>List all registrations</td>
+</tr>
+<tr>
+<td><code>/admin checkins</code></td>
+<td>View check-in status</td>
+</tr>
+<tr>
+<td><code>/admin dq</code></td>
+<td>Disqualify a player</td>
+</tr>
+<tr>
+<td><code>/admin extend-checkin</code></td>
+<td>Extend check-in window</td>
+</tr>
+</tbody></table>
+<hr>
+<p><strong>Need more help?</strong> See the <a href="./Architecture">Architecture</a> doc or create a GitHub issue.</p>
+</article></main></div></div><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"content":"\u003chr\u003e\n\u003ch2\u003elayout: default\ntitle: \u0026quot;Tournament Organizer Quickstart Guide\u0026quot;\u003c/h2\u003e\n\u003ch1\u003eTournament Organizer Quickstart Guide\u003c/h1\u003e\n\u003cp\u003eThis guide walks tournament organizers through setting up and running a tournament with FightRise.\u003c/p\u003e\n\u003ch2\u003ePrerequisites\u003c/h2\u003e\n\u003cp\u003eBefore you begin, make sure you have:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e\u003cstrong\u003eDiscord account\u003c/strong\u003e with a server where you have admin permissions\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eStart.gg account\u003c/strong\u003e with access to the tournament you want to run\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eFightRise bot\u003c/strong\u003e invited to your server (see \u003ca href=\"./Discord-Setup\"\u003eDiscord Setup\u003c/a\u003e)\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e\u003cstrong\u003eEstimated time:\u003c/strong\u003e 10-15 minutes\u003c/p\u003e\n\u003ch2\u003eRelated Documentation\u003c/h2\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eDocument\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003e\u003ca href=\"./Discord-Setup\"\u003eDiscord Setup\u003c/a\u003e\u003c/td\u003e\n\u003ctd\u003eBot installation\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ca href=\"./StartGG-Setup\"\u003eStart.gg Setup\u003c/a\u003e\u003c/td\u003e\n\u003ctd\u003eStart.gg API configuration\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ca href=\"./Player-Quickstart\"\u003ePlayer Quickstart\u003c/a\u003e\u003c/td\u003e\n\u003ctd\u003eGuide for players\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003chr\u003e\n\u003ch2\u003eTable of Contents\u003c/h2\u003e\n\u003col\u003e\n\u003cli\u003e\u003ca href=\"#1-linking-your-server\"\u003eLinking Your Server\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"#2-configuring-tournament-channels\"\u003eConfiguring Tournament Channels\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"#3-managing-registrations\"\u003eManaging Registrations\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"#4-running-the-tournament\"\u003eRunning the Tournament\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"#5-common-issues\"\u003eCommon Issues\u003c/a\u003e\u003c/li\u003e\n\u003c/ol\u003e\n\u003chr\u003e\n\u003ch2\u003e1. Linking Your Server\u003c/h2\u003e\n\u003ch3\u003eStep 1: Run the Setup Command\u003c/h3\u003e\n\u003cp\u003eIn any text channel, type:\u003c/p\u003e\n\u003cpre\u003e\u003ccode\u003e/tournament setup\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eThe bot will respond with instructions to link your Start.gg tournament.\u003c/p\u003e\n\u003ch3\u003eStep 2: Enter Tournament URL\u003c/h3\u003e\n\u003cp\u003eProvide your Start.gg tournament URL (e.g., \u003ccode\u003ehttps://start.gg/your-tournament\u003c/code\u003e)\u003c/p\u003e\n\u003cp\u003eThe bot will fetch tournament details and confirm the link.\u003c/p\u003e\n\u003ch3\u003eStep 3: Configure Discord Channels\u003c/h3\u003e\n\u003cp\u003eThe bot will ask you to configure:\u003c/p\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eChannel\u003c/th\u003e\n\u003cth\u003ePurpose\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003e\u003cstrong\u003eMatch Threads\u003c/strong\u003e\u003c/td\u003e\n\u003ctd\u003eWhere match threads are created\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003cstrong\u003eAnnouncements\u003c/strong\u003e\u003c/td\u003e\n\u003ctd\u003eTournament updates and alerts\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003cstrong\u003eCheck-in\u003c/strong\u003e\u003c/td\u003e\n\u003ctd\u003ePlayer check-in notifications\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003cp\u003eYou can configure these using the \u003ccode\u003e/tournament link-discord\u003c/code\u003e command or during setup.\u003c/p\u003e\n\u003chr\u003e\n\u003ch2\u003e2. Configuring Tournament Channels\u003c/h2\u003e\n\u003ch3\u003eSetting Up Match Thread Channel\u003c/h3\u003e\n\u003cp\u003eChoose a category or channel where match threads will be created:\u003c/p\u003e\n\u003cpre\u003e\u003ccode\u003e/tournament link-discord thread #tournament-matches\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003eSetting Up Announcement Channel\u003c/h3\u003e\n\u003cp\u003eConfigure where the bot posts updates:\u003c/p\u003e\n\u003cpre\u003e\u003ccode\u003e/tournament link-discord announce #tournament-announcements\n\u003c/code\u003e\u003c/pre\u003e\n\u003chr\u003e\n\u003ch2\u003e3. Managing Registrations\u003c/h2\u003e\n\u003ch3\u003eViewing Registrations\u003c/h3\u003e\n\u003cp\u003eSee all registered players:\u003c/p\u003e\n\u003cpre\u003e\u003ccode\u003e/admin registrations\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eThis shows:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003ePlayer names and Discord accounts\u003c/li\u003e\n\u003cli\u003eRegistration status (confirmed/pending)\u003c/li\u003e\n\u003cli\u003eCheck-in status\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3\u003eConfirming Registrations\u003c/h3\u003e\n\u003cp\u003ePlayers can register themselves using \u003ccode\u003e/register\u003c/code\u003e. You can also manually add registrations:\u003c/p\u003e\n\u003cpre\u003e\u003ccode\u003e/admin register @player --event \u0026quot;Street Fighter 6\u0026quot;\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003eManaging Check-in\u003c/h3\u003e\n\u003cp\u003eThe bot automatically handles check-in when matches are ready. You can:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eView check-in status: \u003ccode\u003e/admin checkins\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003eExtend check-in window: \u003ccode\u003e/admin extend-checkin --minutes 5\u003c/code\u003e\u003c/li\u003e\n\u003c/ul\u003e\n\u003chr\u003e\n\u003ch2\u003e4. Running the Tournament\u003c/h2\u003e\n\u003ch3\u003ePhase 1: Registration\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003eAnnounce the tournament in your Discord\u003c/li\u003e\n\u003cli\u003ePlayers run \u003ccode\u003e/link-startgg\u003c/code\u003e to connect their accounts\u003c/li\u003e\n\u003cli\u003ePlayers run \u003ccode\u003e/register\u003c/code\u003e to sign up\u003c/li\u003e\n\u003cli\u003eMonitor registrations with \u003ccode\u003e/admin registrations\u003c/code\u003e\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3\u003ePhase 2: Check-in\u003c/h3\u003e\n\u003cp\u003eWhen the tournament is about to start:\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003eThe bot will post in the announcement channel\u003c/li\u003e\n\u003cli\u003ePlayers have 10 minutes (default) to check in\u003c/li\u003e\n\u003cli\u003eUse \u003ccode\u003e/admin checkins\u003c/code\u003e to see who\u0026#39;s checked in\u003c/li\u003e\n\u003cli\u003eMissing players can be prodded or DQ\u0026#39;d\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3\u003ePhase 3: Match Play\u003c/h3\u003e\n\u003cp\u003eFor each match:\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003eBot creates a thread in the match channel\u003c/li\u003e\n\u003cli\u003eBoth players are pinged with a check-in button\u003c/li\u003e\n\u003cli\u003ePlayers check in using the button\u003c/li\u003e\n\u003cli\u003eOnce both check in, the match is ready\u003c/li\u003e\n\u003cli\u003eWinner reports score with \u003ccode\u003e/report\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003eLoser confirms (or auto-confirms after timeout)\u003c/li\u003e\n\u003cli\u003eResults sync to Start.gg\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3\u003ePhase 4: Completion\u003c/h3\u003e\n\u003cp\u003eWhen all matches are done:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eBot posts final standings\u003c/li\u003e\n\u003cli\u003eThread can be archived\u003c/li\u003e\n\u003cli\u003eResults are saved to Start.gg\u003c/li\u003e\n\u003c/ul\u003e\n\u003chr\u003e\n\u003ch2\u003e5. Common Issues\u003c/h2\u003e\n\u003ch3\u003eBot Not Responding\u003c/h3\u003e\n\u003cp\u003e\u003cstrong\u003eSolution:\u003c/strong\u003e Check that the bot has permissions to:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eRead messages\u003c/li\u003e\n\u003cli\u003eSend messages\u003c/li\u003e\n\u003cli\u003eCreate threads\u003c/li\u003e\n\u003cli\u003eMention @everyone (for match alerts)\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3\u003ePlayers Can\u0026#39;t Register\u003c/h3\u003e\n\u003cp\u003e\u003cstrong\u003ePossible causes:\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003ePlayer hasn\u0026#39;t linked Start.gg: Run \u003ccode\u003e/link-startgg\u003c/code\u003e first\u003c/li\u003e\n\u003cli\u003eRegistration not open: Check tournament status\u003c/li\u003e\n\u003cli\u003ePlayer already registered: Show error message\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3\u003eMatch Thread Not Created\u003c/h3\u003e\n\u003cp\u003e\u003cstrong\u003eCheck:\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eTournament is in progress state on Start.gg\u003c/li\u003e\n\u003cli\u003eBoth players have linked accounts\u003c/li\u003e\n\u003cli\u003eBot has thread creation permissions\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3\u003eScore Not Reporting to Start.gg\u003c/h3\u003e\n\u003cp\u003e\u003cstrong\u003eCommon causes:\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eWrong winner reported (must be confirmed by loser)\u003c/li\u003e\n\u003cli\u003eAPI issues with Start.gg\u003c/li\u003e\n\u003cli\u003eCheck bot logs for errors\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3\u003eNeed Help\u003c/h3\u003e\n\u003cp\u003eIf you encounter issues:\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003eCheck \u003ccode\u003e/tournament status\u003c/code\u003e for current state\u003c/li\u003e\n\u003cli\u003eReview bot logs in Discord server settings\u003c/li\u003e\n\u003cli\u003eReport issues in the support channel or GitHub\u003c/li\u003e\n\u003c/ol\u003e\n\u003chr\u003e\n\u003ch2\u003eAdmin Commands Reference\u003c/h2\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eCommand\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003e/tournament setup\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eConfigure tournament\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003e/tournament status\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eView tournament status\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003e/admin registrations\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eList all registrations\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003e/admin checkins\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eView check-in status\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003e/admin dq\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eDisqualify a player\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003e/admin extend-checkin\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eExtend check-in window\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003chr\u003e\n\u003cp\u003e\u003cstrong\u003eNeed more help?\u003c/strong\u003e See the \u003ca href=\"./Architecture\"\u003eArchitecture\u003c/a\u003e doc or create a GitHub issue.\u003c/p\u003e\n","slug":"guides/to-quickstart"},"__N_SSG":true},"page":"/[[...slug]]","query":{"slug":["guides","to-quickstart"]},"buildId":"acF89I3zldAHDa3e-tMVc","assetPrefix":"/fightrise-bot","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>
