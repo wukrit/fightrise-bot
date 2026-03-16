@@ -1,28 +1,44 @@
 import { readFileSync, readdirSync, existsSync } from 'fs'
 import { join, basename } from 'path'
-import { marked } from 'marked'
+import { marked, Renderer } from 'marked'
 import Link from 'next/link'
 
 // Define sidebar structure
+const BASE_PATH = '/fightrise-bot'
 const SIDEBAR = {
   'getting-started': [
-    { title: 'Index', href: '/' },
+    { title: 'Index', href: BASE_PATH + '/' },
   ],
   guides: [
-    { title: 'Player Quickstart', href: '/guides/player-quickstart' },
-    { title: 'TO Quickstart', href: '/guides/to-quickstart' },
-    { title: 'Discord Setup', href: '/guides/discord-setup' },
-    { title: 'Start.gg Setup', href: '/guides/startgg-setup' },
-    { title: 'Tunnel Setup', href: '/guides/tunnel-setup' },
+    { title: 'Player Quickstart', href: BASE_PATH + '/guides/player-quickstart/' },
+    { title: 'TO Quickstart', href: BASE_PATH + '/guides/to-quickstart/' },
+    { title: 'Discord Setup', href: BASE_PATH + '/guides/discord-setup/' },
+    { title: 'Start.gg Setup', href: BASE_PATH + '/guides/startgg-setup/' },
+    { title: 'Tunnel Setup', href: BASE_PATH + '/guides/tunnel-setup/' },
   ],
   reference: [
-    { title: 'Architecture', href: '/reference/architecture' },
-    { title: 'Codebase Reference', href: '/reference/codebase-reference' },
-    { title: 'API Reference', href: '/reference/api-reference' },
+    { title: 'Architecture', href: BASE_PATH + '/reference/architecture/' },
+    { title: 'Codebase Reference', href: BASE_PATH + '/reference/codebase-reference/' },
+    { title: 'API Reference', href: BASE_PATH + '/reference/api-reference/' },
   ],
 }
 
 const DOCS_DIR = join(process.cwd(), 'content')
+
+// Custom renderer to fix relative links
+const renderer = new Renderer()
+const originalLink = renderer.link.bind(renderer)
+renderer.link = function (href: string, title: string | null | undefined, text: string) {
+  // Only fix relative links (not starting with http, https, mailto, or #)
+  if (href && !href.startsWith('http') && !href.startsWith('https') && !href.startsWith('mailto:') && !href.startsWith('#')) {
+    // Add trailing slash and basePath
+    const normalizedPath = href.endsWith('/') ? href : href + '/'
+    href = BASE_PATH + '/' + normalizedPath
+  }
+  return originalLink(href, title, text)
+}
+
+marked.setOptions({ renderer })
 
 function getContent(slug: string[]) {
   const path = slug?.length ? slug.join('/') : 'index'
