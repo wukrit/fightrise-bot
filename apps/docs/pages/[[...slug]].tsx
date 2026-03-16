@@ -27,15 +27,15 @@ const DOCS_DIR = join(process.cwd(), 'content')
 
 // Custom renderer to fix relative links
 const renderer = new Renderer()
-const originalLink = renderer.link.bind(renderer)
-renderer.link = function (href: string, title: string | null | undefined, text: string) {
+renderer.link = function ({ href, title, text }: { href: string; title?: string | null; text: string }) {
   // Only fix relative links (not starting with http, https, mailto, or #)
   if (href && !href.startsWith('http') && !href.startsWith('https') && !href.startsWith('mailto:') && !href.startsWith('#')) {
     // Add trailing slash and basePath
     const normalizedPath = href.endsWith('/') ? href : href + '/'
     href = BASE_PATH + '/' + normalizedPath
   }
-  return originalLink(href, title, text)
+  const titleAttr = title ? ` title="${title}"` : ''
+  return `<a href="${href}"${titleAttr}>${text}</a>`
 }
 
 marked.setOptions({ renderer })
