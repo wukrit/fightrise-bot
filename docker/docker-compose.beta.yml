@@ -1,0 +1,43 @@
+# Docker Compose configuration for beta environment
+# Uses different ports to avoid conflicts with development and test environments
+#
+# Usage:
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.beta.yml --env-file .env.beta up
+#
+# Note: This overrides docker-compose.override.yml, so dev services won't run
+
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: fightrise_beta
+      POSTGRES_USER: fightrise_beta
+      POSTGRES_PASSWORD: betapassword
+    ports:
+      - "5433:5432"  # Different port - matches test setup
+    volumes:
+      - postgres_beta_data:/var/lib/postgresql/data
+
+  redis:
+    command: redis-server --appendonly no
+    ports:
+      - "6380:6379"  # Different port - matches test setup
+    volumes:
+      - redis_beta_data:/data
+
+  bot:
+    environment:
+      DATABASE_URL: postgresql://fightrise_beta:betapassword@postgres:5432/fightrise_beta
+      REDIS_URL: redis://redis:6379
+      NODE_ENV: beta
+
+  web:
+    environment:
+      DATABASE_URL: postgresql://fightrise_beta:betapassword@postgres:5432/fightrise_beta
+      REDIS_URL: redis://redis:6379
+      NODE_ENV: beta
+    ports:
+      - "4001:4000"  # Different from dev (4000)
+
+volumes:
+  postgres_beta_data:
+  redis_beta_data:

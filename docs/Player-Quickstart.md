@@ -1,0 +1,195 @@
+---
+layout: default
+title: "Player Quickstart Guide"
+---
+
+# Player Quickstart Guide
+
+This guide helps players set up their accounts and participate in tournaments run with FightRise.
+
+## Prerequisites
+
+Before you begin, make sure you have:
+
+- **Discord account** with access to the tournament server
+- **Start.gg account** with your tournament profile set up
+
+**Estimated time:** 5 minutes
+
+## Related Documentation
+
+| Document | Description |
+|----------|-------------|
+| [TO Quickstart](./TO-Quickstart) | Guide for tournament organizers |
+| [Discord Setup](./Discord-Setup) | Bot installation |
+
+---
+
+## Table of Contents
+
+1. [Linking Your Accounts](#1-linking-your-accounts)
+2. [Registering for a Tournament](#2-registering-for-a-tournament)
+3. [Checking In](#3-checking-in)
+4. [Reporting Scores](#4-reporting-scores)
+5. [Common Issues](#5-common-issues)
+
+---
+
+## 1. Linking Your Accounts
+
+### Step 1: Link Start.gg to Discord
+
+Run this command in the tournament Discord server:
+
+```
+/link-startgg
+```
+
+The bot will:
+1. Provide an authorization URL
+2. You click the link and authorize with Start.gg
+3. Your Discord account is now linked to your Start.gg profile
+
+### Verify Linking
+
+Check your linked account:
+
+```
+/my-profile
+```
+
+This shows your connected accounts and any tournaments.
+
+---
+
+## 2. Registering for a Tournament
+
+### Step 1: Find Your Tournament
+
+When a tournament is announced, the bot will post in the announcement channel with:
+- Tournament name
+- Registration deadline
+- How to register
+
+### Step 2: Register
+
+Run:
+
+```
+/register
+```
+
+The bot will:
+1. Ask which event (game) you're entering
+2. Confirm your registration
+3. Notify you when registration is complete
+
+### Check Registration Status
+
+View your registrations:
+
+```
+/my-registrations
+```
+
+---
+
+## 3. Checking In
+
+When your match is called, you'll be notified in a Discord thread:
+
+### Step 1: Check Your Mentions
+
+Look for a DM or mention from the bot in the match thread.
+
+### Step 2: Click Check-In Button
+
+Click the "Check In" button in the thread.
+
+**Time limit:** You typically have 5-10 minutes to check in.
+
+### Step 3: Wait for Opponent
+
+Once both players check in, the match begins.
+
+### If You Can't Check In
+
+- **Technical issues:** Contact a TO immediately
+- **Running late:** Message your opponent in the thread
+- **Need more time:** Ask TO to extend check-in
+
+---
+
+## 4. Reporting Scores
+
+### Step 1: Report Your Win
+
+When your match is complete, the winner runs:
+
+```
+/report
+```
+
+This opens a modal to:
+- Select the winner (yourself)
+- Enter the score (e.g., 2-1)
+
+### Step 2: Opponent Confirms
+
+Your opponent receives a confirmation request. They must confirm for the score to be final.
+
+**Auto-confirm:** If your opponent doesn't confirm within 5 minutes, the result is auto-submitted.
+
+### Step 3: Score Reported to Start.gg
+
+Once confirmed, the result is automatically reported to Start.gg.
+
+---
+
+## 5. Common Issues
+
+### "I can't find /link-startgg"
+
+**Solution:** The command might be restricted. Make sure you're in the tournament Discord server.
+
+### "Registration failed"
+
+**Possible causes:**
+- Tournament registration not open yet
+- You haven't linked Start.gg yet
+- You're already registered
+- Event is full
+
+### "Check-in button not working"
+
+- Make sure you're clicking the button in the correct thread
+- Try refreshing Discord
+- Check if check-in deadline has passed
+
+### "Can't report score"
+
+- Only the winner should run `/report`
+- Wait for opponent to confirm
+- If opponent is unresponsive, contact a TO
+
+### "I reported the wrong score"
+
+Contact your opponent or a TO immediately to correct it before it's confirmed on Start.gg.
+
+---
+
+## Player Commands Reference
+
+| Command | Description |
+|---------|-------------|
+| `/link-startgg` | Connect Start.gg account |
+| `/unlink-startgg` | Disconnect Start.gg account |
+| `/register` | Register for tournament |
+| `/checkin` | Check in for match |
+| `/report` | Report match score |
+| `/my-matches` | View upcoming matches |
+| `/my-registrations` | View registrations |
+
+---
+
+**Need help?** Ask in the tournament Discord or contact a tournament organizer.
