@@ -16,6 +16,8 @@ Use the sidebar to navigate through the documentation:
 | [Discord Setup](./Discord-Setup) | Configure the Discord bot |
 | [Start.gg Setup](./StartGG-Setup) | Set up Start.gg API access |
 | [Tunnel Setup](./Tunnel-Setup) | Configure Cloudflare Tunnel for OAuth |
+| [TO Quickstart](./TO-Quickstart) | Tournament organizer guide |
+| [Player Quickstart](./Player-Quickstart) | Player guide |
 | [Architecture](./Architecture) | System architecture overview |
 | [API Reference](./API_Reference) | Web API documentation |
 
