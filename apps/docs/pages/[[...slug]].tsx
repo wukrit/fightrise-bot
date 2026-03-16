@@ -3,23 +3,25 @@ import { join, basename } from 'path'
 import { marked, Renderer } from 'marked'
 import Link from 'next/link'
 
-// Define sidebar structure
+// Base path for GitHub Pages
 const BASE_PATH = '/fightrise-bot'
+
+// Define sidebar structure - NOTE: Next.js basePath automatically prepends /fightrise-bot
 const SIDEBAR = {
   'getting-started': [
-    { title: 'Index', href: BASE_PATH + '/' },
+    { title: 'Index', href: '/' },
   ],
   guides: [
-    { title: 'Player Quickstart', href: BASE_PATH + '/guides/player-quickstart/' },
-    { title: 'TO Quickstart', href: BASE_PATH + '/guides/to-quickstart/' },
-    { title: 'Discord Setup', href: BASE_PATH + '/guides/discord-setup/' },
-    { title: 'Start.gg Setup', href: BASE_PATH + '/guides/startgg-setup/' },
-    { title: 'Tunnel Setup', href: BASE_PATH + '/guides/tunnel-setup/' },
+    { title: 'Player Quickstart', href: '/guides/player-quickstart/' },
+    { title: 'TO Quickstart', href: '/guides/to-quickstart/' },
+    { title: 'Discord Setup', href: '/guides/discord-setup/' },
+    { title: 'Start.gg Setup', href: '/guides/startgg-setup/' },
+    { title: 'Tunnel Setup', href: '/guides/tunnel-setup/' },
   ],
   reference: [
-    { title: 'Architecture', href: BASE_PATH + '/reference/architecture/' },
-    { title: 'Codebase Reference', href: BASE_PATH + '/reference/codebase-reference/' },
-    { title: 'API Reference', href: BASE_PATH + '/reference/api-reference/' },
+    { title: 'Architecture', href: '/reference/architecture/' },
+    { title: 'Codebase Reference', href: '/reference/codebase-reference/' },
+    { title: 'API Reference', href: '/reference/api-reference/' },
   ],
 }
 
@@ -28,11 +30,10 @@ const DOCS_DIR = join(process.cwd(), 'content')
 // Custom renderer to fix relative links
 const renderer = new Renderer()
 renderer.link = function ({ href, title, text }: { href: string; title?: string | null; text: string }) {
-  // Only fix relative links (not starting with http, https, mailto, or #)
-  if (href && !href.startsWith('http') && !href.startsWith('https') && !href.startsWith('mailto:') && !href.startsWith('#')) {
-    // Add trailing slash and basePath
-    const normalizedPath = href.endsWith('/') ? href : href + '/'
-    href = BASE_PATH + '/' + normalizedPath
+  // Only fix relative links (not starting with http, https, mailto, #, or /)
+  if (href && !href.startsWith('http') && !href.startsWith('https') && !href.startsWith('mailto:') && !href.startsWith('#') && !href.startsWith('/')) {
+    // Add basePath without trailing slash (the markdown paths like ./something become /basepath/something)
+    href = BASE_PATH + '/' + href
   }
   const titleAttr = title ? ` title="${title}"` : ''
   return `<a href="${href}"${titleAttr}>${text}</a>`
