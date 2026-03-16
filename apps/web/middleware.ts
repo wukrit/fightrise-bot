@@ -15,6 +15,7 @@ const publicRoutes = [
   '/',
   '/auth/signin',
   '/api/auth',
+  '/api/health',
 ];
 
 export default withAuth(

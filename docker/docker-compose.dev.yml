@@ -133,6 +133,7 @@ services:
       - ../apps/web/vitest.config.ts:/app/apps/web/vitest.config.ts:ro
       - ../apps/web/vitest.setup.ts:/app/apps/web/vitest.setup.ts:ro
       - ../apps/web/.eslintrc.json:/app/apps/web/.eslintrc.json:ro
+      - ../apps/web/middleware.ts:/app/apps/web/middleware.ts:ro
       - ../packages/shared/src:/app/packages/shared/src:ro
       - ../packages/ui/src:/app/packages/ui/src:ro
       - ../packages/ui/vitest.config.ts:/app/packages/ui/vitest.config.ts:ro

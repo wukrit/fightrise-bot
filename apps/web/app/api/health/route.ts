@@ -3,8 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getClientIp, createRateLimitHeaders, RATE_LIMIT_CONFIGS } from "../../../lib/ratelimit";
 
 export async function GET(request: NextRequest) {
-  // Skip rate limiting in test environment for parallel test execution
-  if (process.env.NODE_ENV === 'test') {
+  // Skip rate limiting in test environment or when E2E_AUTH_BYPASS is set (for E2E tests)
+  const isTestEnv = process.env.NODE_ENV === 'test' || process.env.E2E_AUTH_BYPASS === 'true';
+  if (isTestEnv) {
     return NextResponse.json({ status: 'ok' });
   }
 
