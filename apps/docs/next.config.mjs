@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
-  basePath: '/fightrise-bot/docs',
+  basePath: '/fightrise-bot',
   trailingSlash: true,
   images: {
     unoptimized: true
