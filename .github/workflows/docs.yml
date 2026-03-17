@@ -9,8 +9,13 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
       - uses: actions/setup-node@v4
         with:
           node-version-file: 'package.json'
@@ -18,7 +23,23 @@ jobs:
         working-directory: apps/docs
       - run: npm run build
         working-directory: apps/docs
-      - uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./apps/docs/out
+
+      - name: Copy built docs to docs folder
+        run: |
+          rm -rf docs/*
+          cp -r apps/docs/out/* docs/
+
+          # Create root index.html by copying the getting-started content
+          cp docs/getting-started/index/index.html docs/index.html
+
+          # Create .nojekyll to prevent Jekyll processing
+          touch docs/.nojekyll
+
+          git add docs/
+
+      - name: Commit and push
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git commit -m "docs: update static documentation" || echo "No changes to commit"
+          git push
