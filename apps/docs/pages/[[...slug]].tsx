@@ -27,6 +27,19 @@ const DOCS_DIR = join(process.cwd(), 'content')
 // Custom renderer: prefix all internal links with basePath for static export
 const BASE_PATH = '/fightrise-bot'
 
+// Generate slug for heading IDs — matches GitHub/Markdown anchor generation
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    // Handle HTML-encoded ampersands (marked encodes & as &amp; in heading text)
+    .replace(/&amp;/g, '--')
+    .replace(/&/g, '--')
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
 const renderer = new Renderer()
 renderer.link = function ({ href, title, text }: { href: string; title?: string | null; text: string }) {
   // Skip external links and anchors
@@ -62,6 +75,11 @@ renderer.link = function ({ href, title, text }: { href: string; title?: string 
 
   const titleAttr = title ? ` title="${title}"` : ''
   return `<a href="${href}"${titleAttr}>${text}</a>`
+}
+
+renderer.heading = function ({ text, depth }: { text: string; depth: number }) {
+  const id = slugify(text)
+  return `<h${depth} id="${id}">${text}</h${depth}>\n`
 }
 
 marked.setOptions({ renderer })
