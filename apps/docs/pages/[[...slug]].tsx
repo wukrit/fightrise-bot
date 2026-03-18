@@ -108,6 +108,8 @@ export async function getStaticProps({ params }: { params: { slug?: string[] } }
   }
 }
 
+import ThemeToggle from '../components/ThemeToggle'
+
 export default function DocPage({ content, slug }: { content: string; slug: string }) {
   // Determine which section to show in sidebar
   let currentSection = 'getting-started'
@@ -117,46 +119,37 @@ export default function DocPage({ content, slug }: { content: string; slug: stri
   const links = SIDEBAR[currentSection as keyof typeof SIDEBAR] || []
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <aside style={{ width: 260, borderRight: '1px solid #e5e5e5', padding: '1.5rem', background: '#fafafa', flexShrink: 0 }}>
-        <h2 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.25rem' }}>
-          <Link href="/" style={{ textDecoration: 'none', color: '#333' }}>FightRise</Link>
-        </h2>
-        <nav>
-          <div style={{ marginBottom: '1rem' }}>
-            <Link href="/" style={{ fontWeight: 600, color: '#666', textDecoration: 'none' }}>Getting Started</Link>
+    <div className="docs-layout">
+      <aside className="docs-sidebar">
+        <div className="docs-sidebar-header">
+          <h2 className="docs-logo">
+            <Link href="/">FightRise</Link>
+          </h2>
+          <ThemeToggle />
+        </div>
+        <nav className="docs-nav">
+          <div className="docs-nav-section">
+            <Link href="/" className="docs-nav-link docs-nav-link--section">Getting Started</Link>
           </div>
-          <div style={{ marginBottom: '1rem' }}>
-            <div style={{ fontWeight: 600, color: '#666', marginBottom: '0.5rem' }}>Guides</div>
+          <div className="docs-nav-section">
+            <span className="docs-nav-section-label">Guides</span>
             {SIDEBAR.guides.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                style={{
-                  display: 'block',
-                  padding: '0.25rem 0',
-                  color: slug === link.href.replace('/fightrise-bot', '') ? '#0066cc' : '#333',
-                  textDecoration: 'none',
-                  fontSize: '0.9rem'
-                }}
+                className={`docs-nav-link${slug === link.href.replace('/fightrise-bot', '') ? ' active' : ''}`}
               >
                 {link.title}
               </Link>
             ))}
           </div>
-          <div>
-            <div style={{ fontWeight: 600, color: '#666', marginBottom: '0.5rem' }}>Reference</div>
+          <div className="docs-nav-section">
+            <span className="docs-nav-section-label">Reference</span>
             {SIDEBAR.reference.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                style={{
-                  display: 'block',
-                  padding: '0.25rem 0',
-                  color: slug === link.href.replace('/fightrise-bot', '') ? '#0066cc' : '#333',
-                  textDecoration: 'none',
-                  fontSize: '0.9rem'
-                }}
+                className={`docs-nav-link${slug === link.href.replace('/fightrise-bot', '') ? ' active' : ''}`}
               >
                 {link.title}
               </Link>
@@ -164,10 +157,10 @@ export default function DocPage({ content, slug }: { content: string; slug: stri
           </div>
         </nav>
       </aside>
-      <main style={{ flex: 1, padding: '2rem', maxWidth: 800 }}>
+      <main className="docs-main">
         <article
+          className="docs-content"
           dangerouslySetInnerHTML={{ __html: content }}
-          style={{ lineHeight: 1.7 }}
         />
       </main>
     </div>
