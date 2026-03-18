@@ -25,6 +25,8 @@ const SIDEBAR = {
 const DOCS_DIR = join(process.cwd(), 'content')
 
 // Custom renderer: prefix all internal links with basePath for static export
+const BASE_PATH = '/fightrise-bot'
+
 const renderer = new Renderer()
 renderer.link = function ({ href, title, text }: { href: string; title?: string | null; text: string }) {
   // Skip external links and anchors
@@ -49,9 +51,13 @@ renderer.link = function ({ href, title, text }: { href: string; title?: string 
       cleanHref = cleanHref.replace(/^\.\.\//, 'guides/')
     }
     href = '/' + cleanHref
-  } else {
-    // Absolute path like /guides/... — pass through unchanged
-    href = href
+  }
+
+  // Always prepend basePath to internal absolute paths (e.g. /guides/... → /fightrise-bot/guides/...)
+  if (href.startsWith('/')) {
+    // Strip any existing basePath prefix to avoid double-prefixing
+    href = href.replace(/^\/fightrise-bot/, '')
+    href = BASE_PATH + href
   }
 
   const titleAttr = title ? ` title="${title}"` : ''
