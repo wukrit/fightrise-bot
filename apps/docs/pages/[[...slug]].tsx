@@ -3,8 +3,7 @@ import { join, basename } from 'path'
 import { marked, Renderer } from 'marked'
 import Link from 'next/link'
 
-// basePath: '/fightrise-bot' in next.config.mjs — renderer must prefix content links
-const BASE_PATH = '/fightrise-bot'
+// No basePath — GitHub Pages serves from /docs which maps to URL root
 const SIDEBAR = {
   'getting-started': [
     { title: 'Index', href: '/' },
@@ -39,8 +38,7 @@ renderer.link = function ({ href, title, text }: { href: string; title?: string 
     href.startsWith('http') ||
     href.startsWith('https') ||
     href.startsWith('mailto:') ||
-    href.startsWith('#') ||
-    href.startsWith(BASE_PATH)
+    href.startsWith('#')
   ) {
     const titleAttr = title ? ` title="${title}"` : ''
     return `<a href="${href}"${titleAttr}>${text}</a>`
@@ -55,10 +53,10 @@ renderer.link = function ({ href, title, text }: { href: string; title?: string 
       // ../reference/architecture/ → guides/reference/architecture/
       cleanHref = cleanHref.replace(/^\.\.\//, 'guides/')
     }
-    href = BASE_PATH + '/' + cleanHref
+    href = '/' + cleanHref
   } else {
-    // Absolute path like /guides/... — prefix with basePath
-    href = BASE_PATH + href
+    // Absolute path like /guides/... — pass through unchanged
+    href = href
   }
 
   const titleAttr = title ? ` title="${title}"` : ''
