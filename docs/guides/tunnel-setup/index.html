@@ -1,0 +1,229 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width"/><meta name="next-head-count" content="2"/><link rel="icon" href="/favicon.svg" type="image/svg+xml"/><link rel="preload" href="/fightrise-bot/_next/static/css/82e1fc5146201125.css" as="style"/><link rel="stylesheet" href="/fightrise-bot/_next/static/css/82e1fc5146201125.css" data-n-g=""/><noscript data-n-css=""></noscript><script defer="" nomodule="" src="/fightrise-bot/_next/static/chunks/polyfills-78c92fac7aa8fdd8.js"></script><script src="/fightrise-bot/_next/static/chunks/webpack-1a64f5c80bb82e92.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/framework-6dd3bf7463386647.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/main-31102c233e8a53a2.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/pages/_app-fd0e9306043423e9.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/485-99c76f868280833c.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/pages/%5B%5B...slug%5D%5D-ac41591a1701b4a0.js" defer=""></script><script src="/fightrise-bot/_next/static/vhbCIB3Lp34kmzVexUmHB/_buildManifest.js" defer=""></script><script src="/fightrise-bot/_next/static/vhbCIB3Lp34kmzVexUmHB/_ssgManifest.js" defer=""></script></head><body><script>(function(){var s=localStorage.getItem('fightrise-theme');var m=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=s||m;})();</script><div id="__next"><div class="docs-layout"><aside class="docs-sidebar"><div class="docs-sidebar-header"><h2 class="docs-logo"><a href="/fightrise-bot/">FightRise</a></h2><button class="theme-toggle" aria-label="Switch to dark mode" title="Switch to dark mode"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></button></div><nav class="docs-nav"><div class="docs-nav-section"><a class="docs-nav-link docs-nav-link--section" href="/fightrise-bot/">Getting Started</a></div><div class="docs-nav-section"><span class="docs-nav-section-label">Guides</span><a class="docs-nav-link" href="/fightrise-bot/guides/player-quickstart/">Player Quickstart</a><a class="docs-nav-link" href="/fightrise-bot/guides/to-quickstart/">TO Quickstart</a><a class="docs-nav-link" href="/fightrise-bot/guides/discord-setup/">Discord Setup</a><a class="docs-nav-link" href="/fightrise-bot/guides/startgg-setup/">Start.gg Setup</a><a class="docs-nav-link" href="/fightrise-bot/guides/tunnel-setup/">Tunnel Setup</a></div><div class="docs-nav-section"><span class="docs-nav-section-label">Reference</span><a class="docs-nav-link" href="/fightrise-bot/reference/architecture/">Architecture</a><a class="docs-nav-link" href="/fightrise-bot/reference/codebase-reference/">Codebase Reference</a><a class="docs-nav-link" href="/fightrise-bot/reference/api-reference/">API Reference</a></div></nav></aside><main class="docs-main"><article class="docs-content"><hr>
+<h2>layout: default
+title: &quot;Cloudflare Tunnel Setup Guide&quot;</h2>
+<h1>Cloudflare Tunnel Setup Guide</h1>
+<p>This guide walks you through setting up Cloudflare Tunnel for local OAuth development.</p>
+<h2>Prerequisites</h2>
+<p>Before you begin, make sure you have:</p>
+<ul>
+<li><strong>Cloudflare account</strong> at <a href="https://cloudflare.com">cloudflare.com</a></li>
+<li><strong>Domain</strong> added to Cloudflare with nameservers pointed to Cloudflare</li>
+<li><strong>Homebrew</strong> installed (macOS)</li>
+</ul>
+<p><strong>Estimated time:</strong> 10-15 minutes</p>
+<h2>Related Documentation</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="/fightrise-bot/guides/discord-setup/">Discord Setup</a></td>
+<td>Discord bot configuration</td>
+</tr>
+<tr>
+<td><a href="/fightrise-bot/guides/startgg-setup/">Start.gg Setup</a></td>
+<td>Start.gg API setup</td>
+</tr>
+<tr>
+<td><strong>Tunnel Setup</strong> (this doc)</td>
+<td>Cloudflare Tunnel for OAuth</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>Why Use a Tunnel?</h2>
+<p>OAuth providers (Discord, Start.gg) require publicly accessible callback URLs. During local development, your <code>localhost:3000</code> isn&#39;t accessible from the internet.</p>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Cloudflare Tunnel</td>
+<td>Free, stable URL, secure</td>
+<td>Requires Cloudflare account + domain</td>
+</tr>
+<tr>
+<td>ngrok</td>
+<td>Easy setup</td>
+<td>Free tier has random URLs that change</td>
+</tr>
+<tr>
+<td>localtunnel</td>
+<td>Free, open source</td>
+<td>Less stable</td>
+</tr>
+</tbody></table>
+<p>Cloudflare Tunnel provides <strong>free, stable URLs</strong> that you only need to configure once in your OAuth providers.</p>
+<hr>
+<h2>Setup Steps</h2>
+<h3>1. Install cloudflared</h3>
+<pre><code class="language-bash">brew install cloudflared
+</code></pre>
+<p>Verify installation:</p>
+<pre><code class="language-bash">cloudflared --version
+</code></pre>
+<h3>2. Authenticate with Cloudflare</h3>
+<pre><code class="language-bash">cloudflared tunnel login
+</code></pre>
+<p>This will:</p>
+<ol>
+<li>Open your browser</li>
+<li>Ask you to select your Cloudflare domain</li>
+<li>Generate credentials at <code>~/.cloudflared/cert.pem</code></li>
+</ol>
+<h3>3. Create a Tunnel</h3>
+<pre><code class="language-bash">cloudflared tunnel create fightrise-dev
+</code></pre>
+<p>Output:</p>
+<pre><code>Tunnel credentials written to /Users/you/.cloudflared/&lt;UUID&gt;.json
+Created tunnel fightrise-dev with id &lt;UUID&gt;
+</code></pre>
+<p><strong>Save the UUID</strong> - you&#39;ll need it for the config file.</p>
+<h3>4. Create Configuration File</h3>
+<p>Create <code>~/.cloudflared/config.yml</code>:</p>
+<pre><code class="language-yaml">tunnel: &lt;TUNNEL-UUID&gt;
+credentials-file: /Users/&lt;your-username&gt;/.cloudflared/&lt;TUNNEL-UUID&gt;.json
+
+ingress:
+  # Route to Next.js web app
+  - hostname: fightrise-dev.yourdomain.com
+    service: http://localhost:3000
+  # Catch-all (required)
+  - service: http_status:404
+</code></pre>
+<p>Replace:</p>
+<ul>
+<li><code>&lt;TUNNEL-UUID&gt;</code> with your tunnel&#39;s UUID</li>
+<li><code>&lt;your-username&gt;</code> with your macOS username</li>
+<li><code>yourdomain.com</code> with your Cloudflare domain</li>
+</ul>
+<h3>5. Create DNS Route</h3>
+<pre><code class="language-bash">cloudflared tunnel route dns fightrise-dev fightrise-dev.yourdomain.com
+</code></pre>
+<p>This creates a CNAME record in your Cloudflare DNS.</p>
+<h3>6. Verify Setup</h3>
+<pre><code class="language-bash">cloudflared tunnel list
+</code></pre>
+<p>You should see your <code>fightrise-dev</code> tunnel listed.</p>
+<hr>
+<h2>Running the Tunnel</h2>
+<h3>Using npm script</h3>
+<pre><code class="language-bash">npm run tunnel
+</code></pre>
+<h3>Using cloudflared directly</h3>
+<pre><code class="language-bash">cloudflared tunnel run fightrise-dev
+</code></pre>
+<h3>Using the shell script</h3>
+<pre><code class="language-bash">./scripts/tunnel.sh
+</code></pre>
+<p>Your local app will be accessible at <code>https://fightrise-dev.yourdomain.com</code></p>
+<hr>
+<h2>Update OAuth Providers</h2>
+<p>Add your tunnel URL to OAuth redirect URIs:</p>
+<h3>Discord Developer Portal</h3>
+<ol>
+<li>Go to <a href="https://discord.com/developers/applications">Discord Developer Portal</a></li>
+<li>Select your application</li>
+<li>Go to <strong>OAuth2</strong> → <strong>General</strong></li>
+<li>Add redirect URI:<pre><code>https://fightrise-dev.yourdomain.com/api/auth/callback/discord
+</code></pre>
+</li>
+</ol>
+<h3>Start.gg Developer Settings</h3>
+<ol>
+<li>Go to <a href="https://start.gg/admin/profile/developer">Start.gg Developer Settings</a></li>
+<li>Select your OAuth application</li>
+<li>Add redirect URI:<pre><code>https://fightrise-dev.yourdomain.com/api/auth/callback/startgg
+</code></pre>
+</li>
+</ol>
+<hr>
+<h2>Environment Variables</h2>
+<p>Update your <code>.env</code> for tunnel development:</p>
+<pre><code class="language-bash"># Use tunnel URL for OAuth callbacks
+NEXTAUTH_URL=&quot;https://fightrise-dev.yourdomain.com&quot;
+DISCORD_REDIRECT_URI=&quot;https://fightrise-dev.yourdomain.com/api/auth/callback/discord&quot;
+STARTGG_REDIRECT_URI=&quot;https://fightrise-dev.yourdomain.com/api/auth/callback/startgg&quot;
+</code></pre>
+<hr>
+<h2>Development Workflow</h2>
+<h3>Option A: Full Docker Stack with Tunnel (Recommended)</h3>
+<p>Run everything in Docker with a single command:</p>
+<pre><code class="language-bash">npm run docker:dev:tunnel
+</code></pre>
+<p>This starts PostgreSQL, Redis, bot, web, and the Cloudflare Tunnel together.</p>
+<p><strong>Prerequisites for Docker tunnel:</strong></p>
+<ol>
+<li>Complete the tunnel setup above (steps 1-5)</li>
+<li>Create Docker-specific config:<pre><code class="language-bash">cp docker/cloudflared-config.yml.example docker/cloudflared-config.yml
+</code></pre>
+</li>
+<li>Edit <code>docker/cloudflared-config.yml</code> with your tunnel UUID and domain</li>
+<li>Important: Change <code>service: http://localhost:3000</code> to <code>service: http://web:3000</code> (Docker networking)</li>
+</ol>
+<h3>Option B: Local Tunnel + Docker Infrastructure</h3>
+<p>If you prefer running the tunnel locally:</p>
+<p><strong>Terminal 1:</strong> Start the tunnel</p>
+<pre><code class="language-bash">npm run tunnel
+</code></pre>
+<p><strong>Terminal 2:</strong> Start infrastructure and apps</p>
+<pre><code class="language-bash">npm run docker:dev
+</code></pre>
+<h3>Option C: Local Tunnel + Local Apps</h3>
+<p>For maximum control:</p>
+<p><strong>Terminal 1:</strong> Start the tunnel</p>
+<pre><code class="language-bash">npm run tunnel
+</code></pre>
+<p><strong>Terminal 2:</strong> Start infrastructure</p>
+<pre><code class="language-bash">npm run docker:infra
+</code></pre>
+<p><strong>Terminal 3:</strong> Start the web app</p>
+<pre><code class="language-bash">npm run dev -- --filter=@fightrise/web
+</code></pre>
+<hr>
+<p>Now visit <code>https://fightrise-dev.yourdomain.com</code> and OAuth flows will work.</p>
+<hr>
+<h2>Troubleshooting</h2>
+<h3>&quot;Tunnel not found&quot;</h3>
+<pre><code class="language-bash"># List available tunnels
+cloudflared tunnel list
+
+# Verify config file exists
+cat ~/.cloudflared/config.yml
+</code></pre>
+<h3>&quot;Connection refused&quot;</h3>
+<p>Make sure your local web app is running on the port specified in <code>config.yml</code> (default: 3000).</p>
+<h3>&quot;DNS record not found&quot;</h3>
+<pre><code class="language-bash"># Re-create the DNS route
+cloudflared tunnel route dns fightrise-dev fightrise-dev.yourdomain.com
+</code></pre>
+<h3>Config file conflicts</h3>
+<p>If you have issues, check for conflicting config:</p>
+<pre><code class="language-bash">ls -la ~/.cloudflared/
+</code></pre>
+<p>Remove any old <code>config.yaml</code> files (note: <code>.yaml</code> vs <code>.yml</code>).</p>
+<hr>
+<h2>Managing the Tunnel</h2>
+<h3>List tunnels</h3>
+<pre><code class="language-bash">cloudflared tunnel list
+</code></pre>
+<h3>Delete a tunnel</h3>
+<pre><code class="language-bash">cloudflared tunnel delete fightrise-dev
+</code></pre>
+<h3>View tunnel info</h3>
+<pre><code class="language-bash">cloudflared tunnel info fightrise-dev
+</code></pre>
+<hr>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/">Cloudflare Tunnel Documentation</a></li>
+<li><a href="https://github.com/cloudflare/cloudflared">cloudflared GitHub</a></li>
+</ul>
+</article></main></div></div><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"content":"\u003chr\u003e\n\u003ch2\u003elayout: default\ntitle: \u0026quot;Cloudflare Tunnel Setup Guide\u0026quot;\u003c/h2\u003e\n\u003ch1\u003eCloudflare Tunnel Setup Guide\u003c/h1\u003e\n\u003cp\u003eThis guide walks you through setting up Cloudflare Tunnel for local OAuth development.\u003c/p\u003e\n\u003ch2\u003ePrerequisites\u003c/h2\u003e\n\u003cp\u003eBefore you begin, make sure you have:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e\u003cstrong\u003eCloudflare account\u003c/strong\u003e at \u003ca href=\"https://cloudflare.com\"\u003ecloudflare.com\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eDomain\u003c/strong\u003e added to Cloudflare with nameservers pointed to Cloudflare\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eHomebrew\u003c/strong\u003e installed (macOS)\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e\u003cstrong\u003eEstimated time:\u003c/strong\u003e 10-15 minutes\u003c/p\u003e\n\u003ch2\u003eRelated Documentation\u003c/h2\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eDocument\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003e\u003ca href=\"/fightrise-bot/guides/discord-setup/\"\u003eDiscord Setup\u003c/a\u003e\u003c/td\u003e\n\u003ctd\u003eDiscord bot configuration\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ca href=\"/fightrise-bot/guides/startgg-setup/\"\u003eStart.gg Setup\u003c/a\u003e\u003c/td\u003e\n\u003ctd\u003eStart.gg API setup\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003cstrong\u003eTunnel Setup\u003c/strong\u003e (this doc)\u003c/td\u003e\n\u003ctd\u003eCloudflare Tunnel for OAuth\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003chr\u003e\n\u003ch2\u003eWhy Use a Tunnel?\u003c/h2\u003e\n\u003cp\u003eOAuth providers (Discord, Start.gg) require publicly accessible callback URLs. During local development, your \u003ccode\u003elocalhost:3000\u003c/code\u003e isn\u0026#39;t accessible from the internet.\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eOptions:\u003c/strong\u003e\u003c/p\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eApproach\u003c/th\u003e\n\u003cth\u003ePros\u003c/th\u003e\n\u003cth\u003eCons\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003eCloudflare Tunnel\u003c/td\u003e\n\u003ctd\u003eFree, stable URL, secure\u003c/td\u003e\n\u003ctd\u003eRequires Cloudflare account + domain\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003engrok\u003c/td\u003e\n\u003ctd\u003eEasy setup\u003c/td\u003e\n\u003ctd\u003eFree tier has random URLs that change\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003elocaltunnel\u003c/td\u003e\n\u003ctd\u003eFree, open source\u003c/td\u003e\n\u003ctd\u003eLess stable\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003cp\u003eCloudflare Tunnel provides \u003cstrong\u003efree, stable URLs\u003c/strong\u003e that you only need to configure once in your OAuth providers.\u003c/p\u003e\n\u003chr\u003e\n\u003ch2\u003eSetup Steps\u003c/h2\u003e\n\u003ch3\u003e1. Install cloudflared\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003ebrew install cloudflared\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eVerify installation:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003ecloudflared --version\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003e2. Authenticate with Cloudflare\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003ecloudflared tunnel login\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eThis will:\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003eOpen your browser\u003c/li\u003e\n\u003cli\u003eAsk you to select your Cloudflare domain\u003c/li\u003e\n\u003cli\u003eGenerate credentials at \u003ccode\u003e~/.cloudflared/cert.pem\u003c/code\u003e\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3\u003e3. Create a Tunnel\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003ecloudflared tunnel create fightrise-dev\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eOutput:\u003c/p\u003e\n\u003cpre\u003e\u003ccode\u003eTunnel credentials written to /Users/you/.cloudflared/\u0026lt;UUID\u0026gt;.json\nCreated tunnel fightrise-dev with id \u0026lt;UUID\u0026gt;\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e\u003cstrong\u003eSave the UUID\u003c/strong\u003e - you\u0026#39;ll need it for the config file.\u003c/p\u003e\n\u003ch3\u003e4. Create Configuration File\u003c/h3\u003e\n\u003cp\u003eCreate \u003ccode\u003e~/.cloudflared/config.yml\u003c/code\u003e:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-yaml\"\u003etunnel: \u0026lt;TUNNEL-UUID\u0026gt;\ncredentials-file: /Users/\u0026lt;your-username\u0026gt;/.cloudflared/\u0026lt;TUNNEL-UUID\u0026gt;.json\n\ningress:\n  # Route to Next.js web app\n  - hostname: fightrise-dev.yourdomain.com\n    service: http://localhost:3000\n  # Catch-all (required)\n  - service: http_status:404\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eReplace:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e\u003ccode\u003e\u0026lt;TUNNEL-UUID\u0026gt;\u003c/code\u003e with your tunnel\u0026#39;s UUID\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003e\u0026lt;your-username\u0026gt;\u003c/code\u003e with your macOS username\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eyourdomain.com\u003c/code\u003e with your Cloudflare domain\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3\u003e5. Create DNS Route\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003ecloudflared tunnel route dns fightrise-dev fightrise-dev.yourdomain.com\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eThis creates a CNAME record in your Cloudflare DNS.\u003c/p\u003e\n\u003ch3\u003e6. Verify Setup\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003ecloudflared tunnel list\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eYou should see your \u003ccode\u003efightrise-dev\u003c/code\u003e tunnel listed.\u003c/p\u003e\n\u003chr\u003e\n\u003ch2\u003eRunning the Tunnel\u003c/h2\u003e\n\u003ch3\u003eUsing npm script\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003enpm run tunnel\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003eUsing cloudflared directly\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003ecloudflared tunnel run fightrise-dev\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003eUsing the shell script\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003e./scripts/tunnel.sh\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eYour local app will be accessible at \u003ccode\u003ehttps://fightrise-dev.yourdomain.com\u003c/code\u003e\u003c/p\u003e\n\u003chr\u003e\n\u003ch2\u003eUpdate OAuth Providers\u003c/h2\u003e\n\u003cp\u003eAdd your tunnel URL to OAuth redirect URIs:\u003c/p\u003e\n\u003ch3\u003eDiscord Developer Portal\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003eGo to \u003ca href=\"https://discord.com/developers/applications\"\u003eDiscord Developer Portal\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003eSelect your application\u003c/li\u003e\n\u003cli\u003eGo to \u003cstrong\u003eOAuth2\u003c/strong\u003e → \u003cstrong\u003eGeneral\u003c/strong\u003e\u003c/li\u003e\n\u003cli\u003eAdd redirect URI:\u003cpre\u003e\u003ccode\u003ehttps://fightrise-dev.yourdomain.com/api/auth/callback/discord\n\u003c/code\u003e\u003c/pre\u003e\n\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3\u003eStart.gg Developer Settings\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003eGo to \u003ca href=\"https://start.gg/admin/profile/developer\"\u003eStart.gg Developer Settings\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003eSelect your OAuth application\u003c/li\u003e\n\u003cli\u003eAdd redirect URI:\u003cpre\u003e\u003ccode\u003ehttps://fightrise-dev.yourdomain.com/api/auth/callback/startgg\n\u003c/code\u003e\u003c/pre\u003e\n\u003c/li\u003e\n\u003c/ol\u003e\n\u003chr\u003e\n\u003ch2\u003eEnvironment Variables\u003c/h2\u003e\n\u003cp\u003eUpdate your \u003ccode\u003e.env\u003c/code\u003e for tunnel development:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003e# Use tunnel URL for OAuth callbacks\nNEXTAUTH_URL=\u0026quot;https://fightrise-dev.yourdomain.com\u0026quot;\nDISCORD_REDIRECT_URI=\u0026quot;https://fightrise-dev.yourdomain.com/api/auth/callback/discord\u0026quot;\nSTARTGG_REDIRECT_URI=\u0026quot;https://fightrise-dev.yourdomain.com/api/auth/callback/startgg\u0026quot;\n\u003c/code\u003e\u003c/pre\u003e\n\u003chr\u003e\n\u003ch2\u003eDevelopment Workflow\u003c/h2\u003e\n\u003ch3\u003eOption A: Full Docker Stack with Tunnel (Recommended)\u003c/h3\u003e\n\u003cp\u003eRun everything in Docker with a single command:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003enpm run docker:dev:tunnel\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eThis starts PostgreSQL, Redis, bot, web, and the Cloudflare Tunnel together.\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003ePrerequisites for Docker tunnel:\u003c/strong\u003e\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003eComplete the tunnel setup above (steps 1-5)\u003c/li\u003e\n\u003cli\u003eCreate Docker-specific config:\u003cpre\u003e\u003ccode class=\"language-bash\"\u003ecp docker/cloudflared-config.yml.example docker/cloudflared-config.yml\n\u003c/code\u003e\u003c/pre\u003e\n\u003c/li\u003e\n\u003cli\u003eEdit \u003ccode\u003edocker/cloudflared-config.yml\u003c/code\u003e with your tunnel UUID and domain\u003c/li\u003e\n\u003cli\u003eImportant: Change \u003ccode\u003eservice: http://localhost:3000\u003c/code\u003e to \u003ccode\u003eservice: http://web:3000\u003c/code\u003e (Docker networking)\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3\u003eOption B: Local Tunnel + Docker Infrastructure\u003c/h3\u003e\n\u003cp\u003eIf you prefer running the tunnel locally:\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eTerminal 1:\u003c/strong\u003e Start the tunnel\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003enpm run tunnel\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e\u003cstrong\u003eTerminal 2:\u003c/strong\u003e Start infrastructure and apps\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003enpm run docker:dev\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003eOption C: Local Tunnel + Local Apps\u003c/h3\u003e\n\u003cp\u003eFor maximum control:\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eTerminal 1:\u003c/strong\u003e Start the tunnel\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003enpm run tunnel\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e\u003cstrong\u003eTerminal 2:\u003c/strong\u003e Start infrastructure\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003enpm run docker:infra\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e\u003cstrong\u003eTerminal 3:\u003c/strong\u003e Start the web app\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003enpm run dev -- --filter=@fightrise/web\n\u003c/code\u003e\u003c/pre\u003e\n\u003chr\u003e\n\u003cp\u003eNow visit \u003ccode\u003ehttps://fightrise-dev.yourdomain.com\u003c/code\u003e and OAuth flows will work.\u003c/p\u003e\n\u003chr\u003e\n\u003ch2\u003eTroubleshooting\u003c/h2\u003e\n\u003ch3\u003e\u0026quot;Tunnel not found\u0026quot;\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003e# List available tunnels\ncloudflared tunnel list\n\n# Verify config file exists\ncat ~/.cloudflared/config.yml\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003e\u0026quot;Connection refused\u0026quot;\u003c/h3\u003e\n\u003cp\u003eMake sure your local web app is running on the port specified in \u003ccode\u003econfig.yml\u003c/code\u003e (default: 3000).\u003c/p\u003e\n\u003ch3\u003e\u0026quot;DNS record not found\u0026quot;\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003e# Re-create the DNS route\ncloudflared tunnel route dns fightrise-dev fightrise-dev.yourdomain.com\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003eConfig file conflicts\u003c/h3\u003e\n\u003cp\u003eIf you have issues, check for conflicting config:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003els -la ~/.cloudflared/\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eRemove any old \u003ccode\u003econfig.yaml\u003c/code\u003e files (note: \u003ccode\u003e.yaml\u003c/code\u003e vs \u003ccode\u003e.yml\u003c/code\u003e).\u003c/p\u003e\n\u003chr\u003e\n\u003ch2\u003eManaging the Tunnel\u003c/h2\u003e\n\u003ch3\u003eList tunnels\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003ecloudflared tunnel list\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003eDelete a tunnel\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003ecloudflared tunnel delete fightrise-dev\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3\u003eView tunnel info\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003ecloudflared tunnel info fightrise-dev\n\u003c/code\u003e\u003c/pre\u003e\n\u003chr\u003e\n\u003ch2\u003eAdditional Resources\u003c/h2\u003e\n\u003cul\u003e\n\u003cli\u003e\u003ca href=\"https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/\"\u003eCloudflare Tunnel Documentation\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003e\u003ca href=\"https://github.com/cloudflare/cloudflared\"\u003ecloudflared GitHub\u003c/a\u003e\u003c/li\u003e\n\u003c/ul\u003e\n","slug":"guides/tunnel-setup"},"__N_SSG":true},"page":"/[[...slug]]","query":{"slug":["guides","tunnel-setup"]},"buildId":"vhbCIB3Lp34kmzVexUmHB","assetPrefix":"/fightrise-bot","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>

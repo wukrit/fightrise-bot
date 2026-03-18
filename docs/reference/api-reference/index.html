@@ -1,0 +1,586 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width"/><meta name="next-head-count" content="2"/><link rel="icon" href="/favicon.svg" type="image/svg+xml"/><link rel="preload" href="/fightrise-bot/_next/static/css/82e1fc5146201125.css" as="style"/><link rel="stylesheet" href="/fightrise-bot/_next/static/css/82e1fc5146201125.css" data-n-g=""/><noscript data-n-css=""></noscript><script defer="" nomodule="" src="/fightrise-bot/_next/static/chunks/polyfills-78c92fac7aa8fdd8.js"></script><script src="/fightrise-bot/_next/static/chunks/webpack-1a64f5c80bb82e92.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/framework-6dd3bf7463386647.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/main-31102c233e8a53a2.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/pages/_app-fd0e9306043423e9.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/485-99c76f868280833c.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/pages/%5B%5B...slug%5D%5D-ac41591a1701b4a0.js" defer=""></script><script src="/fightrise-bot/_next/static/vhbCIB3Lp34kmzVexUmHB/_buildManifest.js" defer=""></script><script src="/fightrise-bot/_next/static/vhbCIB3Lp34kmzVexUmHB/_ssgManifest.js" defer=""></script></head><body><script>(function(){var s=localStorage.getItem('fightrise-theme');var m=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=s||m;})();</script><div id="__next"><div class="docs-layout"><aside class="docs-sidebar"><div class="docs-sidebar-header"><h2 class="docs-logo"><a href="/fightrise-bot/">FightRise</a></h2><button class="theme-toggle" aria-label="Switch to dark mode" title="Switch to dark mode"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></button></div><nav class="docs-nav"><div class="docs-nav-section"><a class="docs-nav-link docs-nav-link--section" href="/fightrise-bot/">Getting Started</a></div><div class="docs-nav-section"><span class="docs-nav-section-label">Guides</span><a class="docs-nav-link" href="/fightrise-bot/guides/player-quickstart/">Player Quickstart</a><a class="docs-nav-link" href="/fightrise-bot/guides/to-quickstart/">TO Quickstart</a><a class="docs-nav-link" href="/fightrise-bot/guides/discord-setup/">Discord Setup</a><a class="docs-nav-link" href="/fightrise-bot/guides/startgg-setup/">Start.gg Setup</a><a class="docs-nav-link" href="/fightrise-bot/guides/tunnel-setup/">Tunnel Setup</a></div><div class="docs-nav-section"><span class="docs-nav-section-label">Reference</span><a class="docs-nav-link" href="/fightrise-bot/reference/architecture/">Architecture</a><a class="docs-nav-link" href="/fightrise-bot/reference/codebase-reference/">Codebase Reference</a><a class="docs-nav-link" href="/fightrise-bot/reference/api-reference/">API Reference</a></div></nav></aside><main class="docs-main"><article class="docs-content"><hr>
+<h2>layout: default
+title: &quot;FightRise Web API Documentation&quot;</h2>
+<h1>FightRise Web API Documentation</h1>
+<p>This document describes all API endpoints in the FightRise web application.</p>
+<h2>Base URL</h2>
+<pre><code class="language-text">https://your-domain.com/api
+</code></pre>
+<h2>Authentication</h2>
+<p>Most endpoints require authentication via NextAuth.js session.
+Include cookies from the NextAuth session in requests.</p>
+<hr>
+<h2>Health Check</h2>
+<h3>GET /api/health</h3>
+<p>Health check endpoint for monitoring.</p>
+<p><strong>Authentication:</strong> None (rate limited)</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;ok&quot;
+}
+</code></pre>
+<p><strong>Rate Limit:</strong> Configured via <code>RATE_LIMIT_CONFIGS.health</code></p>
+<hr>
+<h2>Authentication (NextAuth)</h2>
+<h3>GET/POST /api/auth/[...nextauth]</h3>
+<p>NextAuth.js handler for all authentication operations:
+sign in, sign out, session management.</p>
+<p><strong>Authentication:</strong> None (handles auth)</p>
+<p><strong>Rate Limit:</strong> Configured via <code>RATE_LIMIT_CONFIGS.auth</code></p>
+<hr>
+<h2>OAuth Callbacks</h2>
+<h3>GET /api/auth/callback/startgg</h3>
+<p>Handles OAuth callback from Start.gg after user authorizes the application.</p>
+<p><strong>Authentication:</strong> None (OAuth callback)</p>
+<p><strong>Query Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>code</td>
+<td>string</td>
+<td>Yes</td>
+<td>Authorization code from Start.gg</td>
+</tr>
+<tr>
+<td>state</td>
+<td>string</td>
+<td>Yes</td>
+<td>Base64-encoded state containing Discord user info</td>
+</tr>
+<tr>
+<td>error</td>
+<td>string</td>
+<td>No</td>
+<td>OAuth error if any</td>
+</tr>
+</tbody></table>
+<p><strong>State Parameter Format:</strong></p>
+<pre><code class="language-json">{
+  &quot;discordId&quot;: &quot;123456789&quot;,
+  &quot;discordUsername&quot;: &quot;username&quot;
+}
+</code></pre>
+<p><strong>Flow:</strong></p>
+<ol>
+<li>Exchanges authorization code for access/refresh tokens</li>
+<li>Fetches user info from Start.gg GraphQL API</li>
+<li>Links Start.gg account to existing Discord user</li>
+<li>Redirects to <code>/auth/success?message=startgg_linked</code> or <code>/auth/error?error=...</code></li>
+</ol>
+<hr>
+<h3>GET /api/auth/callback/bot</h3>
+<p>Handles OAuth callback when adding the Discord bot to a server.</p>
+<p><strong>Authentication:</strong> None (OAuth callback)</p>
+<p><strong>Query Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>guild_id</td>
+<td>string</td>
+<td>Yes</td>
+<td>Discord server ID</td>
+</tr>
+<tr>
+<td>permissions</td>
+<td>string</td>
+<td>No</td>
+<td>Permissions granted to bot</td>
+</tr>
+<tr>
+<td>state</td>
+<td>string</td>
+<td>Yes</td>
+<td>CSRF protection state (min 8 characters)</td>
+</tr>
+<tr>
+<td>error</td>
+<td>string</td>
+<td>No</td>
+<td>OAuth error if any</td>
+</tr>
+</tbody></table>
+<p><strong>Validation:</strong></p>
+<ul>
+<li><code>guild_id</code> must be a valid Discord snowflake (17-19 digits)</li>
+<li><code>permissions</code> must be a valid Discord permissions integer</li>
+<li><code>state</code> must be at least 8 characters</li>
+</ul>
+<p><strong>Flow:</strong></p>
+<ol>
+<li>Validates all parameters</li>
+<li>Logs successful authorization</li>
+<li>Redirects to <code>/auth/success?message=bot_installed</code> or <code>/auth/error?error=...</code></li>
+</ol>
+<hr>
+<h2>Tournaments</h2>
+<h3>GET /api/tournaments</h3>
+<p>Returns a list of all tournaments.</p>
+<p><strong>Authentication:</strong> None (public read)</p>
+<p><strong>Query Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>state</td>
+<td>string</td>
+<td>No</td>
+<td>Filter by tournament state</td>
+</tr>
+</tbody></table>
+<p><strong>State Values:</strong></p>
+<ul>
+<li><code>CREATED</code></li>
+<li><code>REGISTRATION_OPEN</code></li>
+<li><code>REGISTRATION_CLOSED</code></li>
+<li><code>IN_PROGRESS</code></li>
+<li><code>COMPLETED</code></li>
+<li><code>CANCELLED</code></li>
+</ul>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;tournaments&quot;: [
+    {
+      &quot;id&quot;: &quot;...&quot;,
+      &quot;name&quot;: &quot;Tournament Name&quot;,
+      &quot;startAt&quot;: &quot;2024-01-15T18:00:00Z&quot;,
+      &quot;state&quot;: &quot;REGISTRATION_OPEN&quot;,
+      &quot;discordGuildId&quot;: &quot;...&quot;,
+      &quot;settings&quot;: {},
+      &quot;events&quot;: [],
+      &quot;_count&quot;: {
+        &quot;registrations&quot;: 32
+      }
+    }
+  ],
+  &quot;total&quot;: 10,
+  &quot;page&quot;: 1,
+  &quot;perPage&quot;: 10
+}
+</code></pre>
+<hr>
+<h3>GET /api/tournaments/[id]</h3>
+<p>Returns a single tournament by ID.</p>
+<p><strong>Authentication:</strong> None (public read)</p>
+<p><strong>Path Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>string</td>
+<td>Tournament ID</td>
+</tr>
+</tbody></table>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;...&quot;,
+  &quot;name&quot;: &quot;Tournament Name&quot;,
+  &quot;startAt&quot;: &quot;2024-01-15T18:00:00Z&quot;,
+  &quot;state&quot;: &quot;IN_PROGRESS&quot;,
+  &quot;discordGuildId&quot;: &quot;...&quot;,
+  &quot;settings&quot;: {},
+  &quot;events&quot;: [
+    {
+      &quot;id&quot;: &quot;...&quot;,
+      &quot;name&quot;: &quot;Street Fighter 6&quot;,
+      &quot;numEntrants&quot;: 64
+    }
+  ],
+  &quot;_count&quot;: {
+    &quot;registrations&quot;: 32
+  }
+}
+</code></pre>
+<p><strong>Errors:</strong> 404 if tournament not found</p>
+<hr>
+<h3>GET /api/tournaments/me</h3>
+<p>Returns tournaments for the authenticated user (both admin and participant roles).</p>
+<p><strong>Authentication:</strong> Required (NextAuth session)</p>
+<p><strong>Query Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>state</td>
+<td>string</td>
+<td>No</td>
+<td>Filter by tournament state</td>
+</tr>
+</tbody></table>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;...&quot;,
+    &quot;name&quot;: &quot;My Tournament&quot;,
+    &quot;state&quot;: &quot;IN_PROGRESS&quot;,
+    &quot;userRole&quot;: &quot;ADMIN&quot;,
+    &quot;_count&quot;: {
+      &quot;registrations&quot;: 32
+    }
+  },
+  {
+    &quot;id&quot;: &quot;...&quot;,
+    &quot;name&quot;: &quot;Other Tournament&quot;,
+    &quot;state&quot;: &quot;REGISTRATION_OPEN&quot;,
+    &quot;userRole&quot;: null,
+    &quot;registrationStatus&quot;: &quot;CONFIRMED&quot;
+  }
+]
+</code></pre>
+<p><strong>Errors:</strong> 401 if not authenticated</p>
+<hr>
+<h3>POST /api/tournaments/[id]/register</h3>
+<p>Register the authenticated user for a tournament.</p>
+<p><strong>Authentication:</strong> Required (NextAuth session)</p>
+<p><strong>Path Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>string</td>
+<td>Tournament ID</td>
+</tr>
+</tbody></table>
+<p><strong>Response:</strong> 201 Created</p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;...&quot;,
+  &quot;userId&quot;: &quot;...&quot;,
+  &quot;tournamentId&quot;: &quot;...&quot;,
+  &quot;source&quot;: &quot;DISCORD&quot;,
+  &quot;status&quot;: &quot;CONFIRMED&quot;
+}
+</code></pre>
+<p><strong>Errors:</strong></p>
+<ul>
+<li>401 if not authenticated</li>
+<li>404 if tournament or user not found</li>
+<li>400 if already registered</li>
+</ul>
+<hr>
+<h2>Matches</h2>
+<h3>GET /api/matches</h3>
+<p>Returns matches for the authenticated user.</p>
+<p><strong>Authentication:</strong> Required (NextAuth session)</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;...&quot;,
+    &quot;tournamentId&quot;: &quot;...&quot;,
+    &quot;tournamentName&quot;: &quot;Weekly Tournament&quot;,
+    &quot;round&quot;: 1,
+    &quot;bestOf&quot;: 3,
+    &quot;state&quot;: &quot;CALLED&quot;,
+    &quot;opponent&quot;: {
+      &quot;id&quot;: &quot;...&quot;,
+      &quot;name&quot;: &quot;OpponentName&quot;,
+      &quot;discordId&quot;: &quot;123456789&quot;
+    },
+    &quot;myReportedScore&quot;: null,
+    &quot;isWinner&quot;: null
+  }
+]
+</code></pre>
+<p><strong>Errors:</strong> 401 if not authenticated</p>
+<hr>
+<h3>GET /api/matches/[id]</h3>
+<p>Returns a single match by ID for the authenticated user.</p>
+<p><strong>Authentication:</strong> Required (NextAuth session)</p>
+<p><strong>Path Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>string</td>
+<td>Match ID</td>
+</tr>
+</tbody></table>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;...&quot;,
+  &quot;tournamentId&quot;: &quot;...&quot;,
+  &quot;tournamentName&quot;: &quot;Weekly Tournament&quot;,
+  &quot;round&quot;: 1,
+  &quot;bestOf&quot;: 3,
+  &quot;state&quot;: &quot;IN_PROGRESS&quot;,
+  &quot;checkInDeadline&quot;: &quot;2024-01-15T18:30:00Z&quot;,
+  &quot;player1&quot;: {
+    &quot;id&quot;: &quot;...&quot;,
+    &quot;name&quot;: &quot;Player1Name&quot;,
+    &quot;discordId&quot;: &quot;123456789&quot;,
+    &quot;reportedScore&quot;: 2,
+    &quot;isWinner&quot;: true
+  },
+  &quot;player2&quot;: {
+    &quot;id&quot;: &quot;...&quot;,
+    &quot;name&quot;: &quot;Player2Name&quot;,
+    &quot;discordId&quot;: &quot;987654321&quot;,
+    &quot;reportedScore&quot;: 1,
+    &quot;isWinner&quot;: false
+  },
+  &quot;myReportedScore&quot;: 2,
+  &quot;myIsWinner&quot;: true
+}
+</code></pre>
+<p><strong>Match States:</strong></p>
+<ul>
+<li><code>NOT_STARTED</code></li>
+<li><code>CALLED</code></li>
+<li><code>CHECKED_IN</code></li>
+<li><code>IN_PROGRESS</code></li>
+<li><code>PENDING_CONFIRMATION</code></li>
+<li><code>COMPLETED</code></li>
+<li><code>DISPUTED</code></li>
+<li><code>DQ</code></li>
+</ul>
+<p><strong>Errors:</strong></p>
+<ul>
+<li>401 if not authenticated</li>
+<li>403 if user is not a player in this match</li>
+<li>404 if match not found</li>
+</ul>
+<hr>
+<h3>POST /api/matches/[id]/report</h3>
+<p>Report the score for a match.</p>
+<p><strong>Authentication:</strong> Required (NextAuth session)</p>
+<p><strong>Path Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>string</td>
+<td>Match ID</td>
+</tr>
+</tbody></table>
+<p><strong>Request Body:</strong></p>
+<pre><code class="language-json">{
+  &quot;winnerId&quot;: &quot;player-user-id&quot;,
+  &quot;player1Score&quot;: 2,
+  &quot;player2Score&quot;: 1
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true
+}
+</code></pre>
+<p><strong>Logic:</strong></p>
+<ul>
+<li>Only a player in the match can report</li>
+<li>If both players report matching results, match is marked <code>COMPLETED</code></li>
+<li>If results conflict, match is marked <code>DISPUTED</code></li>
+<li>If only one player reports, match is marked <code>PENDING_CONFIRMATION</code></li>
+</ul>
+<p><strong>Valid Match States for Reporting:</strong> <code>CALLED</code>, <code>CHECKED_IN</code>, <code>IN_PROGRESS</code>, <code>PENDING_CONFIRMATION</code></p>
+<p><strong>Errors:</strong></p>
+<ul>
+<li>401 if not authenticated</li>
+<li>403 if user is not a player in this match</li>
+<li>400 if match is not in a reportable state</li>
+<li>404 if match or user not found</li>
+</ul>
+<hr>
+<h3>POST /api/matches/[id]/confirm</h3>
+<p>Confirm the result of a match (after score is reported by opponent).</p>
+<p><strong>Authentication:</strong> Required (NextAuth session)</p>
+<p><strong>Path Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>string</td>
+<td>Match ID</td>
+</tr>
+</tbody></table>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true
+}
+</code></pre>
+<p><strong>Requirements:</strong></p>
+<ul>
+<li>User must be a player in the match</li>
+<li>Match must be in <code>PENDING_CONFIRMATION</code> state</li>
+</ul>
+<p><strong>Errors:</strong></p>
+<ul>
+<li>401 if not authenticated</li>
+<li>403 if user is not a player in this match</li>
+<li>400 if match is not waiting for confirmation</li>
+</ul>
+<hr>
+<h3>POST /api/matches/[id]/dispute</h3>
+<p>Create a dispute for a match.</p>
+<p><strong>Authentication:</strong> Required (NextAuth session)</p>
+<p><strong>Path Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>string</td>
+<td>Match ID</td>
+</tr>
+</tbody></table>
+<p><strong>Request Body:</strong></p>
+<pre><code class="language-json">{
+  &quot;reason&quot;: &quot;Incorrect score reported&quot;
+}
+</code></pre>
+<p><strong>Response:</strong> 201 Created</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Dispute filed&quot;
+}
+</code></pre>
+<p><strong>Side Effects:</strong> Sets match state to <code>DISPUTED</code></p>
+<p><strong>Errors:</strong></p>
+<ul>
+<li>401 if not authenticated</li>
+<li>403 if user is not a player in this match</li>
+<li>404 if match or user not found</li>
+</ul>
+<hr>
+<h2>Error Responses</h2>
+<p>All endpoints may return standard error responses:</p>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>400</td>
+<td>Bad Request - Invalid parameters</td>
+</tr>
+<tr>
+<td>401</td>
+<td>Unauthorized - Not authenticated</td>
+</tr>
+<tr>
+<td>403</td>
+<td>Forbidden - Not authorized</td>
+</tr>
+<tr>
+<td>404</td>
+<td>Not Found - Resource doesn&#39;t exist</td>
+</tr>
+<tr>
+<td>429</td>
+<td>Too Many Requests - Rate limit exceeded</td>
+</tr>
+<tr>
+<td>500</td>
+<td>Internal Server Error</td>
+</tr>
+</tbody></table>
+<p><strong>Error Format:</strong></p>
+<pre><code class="language-json">{
+  &quot;error&quot;: &quot;Error message&quot;
+}
+</code></pre>
+<hr>
+<h2>Rate Limiting</h2>
+<p>API endpoints use rate limiting with headers:</p>
+<ul>
+<li><code>X-RateLimit-Limit</code>: Maximum requests allowed</li>
+<li><code>X-RateLimit-Remaining</code>: Requests remaining</li>
+<li><code>X-RateLimit-Reset</code>: Unix timestamp when limit resets</li>
+</ul>
+<p>Different endpoints have different rate limit configurations defined in <code>RATE_LIMIT_CONFIGS</code>.</p>
+<hr>
+<h2>Data Models</h2>
+<h3>Tournament State Enum</h3>
+<ul>
+<li><code>CREATED</code> - Tournament created but registration not open</li>
+<li><code>REGISTRATION_OPEN</code> - Registration is open</li>
+<li><code>REGISTRATION_CLOSED</code> - Registration closed</li>
+<li><code>IN_PROGRESS</code> - Tournament is active</li>
+<li><code>COMPLETED</code> - Tournament finished</li>
+<li><code>CANCELLED</code> - Tournament cancelled</li>
+</ul>
+<h3>Match State Enum</h3>
+<ul>
+<li><code>NOT_STARTED</code> - Match not started</li>
+<li><code>CALLED</code> - Players notified to report</li>
+<li><code>CHECKED_IN</code> - Both players checked in</li>
+<li><code>IN_PROGRESS</code> - Match in progress</li>
+<li><code>PENDING_CONFIRMATION</code> - Score reported, awaiting confirmation</li>
+<li><code>COMPLETED</code> - Match finished</li>
+<li><code>DISPUTED</code> - Score disputed</li>
+<li><code>DQ</code> - Player disqualified</li>
+</ul>
+<h3>Registration Source Enum</h3>
+<ul>
+<li><code>STARTGG</code> - From Start.gg sync</li>
+<li><code>DISCORD</code> - From Discord command</li>
+<li><code>MANUAL</code> - Manual admin entry</li>
+</ul>
+<h3>Registration Status Enum</h3>
+<ul>
+<li><code>PENDING</code> - Awaiting confirmation</li>
+<li><code>CONFIRMED</code> - Registered</li>
+<li><code>CANCELLED</code> - Cancelled</li>
+<li><code>DQ</code> - Disqualified</li>
+</ul>
+</article></main></div></div><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"content":"\u003chr\u003e\n\u003ch2\u003elayout: default\ntitle: \u0026quot;FightRise Web API Documentation\u0026quot;\u003c/h2\u003e\n\u003ch1\u003eFightRise Web API Documentation\u003c/h1\u003e\n\u003cp\u003eThis document describes all API endpoints in the FightRise web application.\u003c/p\u003e\n\u003ch2\u003eBase URL\u003c/h2\u003e\n\u003cpre\u003e\u003ccode class=\"language-text\"\u003ehttps://your-domain.com/api\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch2\u003eAuthentication\u003c/h2\u003e\n\u003cp\u003eMost endpoints require authentication via NextAuth.js session.\nInclude cookies from the NextAuth session in requests.\u003c/p\u003e\n\u003chr\u003e\n\u003ch2\u003eHealth Check\u003c/h2\u003e\n\u003ch3\u003eGET /api/health\u003c/h3\u003e\n\u003cp\u003eHealth check endpoint for monitoring.\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eAuthentication:\u003c/strong\u003e None (rate limited)\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eResponse:\u003c/strong\u003e\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e{\n  \u0026quot;status\u0026quot;: \u0026quot;ok\u0026quot;\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e\u003cstrong\u003eRate Limit:\u003c/strong\u003e Configured via \u003ccode\u003eRATE_LIMIT_CONFIGS.health\u003c/code\u003e\u003c/p\u003e\n\u003chr\u003e\n\u003ch2\u003eAuthentication (NextAuth)\u003c/h2\u003e\n\u003ch3\u003eGET/POST /api/auth/[...nextauth]\u003c/h3\u003e\n\u003cp\u003eNextAuth.js handler for all authentication operations:\nsign in, sign out, session management.\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eAuthentication:\u003c/strong\u003e None (handles auth)\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eRate Limit:\u003c/strong\u003e Configured via \u003ccode\u003eRATE_LIMIT_CONFIGS.auth\u003c/code\u003e\u003c/p\u003e\n\u003chr\u003e\n\u003ch2\u003eOAuth Callbacks\u003c/h2\u003e\n\u003ch3\u003eGET /api/auth/callback/startgg\u003c/h3\u003e\n\u003cp\u003eHandles OAuth callback from Start.gg after user authorizes the application.\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eAuthentication:\u003c/strong\u003e None (OAuth callback)\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eQuery Parameters:\u003c/strong\u003e\u003c/p\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eParameter\u003c/th\u003e\n\u003cth\u003eType\u003c/th\u003e\n\u003cth\u003eRequired\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003ecode\u003c/td\u003e\n\u003ctd\u003estring\u003c/td\u003e\n\u003ctd\u003eYes\u003c/td\u003e\n\u003ctd\u003eAuthorization code from Start.gg\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003estate\u003c/td\u003e\n\u003ctd\u003estring\u003c/td\u003e\n\u003ctd\u003eYes\u003c/td\u003e\n\u003ctd\u003eBase64-encoded state containing Discord user info\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003eerror\u003c/td\u003e\n\u003ctd\u003estring\u003c/td\u003e\n\u003ctd\u003eNo\u003c/td\u003e\n\u003ctd\u003eOAuth error if any\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003cp\u003e\u003cstrong\u003eState Parameter Format:\u003c/strong\u003e\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e{\n  \u0026quot;discordId\u0026quot;: \u0026quot;123456789\u0026quot;,\n  \u0026quot;discordUsername\u0026quot;: \u0026quot;username\u0026quot;\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e\u003cstrong\u003eFlow:\u003c/strong\u003e\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003eExchanges authorization code for access/refresh tokens\u003c/li\u003e\n\u003cli\u003eFetches user info from Start.gg GraphQL API\u003c/li\u003e\n\u003cli\u003eLinks Start.gg account to existing Discord user\u003c/li\u003e\n\u003cli\u003eRedirects to \u003ccode\u003e/auth/success?message=startgg_linked\u003c/code\u003e or \u003ccode\u003e/auth/error?error=...\u003c/code\u003e\u003c/li\u003e\n\u003c/ol\u003e\n\u003chr\u003e\n\u003ch3\u003eGET /api/auth/callback/bot\u003c/h3\u003e\n\u003cp\u003eHandles OAuth callback when adding the Discord bot to a server.\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eAuthentication:\u003c/strong\u003e None (OAuth callback)\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eQuery Parameters:\u003c/strong\u003e\u003c/p\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eParameter\u003c/th\u003e\n\u003cth\u003eType\u003c/th\u003e\n\u003cth\u003eRequired\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003eguild_id\u003c/td\u003e\n\u003ctd\u003estring\u003c/td\u003e\n\u003ctd\u003eYes\u003c/td\u003e\n\u003ctd\u003eDiscord server ID\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003epermissions\u003c/td\u003e\n\u003ctd\u003estring\u003c/td\u003e\n\u003ctd\u003eNo\u003c/td\u003e\n\u003ctd\u003ePermissions granted to bot\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003estate\u003c/td\u003e\n\u003ctd\u003estring\u003c/td\u003e\n\u003ctd\u003eYes\u003c/td\u003e\n\u003ctd\u003eCSRF protection state (min 8 characters)\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003eerror\u003c/td\u003e\n\u003ctd\u003estring\u003c/td\u003e\n\u003ctd\u003eNo\u003c/td\u003e\n\u003ctd\u003eOAuth error if any\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003cp\u003e\u003cstrong\u003eValidation:\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e\u003ccode\u003eguild_id\u003c/code\u003e must be a valid Discord snowflake (17-19 digits)\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003epermissions\u003c/code\u003e must be a valid Discord permissions integer\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003estate\u003c/code\u003e must be at least 8 characters\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e\u003cstrong\u003eFlow:\u003c/strong\u003e\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003eValidates all parameters\u003c/li\u003e\n\u003cli\u003eLogs successful authorization\u003c/li\u003e\n\u003cli\u003eRedirects to \u003ccode\u003e/auth/success?message=bot_installed\u003c/code\u003e or \u003ccode\u003e/auth/error?error=...\u003c/code\u003e\u003c/li\u003e\n\u003c/ol\u003e\n\u003chr\u003e\n\u003ch2\u003eTournaments\u003c/h2\u003e\n\u003ch3\u003eGET /api/tournaments\u003c/h3\u003e\n\u003cp\u003eReturns a list of all tournaments.\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eAuthentication:\u003c/strong\u003e None (public read)\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eQuery Parameters:\u003c/strong\u003e\u003c/p\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eParameter\u003c/th\u003e\n\u003cth\u003eType\u003c/th\u003e\n\u003cth\u003eRequired\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003estate\u003c/td\u003e\n\u003ctd\u003estring\u003c/td\u003e\n\u003ctd\u003eNo\u003c/td\u003e\n\u003ctd\u003eFilter by tournament state\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003cp\u003e\u003cstrong\u003eState Values:\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e\u003ccode\u003eCREATED\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eREGISTRATION_OPEN\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eREGISTRATION_CLOSED\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eIN_PROGRESS\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eCOMPLETED\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eCANCELLED\u003c/code\u003e\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e\u003cstrong\u003eResponse:\u003c/strong\u003e\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e{\n  \u0026quot;tournaments\u0026quot;: [\n    {\n      \u0026quot;id\u0026quot;: \u0026quot;...\u0026quot;,\n      \u0026quot;name\u0026quot;: \u0026quot;Tournament Name\u0026quot;,\n      \u0026quot;startAt\u0026quot;: \u0026quot;2024-01-15T18:00:00Z\u0026quot;,\n      \u0026quot;state\u0026quot;: \u0026quot;REGISTRATION_OPEN\u0026quot;,\n      \u0026quot;discordGuildId\u0026quot;: \u0026quot;...\u0026quot;,\n      \u0026quot;settings\u0026quot;: {},\n      \u0026quot;events\u0026quot;: [],\n      \u0026quot;_count\u0026quot;: {\n        \u0026quot;registrations\u0026quot;: 32\n      }\n    }\n  ],\n  \u0026quot;total\u0026quot;: 10,\n  \u0026quot;page\u0026quot;: 1,\n  \u0026quot;perPage\u0026quot;: 10\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003chr\u003e\n\u003ch3\u003eGET /api/tournaments/[id]\u003c/h3\u003e\n\u003cp\u003eReturns a single tournament by ID.\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eAuthentication:\u003c/strong\u003e None (public read)\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003ePath Parameters:\u003c/strong\u003e\u003c/p\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eParameter\u003c/th\u003e\n\u003cth\u003eType\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003eid\u003c/td\u003e\n\u003ctd\u003estring\u003c/td\u003e\n\u003ctd\u003eTournament ID\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003cp\u003e\u003cstrong\u003eResponse:\u003c/strong\u003e\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e{\n  \u0026quot;id\u0026quot;: \u0026quot;...\u0026quot;,\n  \u0026quot;name\u0026quot;: \u0026quot;Tournament Name\u0026quot;,\n  \u0026quot;startAt\u0026quot;: \u0026quot;2024-01-15T18:00:00Z\u0026quot;,\n  \u0026quot;state\u0026quot;: \u0026quot;IN_PROGRESS\u0026quot;,\n  \u0026quot;discordGuildId\u0026quot;: \u0026quot;...\u0026quot;,\n  \u0026quot;settings\u0026quot;: {},\n  \u0026quot;events\u0026quot;: [\n    {\n      \u0026quot;id\u0026quot;: \u0026quot;...\u0026quot;,\n      \u0026quot;name\u0026quot;: \u0026quot;Street Fighter 6\u0026quot;,\n      \u0026quot;numEntrants\u0026quot;: 64\n    }\n  ],\n  \u0026quot;_count\u0026quot;: {\n    \u0026quot;registrations\u0026quot;: 32\n  }\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e\u003cstrong\u003eErrors:\u003c/strong\u003e 404 if tournament not found\u003c/p\u003e\n\u003chr\u003e\n\u003ch3\u003eGET /api/tournaments/me\u003c/h3\u003e\n\u003cp\u003eReturns tournaments for the authenticated user (both admin and participant roles).\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eAuthentication:\u003c/strong\u003e Required (NextAuth session)\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eQuery Parameters:\u003c/strong\u003e\u003c/p\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eParameter\u003c/th\u003e\n\u003cth\u003eType\u003c/th\u003e\n\u003cth\u003eRequired\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003estate\u003c/td\u003e\n\u003ctd\u003estring\u003c/td\u003e\n\u003ctd\u003eNo\u003c/td\u003e\n\u003ctd\u003eFilter by tournament state\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003cp\u003e\u003cstrong\u003eResponse:\u003c/strong\u003e\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e[\n  {\n    \u0026quot;id\u0026quot;: \u0026quot;...\u0026quot;,\n    \u0026quot;name\u0026quot;: \u0026quot;My Tournament\u0026quot;,\n    \u0026quot;state\u0026quot;: \u0026quot;IN_PROGRESS\u0026quot;,\n    \u0026quot;userRole\u0026quot;: \u0026quot;ADMIN\u0026quot;,\n    \u0026quot;_count\u0026quot;: {\n      \u0026quot;registrations\u0026quot;: 32\n    }\n  },\n  {\n    \u0026quot;id\u0026quot;: \u0026quot;...\u0026quot;,\n    \u0026quot;name\u0026quot;: \u0026quot;Other Tournament\u0026quot;,\n    \u0026quot;state\u0026quot;: \u0026quot;REGISTRATION_OPEN\u0026quot;,\n    \u0026quot;userRole\u0026quot;: null,\n    \u0026quot;registrationStatus\u0026quot;: \u0026quot;CONFIRMED\u0026quot;\n  }\n]\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e\u003cstrong\u003eErrors:\u003c/strong\u003e 401 if not authenticated\u003c/p\u003e\n\u003chr\u003e\n\u003ch3\u003ePOST /api/tournaments/[id]/register\u003c/h3\u003e\n\u003cp\u003eRegister the authenticated user for a tournament.\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eAuthentication:\u003c/strong\u003e Required (NextAuth session)\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003ePath Parameters:\u003c/strong\u003e\u003c/p\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eParameter\u003c/th\u003e\n\u003cth\u003eType\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003eid\u003c/td\u003e\n\u003ctd\u003estring\u003c/td\u003e\n\u003ctd\u003eTournament ID\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003cp\u003e\u003cstrong\u003eResponse:\u003c/strong\u003e 201 Created\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e{\n  \u0026quot;id\u0026quot;: \u0026quot;...\u0026quot;,\n  \u0026quot;userId\u0026quot;: \u0026quot;...\u0026quot;,\n  \u0026quot;tournamentId\u0026quot;: \u0026quot;...\u0026quot;,\n  \u0026quot;source\u0026quot;: \u0026quot;DISCORD\u0026quot;,\n  \u0026quot;status\u0026quot;: \u0026quot;CONFIRMED\u0026quot;\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e\u003cstrong\u003eErrors:\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e401 if not authenticated\u003c/li\u003e\n\u003cli\u003e404 if tournament or user not found\u003c/li\u003e\n\u003cli\u003e400 if already registered\u003c/li\u003e\n\u003c/ul\u003e\n\u003chr\u003e\n\u003ch2\u003eMatches\u003c/h2\u003e\n\u003ch3\u003eGET /api/matches\u003c/h3\u003e\n\u003cp\u003eReturns matches for the authenticated user.\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eAuthentication:\u003c/strong\u003e Required (NextAuth session)\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eResponse:\u003c/strong\u003e\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e[\n  {\n    \u0026quot;id\u0026quot;: \u0026quot;...\u0026quot;,\n    \u0026quot;tournamentId\u0026quot;: \u0026quot;...\u0026quot;,\n    \u0026quot;tournamentName\u0026quot;: \u0026quot;Weekly Tournament\u0026quot;,\n    \u0026quot;round\u0026quot;: 1,\n    \u0026quot;bestOf\u0026quot;: 3,\n    \u0026quot;state\u0026quot;: \u0026quot;CALLED\u0026quot;,\n    \u0026quot;opponent\u0026quot;: {\n      \u0026quot;id\u0026quot;: \u0026quot;...\u0026quot;,\n      \u0026quot;name\u0026quot;: \u0026quot;OpponentName\u0026quot;,\n      \u0026quot;discordId\u0026quot;: \u0026quot;123456789\u0026quot;\n    },\n    \u0026quot;myReportedScore\u0026quot;: null,\n    \u0026quot;isWinner\u0026quot;: null\n  }\n]\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e\u003cstrong\u003eErrors:\u003c/strong\u003e 401 if not authenticated\u003c/p\u003e\n\u003chr\u003e\n\u003ch3\u003eGET /api/matches/[id]\u003c/h3\u003e\n\u003cp\u003eReturns a single match by ID for the authenticated user.\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eAuthentication:\u003c/strong\u003e Required (NextAuth session)\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003ePath Parameters:\u003c/strong\u003e\u003c/p\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eParameter\u003c/th\u003e\n\u003cth\u003eType\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003eid\u003c/td\u003e\n\u003ctd\u003estring\u003c/td\u003e\n\u003ctd\u003eMatch ID\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003cp\u003e\u003cstrong\u003eResponse:\u003c/strong\u003e\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e{\n  \u0026quot;id\u0026quot;: \u0026quot;...\u0026quot;,\n  \u0026quot;tournamentId\u0026quot;: \u0026quot;...\u0026quot;,\n  \u0026quot;tournamentName\u0026quot;: \u0026quot;Weekly Tournament\u0026quot;,\n  \u0026quot;round\u0026quot;: 1,\n  \u0026quot;bestOf\u0026quot;: 3,\n  \u0026quot;state\u0026quot;: \u0026quot;IN_PROGRESS\u0026quot;,\n  \u0026quot;checkInDeadline\u0026quot;: \u0026quot;2024-01-15T18:30:00Z\u0026quot;,\n  \u0026quot;player1\u0026quot;: {\n    \u0026quot;id\u0026quot;: \u0026quot;...\u0026quot;,\n    \u0026quot;name\u0026quot;: \u0026quot;Player1Name\u0026quot;,\n    \u0026quot;discordId\u0026quot;: \u0026quot;123456789\u0026quot;,\n    \u0026quot;reportedScore\u0026quot;: 2,\n    \u0026quot;isWinner\u0026quot;: true\n  },\n  \u0026quot;player2\u0026quot;: {\n    \u0026quot;id\u0026quot;: \u0026quot;...\u0026quot;,\n    \u0026quot;name\u0026quot;: \u0026quot;Player2Name\u0026quot;,\n    \u0026quot;discordId\u0026quot;: \u0026quot;987654321\u0026quot;,\n    \u0026quot;reportedScore\u0026quot;: 1,\n    \u0026quot;isWinner\u0026quot;: false\n  },\n  \u0026quot;myReportedScore\u0026quot;: 2,\n  \u0026quot;myIsWinner\u0026quot;: true\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e\u003cstrong\u003eMatch States:\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e\u003ccode\u003eNOT_STARTED\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eCALLED\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eCHECKED_IN\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eIN_PROGRESS\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003ePENDING_CONFIRMATION\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eCOMPLETED\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eDISPUTED\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eDQ\u003c/code\u003e\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e\u003cstrong\u003eErrors:\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e401 if not authenticated\u003c/li\u003e\n\u003cli\u003e403 if user is not a player in this match\u003c/li\u003e\n\u003cli\u003e404 if match not found\u003c/li\u003e\n\u003c/ul\u003e\n\u003chr\u003e\n\u003ch3\u003ePOST /api/matches/[id]/report\u003c/h3\u003e\n\u003cp\u003eReport the score for a match.\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eAuthentication:\u003c/strong\u003e Required (NextAuth session)\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003ePath Parameters:\u003c/strong\u003e\u003c/p\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eParameter\u003c/th\u003e\n\u003cth\u003eType\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003eid\u003c/td\u003e\n\u003ctd\u003estring\u003c/td\u003e\n\u003ctd\u003eMatch ID\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003cp\u003e\u003cstrong\u003eRequest Body:\u003c/strong\u003e\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e{\n  \u0026quot;winnerId\u0026quot;: \u0026quot;player-user-id\u0026quot;,\n  \u0026quot;player1Score\u0026quot;: 2,\n  \u0026quot;player2Score\u0026quot;: 1\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e\u003cstrong\u003eResponse:\u003c/strong\u003e\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e{\n  \u0026quot;success\u0026quot;: true\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e\u003cstrong\u003eLogic:\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eOnly a player in the match can report\u003c/li\u003e\n\u003cli\u003eIf both players report matching results, match is marked \u003ccode\u003eCOMPLETED\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003eIf results conflict, match is marked \u003ccode\u003eDISPUTED\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003eIf only one player reports, match is marked \u003ccode\u003ePENDING_CONFIRMATION\u003c/code\u003e\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e\u003cstrong\u003eValid Match States for Reporting:\u003c/strong\u003e \u003ccode\u003eCALLED\u003c/code\u003e, \u003ccode\u003eCHECKED_IN\u003c/code\u003e, \u003ccode\u003eIN_PROGRESS\u003c/code\u003e, \u003ccode\u003ePENDING_CONFIRMATION\u003c/code\u003e\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eErrors:\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e401 if not authenticated\u003c/li\u003e\n\u003cli\u003e403 if user is not a player in this match\u003c/li\u003e\n\u003cli\u003e400 if match is not in a reportable state\u003c/li\u003e\n\u003cli\u003e404 if match or user not found\u003c/li\u003e\n\u003c/ul\u003e\n\u003chr\u003e\n\u003ch3\u003ePOST /api/matches/[id]/confirm\u003c/h3\u003e\n\u003cp\u003eConfirm the result of a match (after score is reported by opponent).\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eAuthentication:\u003c/strong\u003e Required (NextAuth session)\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003ePath Parameters:\u003c/strong\u003e\u003c/p\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eParameter\u003c/th\u003e\n\u003cth\u003eType\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003eid\u003c/td\u003e\n\u003ctd\u003estring\u003c/td\u003e\n\u003ctd\u003eMatch ID\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003cp\u003e\u003cstrong\u003eResponse:\u003c/strong\u003e\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e{\n  \u0026quot;success\u0026quot;: true\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e\u003cstrong\u003eRequirements:\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eUser must be a player in the match\u003c/li\u003e\n\u003cli\u003eMatch must be in \u003ccode\u003ePENDING_CONFIRMATION\u003c/code\u003e state\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e\u003cstrong\u003eErrors:\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e401 if not authenticated\u003c/li\u003e\n\u003cli\u003e403 if user is not a player in this match\u003c/li\u003e\n\u003cli\u003e400 if match is not waiting for confirmation\u003c/li\u003e\n\u003c/ul\u003e\n\u003chr\u003e\n\u003ch3\u003ePOST /api/matches/[id]/dispute\u003c/h3\u003e\n\u003cp\u003eCreate a dispute for a match.\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eAuthentication:\u003c/strong\u003e Required (NextAuth session)\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003ePath Parameters:\u003c/strong\u003e\u003c/p\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eParameter\u003c/th\u003e\n\u003cth\u003eType\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003eid\u003c/td\u003e\n\u003ctd\u003estring\u003c/td\u003e\n\u003ctd\u003eMatch ID\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003cp\u003e\u003cstrong\u003eRequest Body:\u003c/strong\u003e\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e{\n  \u0026quot;reason\u0026quot;: \u0026quot;Incorrect score reported\u0026quot;\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e\u003cstrong\u003eResponse:\u003c/strong\u003e 201 Created\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e{\n  \u0026quot;success\u0026quot;: true,\n  \u0026quot;message\u0026quot;: \u0026quot;Dispute filed\u0026quot;\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003e\u003cstrong\u003eSide Effects:\u003c/strong\u003e Sets match state to \u003ccode\u003eDISPUTED\u003c/code\u003e\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003eErrors:\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e401 if not authenticated\u003c/li\u003e\n\u003cli\u003e403 if user is not a player in this match\u003c/li\u003e\n\u003cli\u003e404 if match or user not found\u003c/li\u003e\n\u003c/ul\u003e\n\u003chr\u003e\n\u003ch2\u003eError Responses\u003c/h2\u003e\n\u003cp\u003eAll endpoints may return standard error responses:\u003c/p\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eStatus\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003e400\u003c/td\u003e\n\u003ctd\u003eBad Request - Invalid parameters\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e401\u003c/td\u003e\n\u003ctd\u003eUnauthorized - Not authenticated\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e403\u003c/td\u003e\n\u003ctd\u003eForbidden - Not authorized\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e404\u003c/td\u003e\n\u003ctd\u003eNot Found - Resource doesn\u0026#39;t exist\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e429\u003c/td\u003e\n\u003ctd\u003eToo Many Requests - Rate limit exceeded\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e500\u003c/td\u003e\n\u003ctd\u003eInternal Server Error\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003cp\u003e\u003cstrong\u003eError Format:\u003c/strong\u003e\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-json\"\u003e{\n  \u0026quot;error\u0026quot;: \u0026quot;Error message\u0026quot;\n}\n\u003c/code\u003e\u003c/pre\u003e\n\u003chr\u003e\n\u003ch2\u003eRate Limiting\u003c/h2\u003e\n\u003cp\u003eAPI endpoints use rate limiting with headers:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e\u003ccode\u003eX-RateLimit-Limit\u003c/code\u003e: Maximum requests allowed\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eX-RateLimit-Remaining\u003c/code\u003e: Requests remaining\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eX-RateLimit-Reset\u003c/code\u003e: Unix timestamp when limit resets\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003eDifferent endpoints have different rate limit configurations defined in \u003ccode\u003eRATE_LIMIT_CONFIGS\u003c/code\u003e.\u003c/p\u003e\n\u003chr\u003e\n\u003ch2\u003eData Models\u003c/h2\u003e\n\u003ch3\u003eTournament State Enum\u003c/h3\u003e\n\u003cul\u003e\n\u003cli\u003e\u003ccode\u003eCREATED\u003c/code\u003e - Tournament created but registration not open\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eREGISTRATION_OPEN\u003c/code\u003e - Registration is open\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eREGISTRATION_CLOSED\u003c/code\u003e - Registration closed\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eIN_PROGRESS\u003c/code\u003e - Tournament is active\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eCOMPLETED\u003c/code\u003e - Tournament finished\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eCANCELLED\u003c/code\u003e - Tournament cancelled\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3\u003eMatch State Enum\u003c/h3\u003e\n\u003cul\u003e\n\u003cli\u003e\u003ccode\u003eNOT_STARTED\u003c/code\u003e - Match not started\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eCALLED\u003c/code\u003e - Players notified to report\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eCHECKED_IN\u003c/code\u003e - Both players checked in\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eIN_PROGRESS\u003c/code\u003e - Match in progress\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003ePENDING_CONFIRMATION\u003c/code\u003e - Score reported, awaiting confirmation\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eCOMPLETED\u003c/code\u003e - Match finished\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eDISPUTED\u003c/code\u003e - Score disputed\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eDQ\u003c/code\u003e - Player disqualified\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3\u003eRegistration Source Enum\u003c/h3\u003e\n\u003cul\u003e\n\u003cli\u003e\u003ccode\u003eSTARTGG\u003c/code\u003e - From Start.gg sync\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eDISCORD\u003c/code\u003e - From Discord command\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eMANUAL\u003c/code\u003e - Manual admin entry\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3\u003eRegistration Status Enum\u003c/h3\u003e\n\u003cul\u003e\n\u003cli\u003e\u003ccode\u003ePENDING\u003c/code\u003e - Awaiting confirmation\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eCONFIRMED\u003c/code\u003e - Registered\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eCANCELLED\u003c/code\u003e - Cancelled\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eDQ\u003c/code\u003e - Disqualified\u003c/li\u003e\n\u003c/ul\u003e\n","slug":"reference/api-reference"},"__N_SSG":true},"page":"/[[...slug]]","query":{"slug":["reference","api-reference"]},"buildId":"vhbCIB3Lp34kmzVexUmHB","assetPrefix":"/fightrise-bot","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>
