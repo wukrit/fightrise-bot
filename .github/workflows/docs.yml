@@ -26,12 +26,13 @@ jobs:
 
       - name: Deploy built docs to /docs
         run: |
-          # Remove old tracked docs/ files from git index and filesystem
+          # Remove old docs/ from git index (ignore if not tracked) and filesystem
           git rm -rf --cached docs/ 2>/dev/null || true
           rm -rf docs/
 
           # Copy built output to /docs (GitHub Pages serves from /docs subdirectory)
-          cp -r apps/docs/out/* docs/
+          mkdir -p docs
+          cp -r apps/docs/out/. docs/
 
           # Create root index.html from getting-started (empty slug → / route)
           cp docs/getting-started/index/index.html docs/index.html
