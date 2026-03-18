@@ -50,7 +50,10 @@ renderer.link = function ({ href, title, text }: { href: string; title?: string 
   if (!href.startsWith('/')) {
     let cleanHref = href.replace(/^\.\//, '')
     if (cleanHref.startsWith('../')) {
-      cleanHref = 'guides/' + cleanHref.replace(/\.\.\//g, '')
+      // Replace ../ at the start with guides/ — since ../ = guides/../, this correctly
+      // resolves both ../startgg-setup/ → guides/startgg-setup/ and
+      // ../reference/architecture/ → guides/reference/architecture/
+      cleanHref = cleanHref.replace(/^\.\.\//, 'guides/')
     }
     href = BASE_PATH + '/' + cleanHref
   } else {
