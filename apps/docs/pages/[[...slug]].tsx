@@ -27,6 +27,20 @@ function stripSlash(path: string) {
   return path.replace(/\/$/, '')
 }
 
+// Determine if a sidebar link is the active one for the current page.
+// slug formats: 'guides/discord-setup', 'reference/architecture', 'getting-started/index'
+// href formats:  '/guides/discord-setup/', '/reference/architecture/', '/'
+function isActiveLink(slug: string, linkHref: string, currentSection: string): boolean {
+  const normalizedSlug = stripSlash(slug)
+  // Build the full path from href (strip leading /, prepend section/)
+  const hrefFull = stripSlash(linkHref)
+  // For reference section, slug doesn't include 'reference/' prefix
+  const slugFull = currentSection === 'reference' && !normalizedSlug.startsWith(`${currentSection}/`)
+    ? `${currentSection}/${normalizedSlug}`
+    : normalizedSlug
+  return slugFull === hrefFull
+}
+
 const DOCS_DIR = join(process.cwd(), 'content')
 
 // Custom renderer: prefix all internal links with basePath for static export
@@ -150,27 +164,33 @@ export default function DocPage({ content, slug }: { content: string; slug: stri
           </div>
           <div className="docs-nav-section">
             <span className="docs-nav-section-label">Guides</span>
-            {SIDEBAR.guides.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`docs-nav-link${slug === stripSlash(link.href) ? ' active' : ''}`}
-              >
-                {link.title}
-              </Link>
-            ))}
+            {SIDEBAR.guides.map((link) => {
+              const isActive = slug === link.href.replace(/^\/|\/$/g, '')
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`docs-nav-link${isActive ? ' active' : ''}`}
+                >
+                  {link.title}
+                </Link>
+              )
+            })}
           </div>
           <div className="docs-nav-section">
             <span className="docs-nav-section-label">Reference</span>
-            {SIDEBAR.reference.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`docs-nav-link${slug === stripSlash(link.href) ? ' active' : ''}`}
-              >
-                {link.title}
-              </Link>
-            ))}
+            {SIDEBAR.reference.map((link) => {
+              const isActive = slug === link.href.replace(/^\/|\/$/g, '')
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`docs-nav-link${isActive ? ' active' : ''}`}
+                >
+                  {link.title}
+                </Link>
+              )
+            })}
           </div>
         </nav>
       </aside>
