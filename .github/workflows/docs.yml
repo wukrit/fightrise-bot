@@ -3,7 +3,7 @@ name: Deploy Docs
 on:
   push:
     branches: [main]
-    paths: ['apps/docs/**', '.github/workflows/docs.yml']
+    paths: ['apps/docs/**', '.github/workflows/docs.yml', '.gitignore']
   workflow_dispatch:
 
 jobs:
@@ -24,22 +24,22 @@ jobs:
       - run: npm run build
         working-directory: apps/docs
 
-      - name: Copy built docs to repo root
+      - name: Deploy built docs to /docs
         run: |
-          # Remove old docs/ folder (no longer used)
+          # Remove old built output from repo root (no longer used)
           rm -rf docs/
 
-          # Copy built output to repo root (GitHub Pages serves from root)
-          cp -r apps/docs/out/* .
+          # Copy built output to /docs (GitHub Pages serves from /docs subdirectory)
+          cp -r apps/docs/out/* docs/
 
           # Create root index.html from getting-started (empty slug → / route)
-          cp getting-started/index/index.html index.html
+          cp docs/getting-started/index/index.html docs/index.html
 
           # Create .nojekyll to prevent Jekyll processing
-          touch .nojekyll
+          touch docs/.nojekyll
 
-          # Stage everything except node_modules, apps, packages, .git, etc.
-          git add -f *.html 404/ _next/ getting-started/ guides/ reference/ .nojekyll favicon.svg 2>/dev/null || true
+          # Stage all new/updated static files in /docs
+          git add -f docs/ 2>/dev/null || true
 
       - name: Commit and push
         run: |

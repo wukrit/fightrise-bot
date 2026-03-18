@@ -79,5 +79,8 @@ _site/
 .jekyll-cache/
 .jekyll-metadata
 
+# GitHub Pages deployment (served from repo root, not docs/)
+docs/
+
 # Git worktrees location
 .worktrees/

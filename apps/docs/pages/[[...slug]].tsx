@@ -3,7 +3,8 @@ import { join, basename } from 'path'
 import { marked, Renderer } from 'marked'
 import Link from 'next/link'
 
-// No basePath — links are served from the repo root on GitHub Pages
+// basePath: '/fightrise-bot' in next.config.mjs — renderer must prefix content links
+const BASE_PATH = '/fightrise-bot'
 const SIDEBAR = {
   'getting-started': [
     { title: 'Index', href: '/' },
@@ -29,19 +30,34 @@ function stripSlash(path: string) {
 
 const DOCS_DIR = join(process.cwd(), 'content')
 
-// Custom renderer to fix relative links (no basePath — served from root)
+// Custom renderer: prefix all internal links with basePath for static export
 const renderer = new Renderer()
 renderer.link = function ({ href, title, text }: { href: string; title?: string | null; text: string }) {
-  // Only fix relative links (not starting with http, https, mailto, #, or /)
-  if (href && !href.startsWith('http') && !href.startsWith('https') && !href.startsWith('mailto:') && !href.startsWith('#') && !href.startsWith('/')) {
-    // Handle ./ prefix - just remove it
+  // Skip external links and anchors
+  if (
+    !href ||
+    href.startsWith('http') ||
+    href.startsWith('https') ||
+    href.startsWith('mailto:') ||
+    href.startsWith('#') ||
+    href.startsWith(BASE_PATH)
+  ) {
+    const titleAttr = title ? ` title="${title}"` : ''
+    return `<a href="${href}"${titleAttr}>${text}</a>`
+  }
+
+  // Handle relative links (starting with ./ or ../)
+  if (!href.startsWith('/')) {
     let cleanHref = href.replace(/^\.\//, '')
-    // Handle ../ prefix - convert to proper path
     if (cleanHref.startsWith('../')) {
       cleanHref = 'guides/' + cleanHref.replace(/\.\.\//g, '')
     }
-    href = '/' + cleanHref
+    href = BASE_PATH + '/' + cleanHref
+  } else {
+    // Absolute path like /guides/... — prefix with basePath
+    href = BASE_PATH + href
   }
+
   const titleAttr = title ? ` title="${title}"` : ''
   return `<a href="${href}"${titleAttr}>${text}</a>`
 }
