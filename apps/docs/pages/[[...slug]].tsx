@@ -32,8 +32,15 @@ const renderer = new Renderer()
 renderer.link = function ({ href, title, text }: { href: string; title?: string | null; text: string }) {
   // Only fix relative links (not starting with http, https, mailto, #, or /)
   if (href && !href.startsWith('http') && !href.startsWith('https') && !href.startsWith('mailto:') && !href.startsWith('#') && !href.startsWith('/')) {
-    // Add basePath without trailing slash (the markdown paths like ./something become /basepath/something)
-    href = BASE_PATH + '/' + href
+    // Handle ./ prefix - just remove it
+    let cleanHref = href.replace(/^\.\//, '')
+    // Handle ../ prefix - convert to proper path
+    // ../startgg-setup/ from guides/ means guides/startgg-setup/
+    if (cleanHref.startsWith('../')) {
+      // Remove ../ and prepend guides/ (since that's where we are)
+      cleanHref = 'guides/' + cleanHref.replace(/\.\.\//g, '')
+    }
+    href = BASE_PATH + '/' + cleanHref
   }
   const titleAttr = title ? ` title="${title}"` : ''
   return `<a href="${href}"${titleAttr}>${text}</a>`
