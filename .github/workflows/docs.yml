@@ -26,7 +26,8 @@ jobs:
 
       - name: Deploy built docs to /docs
         run: |
-          # Remove old built output from repo root (no longer used)
+          # Remove old tracked docs/ files from git index and filesystem
+          git rm -rf --cached docs/ 2>/dev/null || true
           rm -rf docs/
 
           # Copy built output to /docs (GitHub Pages serves from /docs subdirectory)
@@ -38,7 +39,7 @@ jobs:
           # Create .nojekyll to prevent Jekyll processing
           touch docs/.nojekyll
 
-          # Stage all new/updated static files in /docs
+          # Stage all new static files in /docs (docs/ is in .gitignore so -f is needed)
           git add -f docs/ 2>/dev/null || true
 
       - name: Commit and push
