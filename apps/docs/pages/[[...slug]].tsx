@@ -22,25 +22,6 @@ const SIDEBAR = {
   ],
 }
 
-// Strip trailing slashes for consistent comparison
-function stripSlash(path: string) {
-  return path.replace(/\/$/, '')
-}
-
-// Determine if a sidebar link is the active one for the current page.
-// slug formats: 'guides/discord-setup', 'reference/architecture', 'getting-started/index'
-// href formats:  '/guides/discord-setup/', '/reference/architecture/', '/'
-function isActiveLink(slug: string, linkHref: string, currentSection: string): boolean {
-  const normalizedSlug = stripSlash(slug)
-  // Build the full path from href (strip leading /, prepend section/)
-  const hrefFull = stripSlash(linkHref)
-  // For reference section, slug doesn't include 'reference/' prefix
-  const slugFull = currentSection === 'reference' && !normalizedSlug.startsWith(`${currentSection}/`)
-    ? `${currentSection}/${normalizedSlug}`
-    : normalizedSlug
-  return slugFull === hrefFull
-}
-
 const DOCS_DIR = join(process.cwd(), 'content')
 
 // Custom renderer: prefix all internal links with basePath for static export
