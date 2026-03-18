@@ -60,6 +60,10 @@ renderer.link = function ({ href, title, text }: { href: string; title?: string 
 
 marked.setOptions({ renderer })
 
+function stripFrontmatter(content: string): string {
+  return content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '')
+}
+
 function getContent(slug: string[]) {
   const path = slug?.length ? slug.join('/') : 'index'
   const filePath = join(DOCS_DIR, `${path}.mdx`)
@@ -68,7 +72,8 @@ function getContent(slug: string[]) {
     return null
   }
 
-  const content = readFileSync(filePath, 'utf-8')
+  const raw = readFileSync(filePath, 'utf-8')
+  const content = stripFrontmatter(raw)
   return marked.parse(content)
 }
 
