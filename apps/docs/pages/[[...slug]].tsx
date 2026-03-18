@@ -3,10 +3,7 @@ import { join, basename } from 'path'
 import { marked, Renderer } from 'marked'
 import Link from 'next/link'
 
-// Base path for GitHub Pages
-const BASE_PATH = '/fightrise-bot'
-
-// Define sidebar structure - NOTE: Next.js basePath automatically prepends /fightrise-bot
+// No basePath — links are served from the repo root on GitHub Pages
 const SIDEBAR = {
   'getting-started': [
     { title: 'Index', href: '/' },
@@ -25,9 +22,14 @@ const SIDEBAR = {
   ],
 }
 
+// Strip trailing slashes for consistent comparison
+function stripSlash(path: string) {
+  return path.replace(/\/$/, '')
+}
+
 const DOCS_DIR = join(process.cwd(), 'content')
 
-// Custom renderer to fix relative links
+// Custom renderer to fix relative links (no basePath — served from root)
 const renderer = new Renderer()
 renderer.link = function ({ href, title, text }: { href: string; title?: string | null; text: string }) {
   // Only fix relative links (not starting with http, https, mailto, #, or /)
@@ -35,12 +37,10 @@ renderer.link = function ({ href, title, text }: { href: string; title?: string 
     // Handle ./ prefix - just remove it
     let cleanHref = href.replace(/^\.\//, '')
     // Handle ../ prefix - convert to proper path
-    // ../startgg-setup/ from guides/ means guides/startgg-setup/
     if (cleanHref.startsWith('../')) {
-      // Remove ../ and prepend guides/ (since that's where we are)
       cleanHref = 'guides/' + cleanHref.replace(/\.\.\//g, '')
     }
-    href = BASE_PATH + '/' + cleanHref
+    href = '/' + cleanHref
   }
   const titleAttr = title ? ` title="${title}"` : ''
   return `<a href="${href}"${titleAttr}>${text}</a>`
@@ -137,7 +137,7 @@ export default function DocPage({ content, slug }: { content: string; slug: stri
               <Link
                 key={link.href}
                 href={link.href}
-                className={`docs-nav-link${slug === link.href.replace('/fightrise-bot', '') ? ' active' : ''}`}
+                className={`docs-nav-link${slug === stripSlash(link.href) ? ' active' : ''}`}
               >
                 {link.title}
               </Link>
@@ -149,7 +149,7 @@ export default function DocPage({ content, slug }: { content: string; slug: stri
               <Link
                 key={link.href}
                 href={link.href}
-                className={`docs-nav-link${slug === link.href.replace('/fightrise-bot', '') ? ' active' : ''}`}
+                className={`docs-nav-link${slug === stripSlash(link.href) ? ' active' : ''}`}
               >
                 {link.title}
               </Link>

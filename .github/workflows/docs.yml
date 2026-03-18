@@ -24,18 +24,22 @@ jobs:
       - run: npm run build
         working-directory: apps/docs
 
-      - name: Copy built docs to docs folder
+      - name: Copy built docs to repo root
         run: |
-          rm -rf docs/*
-          cp -r apps/docs/out/* docs/
+          # Remove old docs/ folder (no longer used)
+          rm -rf docs/
 
-          # Create root index.html by copying the getting-started content
-          cp docs/getting-started/index/index.html docs/index.html
+          # Copy built output to repo root (GitHub Pages serves from root)
+          cp -r apps/docs/out/* .
+
+          # Create root index.html from getting-started (empty slug → / route)
+          cp getting-started/index/index.html index.html
 
           # Create .nojekyll to prevent Jekyll processing
-          touch docs/.nojekyll
+          touch .nojekyll
 
-          git add docs/
+          # Stage everything except node_modules, apps, packages, .git, etc.
+          git add -f *.html 404/ _next/ getting-started/ guides/ reference/ .nojekyll favicon.svg 2>/dev/null || true
 
       - name: Commit and push
         run: |
