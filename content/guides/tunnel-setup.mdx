@@ -1,0 +1,134 @@
+---
+title: Tunnel Setup Guide
+description: Configure Cloudflare Tunnel for OAuth development
+---
+
+# Tunnel Setup Guide
+
+This guide explains how to set up Cloudflare Tunnel for OAuth development with FightRise.
+
+## Why Do You Need a Tunnel?
+
+OAuth requires a publicly accessible URL for callback URLs. During local development, your localhost isn't accessible from the internet. A tunnel exposes your local server to the web.
+
+## Prerequisites
+
+- Cloudflare account (free tier works)
+- Node.js installed
+- Discord and Start.gg OAuth applications configured
+
+## Setting Up Cloudflare Tunnel
+
+### Step 1: Install Cloudflare Tunnel
+
+```bash
+# Using npm
+npm install -g cloudflared
+
+# Or download from
+# https://github.com/cloudflare/cloudflared/releases
+```
+
+### Step 2: Authenticate
+
+```bash
+cloudflared tunnel login
+```
+
+This opens a browser window. Authorize with your Cloudflare account.
+
+### Step 3: Create a Tunnel
+
+```bash
+cloudflared tunnel create fightrise-dev
+```
+
+Copy the tunnel credentials path (shown after creation).
+
+### Step 4: Configure DNS
+
+```bash
+cloudflared tunnel route dns fightrise-dev fightrise-dev.yourdomain.com
+```
+
+Replace `yourdomain.com` with your Cloudflare-managed domain.
+
+### Step 5: Run the Tunnel
+
+```bash
+cloudflared tunnel run --config ~/.cloudflared/config.yaml fightrise-dev
+```
+
+Create `~/.cloudflared/config.yaml`:
+
+```yaml
+tunnel: your-tunnel-uuid
+credentials-file: /path/to/credentials.json
+
+ingress:
+  - hostname: fightrise-dev.yourdomain.com
+    service: http://localhost:4000
+  - service: http://localhost:4000
+```
+
+## Configure OAuth Redirects
+
+Update your environment variables:
+
+```bash
+# In .env
+NEXTAUTH_URL=https://fightrise-dev.yourdomain.com
+DISCORD_REDIRECT_URI=https://fightrise-dev.yourdomain.com/api/auth/callback/discord
+STARTGG_REDIRECT_URI=https://fightrise-dev.yourdomain.com/api/auth/callback/startgg
+```
+
+## Register OAuth Callbacks
+
+### Discord
+
+1. Go to Discord Developer Portal > OAuth2 > General
+2. Add redirect: `https://fightrise-dev.yourdomain.com/api/auth/callback/discord`
+3. Save
+
+### Start.gg
+
+1. Go to Start.gg Developer > OAuth Applications
+2. Add redirect: `https://fightrise-dev.yourdomain.com/api/auth/callback/startgg`
+3. Save
+
+## Run FightRise with Tunnel
+
+```bash
+# Terminal 1: Start tunnel
+cloudflared tunnel run fightrise-dev
+
+# Terminal 2: Start FightRise
+npm run dev
+```
+
+## Using the NPM Tunnel Script
+
+FightRise includes a convenience script:
+
+```bash
+npm run tunnel
+```
+
+This requires `cloudflared` to be installed and configured.
+
+## Troubleshooting
+
+### Tunnel not connecting
+
+- Check credentials file exists and is valid
+- Verify DNS points to tunnel IP
+
+### OAuth callback errors
+
+- Verify redirect URIs match exactly
+- Check protocol (https vs http)
+
+### "Connection refused" errors
+
+- Ensure FightRise is running on port 4000
+- Check ingress rules in config.yaml

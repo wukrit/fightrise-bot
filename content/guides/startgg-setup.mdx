@@ -1,0 +1,102 @@
+---
+title: Start.gg Setup Guide
+description: Set up Start.gg API access for tournament management
+---
+
+# Start.gg Setup Guide
+
+This guide walks you through setting up Start.gg API access for FightRise.
+
+## Prerequisites
+
+- Start.gg account with tournament organizer access
+- Basic understanding of REST/GraphQL APIs
+
+## Getting an API Token
+
+### Step 1: Access Developer Settings
+
+1. Go to [Start.gg Developer](https://start.gg/admin/profile/developer)
+2. Log in with your Start.gg credentials
+
+### Step 2: Create API Token
+
+1. Click "Create new token"
+2. Enter a descriptive name (e.g., "FightRise Bot")
+3. Select appropriate scopes:
+   - `tournament:read` - Read tournament data
+   - `tournament:write` - Write tournament data (for score reporting)
+4. Click "Create"
+5. **Copy the token immediately** - it won't be shown again!
+
+### Step 3: Configure Environment
+
+Add to `.dmno.env.local`:
+
+```bash
+STARTGG_API_KEY=your_token_here
+```
+
+## API Basics
+
+### GraphQL Endpoint
+
+```
+https://api.start.gg/gql/alpha
+```
+
+### Authentication
+
+Include the token in the `Authorization` header:
+
+```graphql
+Authorization: Bearer YOUR_TOKEN
+```
+
+## Rate Limits
+
+- **100 requests per minute** for most operations
+- **300 requests per minute** for read operations
+- Exceeding limits results in 429 errors
+
+FightRise handles rate limiting automatically using exponential backoff.
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `STARTGG_API_KEY` | Your Start.gg API token |
+
+## Testing Your Setup
+
+```bash
+# Test Start.gg connectivity
+curl -X POST https://api.start.gg/gql/alpha \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ me { id } }"}'
+```
+
+## Security Best Practices
+
+1. **Never commit API tokens** - Use `.dmno.env.local`
+2. **Rotate tokens periodically** - Create new tokens every few months
+3. **Use minimal scopes** - Only grant necessary permissions
+4. **Monitor usage** - Check for unusual activity
+
+## Troubleshooting
+
+### "Invalid token" errors
+
+- Verify token is correct in `.dmno.env.local`
+- Check token hasn't expired
+
+### Rate limit errors
+
+- Wait and retry with exponential backoff
+- FightRise handles this automatically
+
+### "Unauthorized" errors
+
+- Verify token has required scopes
+- Check the token belongs to your Start.gg account

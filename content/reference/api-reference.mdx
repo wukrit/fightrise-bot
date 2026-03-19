@@ -1,0 +1,139 @@
+---
+title: API Reference
+description: Web API endpoints for FightRise
+---
+
+# API Reference
+
+## Authentication
+
+All endpoints (except public ones) require authentication via NextAuth.js session.
+
+Include credentials in requests:
+
+```javascript
+// With credentials
+fetch('/api/tournaments', {
+  credentials: 'include'
+});
+```
+
+## Public Endpoints
+
+### GET /api/health
+
+Health check endpoint.
+
+**Response:**
+```json
+{
+  "status": "ok",
+  "timestamp": "2024-01-01T00:00:00.000Z"
+}
+```
+
+### GET /api/tournaments/:slug
+
+Get public tournament information.
+
+**Response:**
+```json
+{
+  "id": "abc123",
+  "name": "Weekly Tournament",
+  "slug": "weekly-1",
+  "startDate": "2024-01-15T18:00:00Z",
+  "state": "IN_PROGRESS"
+}
+```
+
+## Authenticated Endpoints
+
+### GET /api/auth/session
+
+Get current session.
+
+**Response:**
+```json
+{
+  "user": {
+    "id": "user_123",
+    "discordId": "123456789",
+    "startggId": "987654321"
+  }
+}
+```
+
+### POST /api/tournaments
+
+Create a new tournament (requires admin).
+
+**Request:**
+```json
+{
+  "slug": "my-tournament",
+  "name": "My Tournament",
+  "discordChannelId": "123456789"
+}
+```
+
+### GET /api/tournaments/:id/registrations
+
+List tournament registrations.
+
+### PATCH /api/registrations/:id
+
+Update registration status (approve/reject).
+
+**Request:**
+```json
+{
+  "status": "CONFIRMED"
+}
+```
+
+### POST /api/matches/:id/report
+
+Report match score.
+
+**Request:**
+```json
+{
+  "winnerId": "player_123",
+  "score": "2-1"
+}
+```
+
+### POST /api/matches/:id/dispute
+
+Dispute a match result.
+
+**Request:**
+```json
+{
+  "reason": "Incorrect score reported"
+}
+```
+
+## Error Responses
+
+All errors follow this format:
+
+```json
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "You must be logged in"
+  }
+}
+```
+
+### Error Codes
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `UNAUTHORIZED` | 401 | Not authenticated |
+| `FORBIDDEN` | 403 | Not authorized |
+| `NOT_FOUND` | 404 | Resource not found |
+| `VALIDATION_ERROR` | 422 | Invalid input |
+| `INTERNAL_ERROR` | 500 | Server error |

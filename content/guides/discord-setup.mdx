@@ -1,0 +1,117 @@
+---
+title: Discord Bot Setup Guide
+description: Set up a Discord application and bot for FightRise
+---
+
+# Discord Bot Setup Guide
+
+This guide walks you through setting up a Discord application and bot for FightRise.
+
+## Prerequisites
+
+Before you begin, make sure you have:
+
+- **Discord account** with verified email address
+- **Administrator access** to a Discord server (for testing the bot)
+- **Text editor** for managing `.env` files
+- **Node.js 18+** installed (for running the bot locally)
+
+**Estimated time:** 15-20 minutes
+
+## Related Documentation
+
+| Document | Description |
+|----------|-------------|
+| **Discord Setup** (this doc) | Discord bot configuration |
+| [Start.gg Setup](/fightrise-bot/guides/startgg-setup/) | Start.gg API setup |
+| [Tunnel Setup](/fightrise-bot/guides/tunnel-setup/) | Cloudflare Tunnel for OAuth |
+| [Architecture](/fightrise-bot/reference/architecture/) | System architecture overview |
+
+## Creating a Discord Application
+
+### Step 1: Access the Developer Portal
+
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Click "New Application" in the top right
+3. Enter a name (e.g., "FightRise Bot")
+4. Click "Create"
+
+### Step 2: Configure the Bot
+
+1. In the left sidebar, click "Bot"
+2. Click "Reset Token" - **copy this immediately** (it won't be shown again)
+3. Add the token to your `.dmno.env.local`:
+   ```
+   DISCORD_TOKEN=your_token_here
+   ```
+
+### Gateway Intents
+
+FightRise requires specific Gateway Intents:
+
+1. In the Bot settings, scroll to "Privileged Gateway Intents"
+2. Enable **Message Content Intent** (required for commands)
+3. Save changes
+
+### Step 3: OAuth2 Configuration
+
+1. Click "OAuth2" in the left sidebar
+2. Click "General" sub-tab
+3. Under "Redirects", add:
+   - `http://localhost:4000/api/auth/callback/discord` (development)
+   - `https://your-production-url/api/auth/callback/discord` (production)
+4. Click "Save Changes"
+
+### Step 4: Generate Bot Invite URL
+
+1. Go to "OAuth2" > "URL Generator"
+2. Select scopes:
+   - `bot`
+   - `identify`
+   - `guilds`
+3. Select permissions:
+   - `Manage Threads`
+   - `Send Messages`
+   - `Embed Links`
+   - `Use Slash Commands`
+4. Copy the generated URL
+5. Open it in a browser and select your server
+
+## Environment Variables
+
+After completing the Discord setup, ensure these variables are set:
+
+```bash
+# In .dmno.env.local
+DISCORD_TOKEN=your_bot_token
+DISCORD_CLIENT_ID=your_application_id
+DISCORD_CLIENT_SECRET=your_client_secret
+```
+
+You can find `DISCORD_CLIENT_ID` in "General Information" tab.
+
+## Security Best Practices
+
+1. **Never share your bot token** - It provides full bot access
+2. **Use environment variables** - Never hardcode secrets
+3. **Limit permissions** - Only grant what's necessary
+4. **Rotate tokens** - Reset tokens periodically
+5. **Use HTTPS in production** - Never use HTTP for production bots
+
+## Troubleshooting
+
+### Bot not responding to commands
+
+- Verify the bot is in your server
+- Check "Message Content Intent" is enabled
+- Re-run `/docker:deploy` to update commands
+
+### "Missing permissions" errors
+
+- Re-invite the bot with correct permissions
+- Check channel permissions override server permissions
+
+### Invalid token errors
+
+- Reset the token in Developer Portal
+- Update `.dmno.env.local` with new token

@@ -1,0 +1,103 @@
+---
+title: Tournament Organizer Quickstart
+description: Get started as a tournament organizer with FightRise
+---
+
+# Tournament Organizer Quickstart
+
+This guide helps tournament organizers (TOs) get started with FightRise.
+
+## Prerequisites
+
+- Discord server admin or have a channel where the bot can create threads
+- Start.gg tournament created
+- FightRise bot installed in your Discord server
+
+## Quick Start
+
+### Step 1: Link Your Start.gg Account
+
+```
+/link-startgg
+```
+
+Follow the OAuth flow to connect your Start.gg account.
+
+### Step 2: Set Up Tournament
+
+```
+/tournament setup
+```
+
+Configure:
+- Start.gg tournament slug
+- Discord channel for match threads
+- Check-in window duration
+- Auto-DQ settings
+
+### Step 3: Monitor Registrations
+
+Players can register using:
+
+```
+/register
+```
+
+View pending registrations:
+
+```
+/admin registrations
+```
+
+Approve or reject registrations as needed.
+
+### Step 4: Start Tournament
+
+When ready, the tournament starts automatically when Start.gg closes registration.
+
+## Available Commands
+
+### For Players
+
+| Command | Description |
+|---------|-------------|
+| `/link-startgg` | Connect Start.gg account |
+| `/register` | Register for tournament |
+| `/my-matches` | View upcoming matches |
+| `/checkin` | Check in (in match thread) |
+| `/report` | Report score (in match thread) |
+
+### For TOs
+
+| Command | Description |
+|---------|-------------|
+| `/tournament setup` | Configure tournament |
+| `/tournament status` | View tournament status |
+| `/admin registrations` | Manage registrations |
+| `/admin dq` | Disqualify player |
+
+## Match Flow
+
+1. **Tournament starts** - Bot polls Start.gg for bracket updates
+2. **Match called** - Bot creates Discord thread and pings players
+3. **Check-in** - Players click check-in button within the window
+4. **Match live** - Both players check in, match begins
+5. **Score reporting** - Winner reports score, loser confirms
+6. **Results synced** - Score submitted to Start.gg
+
+## Troubleshooting
+
+### No match threads appearing
+
+- Check tournament is in progress on Start.gg
+- Verify channel configuration with `/tournament status`
+
+### Players can't check in
+
+- Check check-in window hasn't expired
+- Verify player is registered
+
+### Scores not syncing to Start.gg
+
+- Verify bot has Start.gg API access
+- Check player has linked Start.gg account

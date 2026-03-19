@@ -134,9 +134,11 @@ packages/
 
 1. **Start.gg Polling**: BullMQ jobs poll Start.gg GraphQL API for tournament/match state changes (no webhooks available)
 2. **Match Ready**: When a match is ready, bot creates a Discord thread and pings players
-3. **Check-in**: Players use Discord buttons to check in within the configured window
-4. **Score Reporting**: Players report scores via Discord buttons; loser confirmation auto-submits to Start.gg
+3. **Check-in**: Players click **buttons in the match thread** (not `/checkin` slash command) to check in within the configured window
+4. **Score Reporting**: Players click **buttons in the match thread** (not `/report` slash command) to report scores; loser confirmation auto-submits to Start.gg
 5. **Sync Back**: Results are reported to Start.gg via GraphQL mutation
+
+> **Note**: The `/checkin` and `/report` slash commands exist but are deprecated stubs. All player interactions happen via buttons in the match thread for better UX.
 
 ### Code Patterns
 
@@ -258,8 +260,8 @@ All 11 models in the database schema:
 | `/tournament setup` | ✅ Complete | Configure tournament Discord settings |
 | `/tournament status` | ✅ Complete | View tournament status |
 | `/register` | ✅ Complete | Register for a tournament |
-| `/checkin` | ✅ Complete | Check in for current match |
-| `/report` | ✅ Complete | Report match score |
+| `/checkin` | ⚠️ Stub | Button in match thread (recommended) - slash command exists but deprecated |
+| `/report` | ⚠️ Stub | Button in match thread (recommended) - slash command exists but deprecated |
 | `/my-matches` | ✅ Complete | View upcoming matches |
 | `/link-startgg` | ✅ Complete | Link Start.gg account |
 | `/unlink-startgg` | ✅ Complete | Unlink Start.gg account |
