@@ -355,7 +355,26 @@ async function processSet(
     });
     result.updated = true;
     logger.info({ matchRound: set.fullRoundText }, 'Match completed');
-    // TODO: Archive Discord thread (Issue #10)
+
+    // Archive Discord thread after match completion
+    if (discordClient) {
+      const matchWithThread = await prisma.match.findUnique({
+        where: { id: existingMatch.id },
+        select: { discordThreadId: true },
+      });
+
+      if (matchWithThread?.discordThreadId) {
+        try {
+          const thread = await discordClient.channels.fetch(matchWithThread.discordThreadId);
+          if (thread && 'setArchived' in thread) {
+            await thread.setArchived(true);
+            logger.info({ threadId: matchWithThread.discordThreadId }, 'Match thread archived');
+          }
+        } catch (err) {
+          logger.error({ err, threadId: matchWithThread.discordThreadId }, 'Failed to archive thread');
+        }
+      }
+    }
   }
 
   return result;

@@ -216,7 +216,55 @@ async function handleRegister(interaction: ChatInputCommandInteraction): Promise
         embeds: [embed],
       });
 
-      // TODO: Notify tournament admins of pending registration
+      // Notify tournament admins of pending registration
+      try {
+        const discordClient = interaction.client;
+
+        // Get tournament admins
+        const admins = await prisma.tournamentAdmin.findMany({
+          where: { tournamentId },
+          include: { user: true },
+        });
+
+        if (admins.length > 0) {
+          const adminEmbed = new EmbedBuilder()
+            .setTitle('New Pending Registration')
+            .setColor(Colors.Yellow)
+            .setDescription(`A new player has requested to register for **${tournament.name}**`)
+            .addFields(
+              {
+                name: 'Player',
+                value: interaction.user.username,
+                inline: true,
+              },
+              {
+                name: 'Status',
+                value: 'Pending Approval',
+                inline: true,
+              }
+            )
+            .addFields({
+              name: 'Action Required',
+              value: 'Use `/admin registrations` to approve or reject this registration.',
+            });
+
+          // Send DM to each admin
+          for (const admin of admins) {
+            if (admin.user.discordId) {
+              try {
+                const adminUser = await discordClient.users.fetch(admin.user.discordId);
+                if (adminUser) {
+                  await adminUser.send({ embeds: [adminEmbed] });
+                }
+              } catch (err) {
+                console.error(`Failed to notify admin ${admin.user.discordId}:`, err);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to notify tournament admins:', err);
+      }
     }
   } catch (error) {
     console.error('Error during registration:', error);
