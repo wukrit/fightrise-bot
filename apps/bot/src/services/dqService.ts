@@ -184,7 +184,7 @@ async function syncDQToStartGG(
   }
 
   try {
-    const client = new StartGGClient(apiKey);
+    const client = new StartGGClient({ apiKey });
     await client.dqEntrant(setId, winnerEntrantId);
 
     console.log(`[DQ] Successfully synced DQ to Start.gg: ${dqPlayerName} DQ'd, ${winnerName} wins`);
