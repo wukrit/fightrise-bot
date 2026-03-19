@@ -137,11 +137,60 @@ export async function dqPlayer(
     throw error;
   }
 
-  // TODO: Sync to Start.gg
-  // TODO: Notify players
+  // Sync to Start.gg
+  const syncResult = await syncDQToStartGG(
+    match.startggSetId,
+    opponent.startggEntrantId,
+    dqPlayer.playerName,
+    opponent.playerName
+  );
+
+  if (!syncResult.success) {
+    console.error(`[DQ] Failed to sync DQ to Start.gg for match ${match.identifier}:`, syncResult.error);
+    // Don't fail the operation - the DQ was recorded locally
+  }
 
   return {
     success: true,
     message: `${dqPlayer.playerName} has been disqualified. ${opponent.playerName} wins by default.`,
   };
+}
+
+/**
+ * Sync DQ result to Start.gg.
+ * Reports the match with the non-DQ'd player as winner.
+ */
+async function syncDQToStartGG(
+  setId: string,
+  winnerEntrantId: string | null,
+  dqPlayerName: string,
+  winnerName: string
+): Promise<{ success: boolean; error?: string }> {
+  // Validate we have the required Start.gg IDs
+  if (!setId) {
+    return { success: false, error: 'No Start.gg set ID found' };
+  }
+
+  if (!winnerEntrantId) {
+    return { success: false, error: 'No Start.gg entrant ID for winner' };
+  }
+
+  // Import StartGGClient dynamically to avoid circular deps
+  const { StartGGClient } = await import('@fightrise/startgg-client');
+
+  const apiKey = process.env.STARTGG_API_KEY;
+  if (!apiKey) {
+    return { success: false, error: 'STARTGG_API_KEY not configured' };
+  }
+
+  try {
+    const client = new StartGGClient({ apiKey });
+    await client.dqEntrant(setId, winnerEntrantId);
+
+    console.log(`[DQ] Successfully synced DQ to Start.gg: ${dqPlayerName} DQ'd, ${winnerName} wins`);
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: errorMessage };
+  }
 }
