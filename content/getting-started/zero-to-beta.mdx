@@ -5,28 +5,33 @@ description: Complete step-by-step guide to set up FightRise from scratch
 
 # Zero to Beta: Complete Setup Guide
 
-This guide walks you through setting up FightRise from a fresh clone to a running tournament bot.
+This comprehensive guide walks you through setting up FightRise from a fresh clone to a running tournament bot. Follow each step in order.
 
 ## Prerequisites
 
-- Node.js 18+ installed
-- Docker and Docker Compose installed
-- A Discord account with a server you admin
-- A Start.gg account (for tournament management)
+Before you begin, ensure you have the following:
 
-## Estimated Time
+| Requirement | Description | Notes |
+|------------|-------------|-------|
+| **Node.js 22+** | JavaScript runtime | Check with `node --version` |
+| **Docker & Docker Compose** | Container runtime | Required for PostgreSQL & Redis |
+| **Discord account** | For bot authentication | Must have server admin access |
+| **Start.gg account** | Tournament management | Required for bracket sync |
+| **Cloudflare account** | For OAuth callbacks | Needed for production OAuth |
 
-**30-45 minutes** for initial setup
+**Estimated time:** 45-60 minutes for initial setup
 
 ## Steps Overview
 
 1. Clone and install dependencies
 2. Configure environment variables
-3. Set up Discord bot
+3. Set up Discord Developer Portal
 4. Set up Start.gg API
-5. Start infrastructure (PostgreSQL, Redis)
-6. Deploy Discord commands
-7. Run the bot
+5. Configure Cloudflare Tunnel (for OAuth)
+6. Start Docker infrastructure
+7. Set up database
+8. Deploy Discord commands
+9. Invite bot and test
 
 ---
 
@@ -38,6 +43,11 @@ cd fightrise-bot
 npm install
 ```
 
+This installs all dependencies including:
+- Turborepo for monorepo management
+- DMNO for environment management
+- Prisma for database ORM
+
 ## Step 2: Configure Environment Variables
 
 FightRise uses DMNO for environment management. Copy the example files:
@@ -47,47 +57,144 @@ cp .env.example .env
 cp .dmno.env.local.example .dmno.env.local
 ```
 
-Edit `.dmno.env.local` with your secrets:
+### Generate Required Secrets
+
+Generate a NextAuth secret for session encryption:
 
 ```bash
-# Generate a NextAuth secret
 openssl rand -base64 32
-# Add the output to NEXTAUTH_SECRET
+```
 
-# Add your Discord bot token
-DISCORD_TOKEN=your_bot_token
+Copy the output and add it to `.dmno.env.local`:
 
-# Add your Start.gg API key
+```bash
+# .dmno.env.local
+NEXTAUTH_SECRET=paste_your_generated_secret_here
+DISCORD_TOKEN=your_discord_bot_token
+DISCORD_CLIENT_SECRET=your_discord_client_secret
 STARTGG_API_KEY=your_startgg_api_key
 ```
 
 See the [DMNO Guide](/fightrise-bot/guides/dmno-setup/) for detailed environment configuration.
 
-## Step 3: Set Up Discord Bot
+## Step 3: Set Up Discord Developer Portal
+
+### Create Application
 
 1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
-2. Create a new application
-3. Go to the **Bot** tab:
-   - Click "Reset Token" and copy it
-   - Enable "Message Content Intent" under Privileged Gateway Intents
-4. Go to **OAuth2** > **General**:
-   - Add redirect: `http://localhost:4000/api/auth/callback/discord`
-5. Go to **OAuth2** > **URL Generator**:
-   - Select scopes: `bot`, `identify`, `guilds`
-   - Select permissions: `Manage Threads`, `Send Messages`, `Embed Links`, `Use Slash Commands`
-   - Copy the generated URL and invite the bot to your server
+2. Click "New Application" in top right
+3. Enter name (e.g., "FightRise Bot")
+4. Click "Create"
+
+### Configure Bot
+
+1. Go to **Bot** tab in left sidebar
+2. Click "Reset Token" - **copy immediately** (won't be shown again)
+3. Add to `.dmno.env.local`:
+   ```
+   DISCORD_TOKEN=your_token_here
+   ```
+4. Scroll to "Privileged Gateway Intents"
+5. Enable **Message Content Intent** (required for slash commands)
+6. Save Changes
+
+### Configure OAuth Redirects
+
+1. Go to **OAuth2** > **General**
+2. Under "Redirects", add:
+   - `http://localhost:4000/api/auth/callback/discord` (development)
+3. Click "Save Changes"
+
+### Get Application ID
+
+1. Go to **General Information**
+2. Copy "Application ID"
+3. Add to `.dmno.env.local`:
+   ```
+   DISCORD_CLIENT_ID=your_application_id
+   ```
+
+### Generate Invite URL
+
+1. Go to **OAuth2** > **URL Generator**
+2. Select scopes:
+   - `bot`
+   - `identify`
+   - `guilds`
+3. Select permissions:
+   - `Manage Threads`
+   - `Send Messages`
+   - `Embed Links`
+   - `Use Slash Commands`
+4. Copy generated URL
+5. Open in browser and select your server
 
 See [Discord Setup Guide](/fightrise-bot/guides/discord-setup/) for detailed instructions.
 
 ## Step 4: Set Up Start.gg API
 
 1. Go to [Start.gg Developer](https://start.gg/admin/profile/developer)
-2. Create a new API token
-3. Copy the token (it won't be shown again!)
+2. Go to Developer Settings
+3. Click "Create new token"
+4. **Copy immediately** - token cannot be viewed again
+5. Add to `.dmno.env.local`:
+   ```
+   STARTGG_API_KEY=your_token_here
+   ```
 
 See [Start.gg Setup Guide](/fightrise-bot/guides/startgg-setup/) for detailed instructions.
 
-## Step 5: Start Infrastructure
+## Step 5: Configure Cloudflare Tunnel (Required for OAuth)
+
+OAuth requires publicly accessible callback URLs. For local development, use Cloudflare Tunnel.
+
+### Install cloudflared
+
+```bash
+# macOS
+brew install cloudflared
+
+# Linux
+curl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared
+chmod +x /usr/local/bin/cloudflared
+```
+
+### Create Tunnel
+
+```bash
+cloudflared tunnel create fightrise-dev
+```
+
+### Configure DNS
+
+```bash
+# Add a subdomain CNAME pointing to your tunnel
+cloudflared tunnel route dns fightrise-dev fightrise-dev.yourdomain.com
+```
+
+### Create Tunnel Credentials File
+
+Save the tunnel credentials JSON to `~/.cloudflared/credentials.json`.
+
+### Update Environment
+
+Add to `.dmno.env.local`:
+```
+NEXTAUTH_URL=https://fightrise-dev.yourdomain.com
+DISCORD_REDIRECT_URI=https://fightrise-dev.yourdomain.com/api/auth/callback/discord
+STARTGG_REDIRECT_URI=https://fightrise-dev.yourdomain.com/api/auth/callback/startgg
+```
+
+### Start Tunnel
+
+```bash
+# In a separate terminal
+cloudflared tunnel run fightrise-dev
+```
+
+See [Tunnel Setup Guide](/fightrise-bot/guides/tunnel-setup/) for detailed instructions.
+
+## Step 6: Start Docker Infrastructure
 
 FightRise requires PostgreSQL and Redis. Use Docker:
 
@@ -96,38 +203,82 @@ npm run docker:infra
 ```
 
 This starts:
-- PostgreSQL on localhost:5432
-- Redis on localhost:6379
+- PostgreSQL on `localhost:5432` (database: `fightrise`)
+- Redis on `localhost:6379`
 
-Push the database schema:
+Verify containers are running:
+
+```bash
+docker ps
+```
+
+## Step 7: Set Up Database
+
+### Generate Prisma Client
+
+```bash
+npm run docker:db:generate
+```
+
+This generates TypeScript types from the database schema.
+
+### Push Database Schema
 
 ```bash
 npm run docker:db:push
 ```
 
-## Step 6: Deploy Discord Commands
+This creates all tables and indexes in your PostgreSQL database.
 
-Before running the bot, deploy the slash commands:
+## Step 8: Deploy Discord Commands
+
+Before running the bot, deploy slash commands to Discord:
 
 ```bash
 npm run docker:deploy
 ```
 
-## Step 7: Run the Bot
+This registers all commands:
+- `/tournament` - Tournament management
+- `/register` - Player registration
+- `/checkin` - Match check-in
+- `/report` - Score reporting
+- `/my-matches` - View your matches
+- `/link-startgg` - Link Start.gg account
+- `/unlink-startgg` - Unlink Start.gg account
+- `/admin` - Admin operations
+
+## Step 9: Run and Test
+
+### Start Development Servers
 
 ```bash
-# Development mode (recommended)
 npm run dev
-
-# Or run just the bot
-npm run run:bot
 ```
 
-## Verification
+This starts:
+- Bot on port 3001 (Discord client)
+- Web portal on port 4000 (Next.js)
 
-1. Check the bot is online in Discord
-2. Try `/link-startgg` to link your Start.gg account
-3. Try `/tournament status` to see tournament info
+### Verify Bot is Online
+
+1. Check Discord server - bot should show as "Online"
+2. Type `/link-startgg` to link your Start.gg account
+3. Type `/tournament status` to see tournament info
+
+### Test Tournament Flow
+
+1. Use `/link-startgg` to connect your Start.gg account
+2. Use `/tournament setup` to configure a tournament
+3. Use `/register` to register for a tournament
+
+## Verification Checklist
+
+- [ ] Bot appears online in Discord
+- [ ] Bot responds to `/link-startgg`
+- [ ] Bot responds to `/tournament status`
+- [ ] Database tables created (`npm run docker:db:push`)
+- [ ] Commands deployed (`npm run docker:deploy`)
 
 ## Troubleshooting
 
@@ -135,19 +286,33 @@ npm run run:bot
 
 - Ensure commands were deployed: `npm run docker:deploy`
 - Check bot has correct permissions in Discord server settings
+- Verify Message Content Intent is enabled in Developer Portal
 
 ### Database connection errors
 
 - Verify Docker is running: `docker ps`
 - Check DATABASE_URL in .env matches your Docker setup
+- Ensure PostgreSQL container is healthy
 
 ### Redis connection errors
 
 - Verify Redis is running: `docker ps`
 - Check REDIS_URL in .env
+- Ensure Redis container is healthy
+
+### OAuth errors in production
+
+- Verify Cloudflare Tunnel is running
+- Check redirect URIs match exactly in Developer Portal
+- Ensure NEXTAUTH_URL is set correctly
+
+### "Missing variable" errors
+
+- Ensure `.dmno.env.local` exists with all required values
+- Run `npm run docker:db:push` to verify database connection
 
 ## Next Steps
 
-- Set up [Cloudflare Tunnel](/fightrise-bot/guides/tunnel-setup/) for OAuth (required for production)
 - Configure tournament channels with `/tournament setup`
 - Learn about [Tournament Organizer workflows](/fightrise-bot/guides/to-quickstart/)
+- Review [Architecture Reference](/fightrise-bot/reference/architecture/)
