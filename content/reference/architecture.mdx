@@ -1,0 +1,109 @@
+---
+title: Architecture Overview
+description: System architecture and data flow for FightRise
+---
+
+# Architecture Overview
+
+FightRise is a Discord bot and web portal for running Start.gg tournaments entirely within Discord.
+
+## System Components
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        FightRise System                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐   │
+│  │  Discord     │     │   Web        │     │  Start.gg    │   │
+│  │  Bot         │◄───►│   Portal     │◄───►│  API         │   │
+│  │  (discord.js)│     │  (Next.js)   │     │  (GraphQL)   │   │
+│  └──────────────┘     └──────────────┘     └──────────────┘   │
+│         │                    │                    │             │
+│         └────────────────────┼────────────────────┘             │
+│                              │                                   │
+│                    ┌─────────▼─────────┐                         │
+│                    │   Shared          │                         │
+│                    │   Packages        │                         │
+│                    │   - database      │                         │
+│                    │   - shared        │                         │
+│                    │   - ui            │                         │
+│                    │   - startgg-client│                         │
+│                    └───────────────────┘                         │
+│                              │                                   │
+│                    ┌─────────▼─────────┐                         │
+│                    │   Infrastructure  │                         │
+│                    │   - PostgreSQL     │                         │
+│                    │   - Redis         │                         │
+│                    └───────────────────┘                         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Data Flow
+
+### 1. Tournament Setup
+1. TO configures tournament via `/tournament setup`
+2. Bot stores configuration in PostgreSQL
+3. Tournament linked to Discord channel and Start.gg event
+
+### 2. Registration
+1. Players link Start.gg accounts via OAuth
+2. Players register via `/register`
+3. TO approves/rejects registrations
+4. Registrations synced from Start.gg
+
+### 3. Match Cycle
+1. BullMQ workers poll Start.gg for bracket updates
+2. When match is ready:
+   - Bot creates Discord thread
+   - Pings both players
+3. Players check in via buttons
+4. Players report scores via buttons
+5. Results submitted to Start.gg
+
+## Technology Stack
+
+| Component | Technology |
+|-----------|------------|
+| Discord Bot | discord.js v14, BullMQ |
+| Web Portal | Next.js 14 (App Router) |
+| Database | PostgreSQL, Prisma |
+| Queue | Redis, BullMQ |
+| Auth | NextAuth.js |
+| API | Start.gg GraphQL |
+
+## Key Services
+
+### Polling Service
+- Polls Start.gg GraphQL API
+- Dynamic intervals (15s active, 5min inactive)
+- Updates match state in database
+- Triggers Discord notifications
+
+### Match Service
+- Creates Discord threads for matches
+- Handles check-in flow
+- Manages score reporting
+- Submits results to Start.gg
+
+### Registration Sync
+- Syncs registrations from Start.gg
+- Creates Discord user records
+- Handles bracket updates
+
+## Security
+
+### Token Storage
+- Start.gg tokens encrypted with AES-256
+- Stored in PostgreSQL
+- Decrypted only when needed
+
+### OAuth
+- Discord OAuth for user authentication
+- Start.gg OAuth for API access
+- Sessions encrypted with NextAuth
+
+### Rate Limiting
+- Start.gg API rate limits handled
+- Per-user rate limits on web API

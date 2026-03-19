@@ -1,0 +1,117 @@
+---
+title: Codebase Reference
+description: Key files and patterns in the FightRise codebase
+---
+
+# Codebase Reference
+
+## Project Structure
+
+```
+fightrise-bot/
+├── apps/
+│   ├── bot/              # Discord bot
+│   │   └── src/
+│   │       ├── commands/    # Slash commands
+│   │       ├── events/      # Discord events
+│   │       ├── handlers/    # Button interactions
+│   │       ├── services/    # Business logic
+│   │       └── workers/     # BullMQ workers
+│   │
+│   └── web/              # Next.js web portal
+│       └── app/
+│           ├── api/         # API routes
+│           ├── dashboard/   # User dashboard
+│           └── tournaments/ # Tournament pages
+│
+└── packages/
+    ├── database/         # Prisma schema & client
+    ├── startgg-client/  # Start.gg GraphQL wrapper
+    ├── shared/          # Shared types & utilities
+    └── ui/              # React components
+```
+
+## Key Files
+
+### Bot Entry
+| File | Purpose |
+|------|---------|
+| `apps/bot/src/index.ts` | Bot initialization |
+| `apps/bot/src/events/interactionCreate.ts` | Command router |
+
+### Commands
+| File | Purpose |
+|------|---------|
+| `apps/bot/src/commands/tournament.ts` | Tournament setup/status |
+| `apps/bot/src/commands/register.ts` | Player registration |
+| `apps/bot/src/commands/admin.ts` | Admin operations |
+
+### Services
+| File | Purpose |
+|------|---------|
+| `apps/bot/src/services/pollingService.ts` | Start.gg polling |
+| `apps/bot/src/services/matchService.ts` | Match management |
+| `apps/bot/src/services/tournamentService.ts` | Tournament ops |
+| `apps/bot/src/services/dqService.ts` | Disqualifications |
+
+### Handlers
+| File | Purpose |
+|------|---------|
+| `apps/bot/src/handlers/checkin.ts` | Check-in buttons |
+| `apps/bot/src/handlers/scoreHandler.ts` | Score reporting |
+| `apps/bot/src/handlers/buttonHandlers.ts` | Router |
+
+### Database
+| File | Purpose |
+|------|---------|
+| `packages/database/prisma/schema.prisma` | All models |
+| `packages/database/src/index.ts` | Prisma client |
+
+### Start.gg
+| File | Purpose |
+|------|---------|
+| `packages/startgg-client/src/client.ts` | GraphQL client |
+| `packages/startgg-client/src/queries/` | Query definitions |
+
+## Common Patterns
+
+### Slash Command
+```typescript
+export const exampleCommand = {
+  data: new SlashCommandBuilder()
+    .setName('example')
+    .setDescription('Example command')
+    .addStringOption(/* ... */),
+
+  async execute(interaction: ChatInputCommandInteraction) {
+    // Handle command
+  },
+};
+```
+
+### Button Handler
+```typescript
+export const myHandler: ButtonHandler = {
+  prefix: 'myprefix',
+
+  async execute(interaction: ButtonInteraction, parts: string[]) {
+    // Handle button click
+  },
+};
+```
+
+### Service Function
+```typescript
+export async function doSomething(id: string): Promise<Result> {
+  // Business logic
+  return { success: true, data: /* ... */ };
+}
+```
+
+### Database Transaction
+```typescript
+await prisma.$transaction(async (tx) => {
+  await tx.match.update({ where: { id }, data: { /* ... */ } });
+  await tx.player.update(/* ... */);
+});
+```
