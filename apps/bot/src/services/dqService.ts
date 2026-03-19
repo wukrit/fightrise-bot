@@ -1,7 +1,5 @@
 import { prisma, MatchState, AuditAction, AuditSource } from '@fightrise/database';
 import { createAuditLog } from './auditService.js';
-import { StartGGClient } from '@fightrise/startgg-client';
-import type { Client, GuildTextBasedChannel, User } from 'discord.js';
 
 /**
  * DQ (Disqualify) a player from a match.
@@ -13,23 +11,17 @@ import type { Client, GuildTextBasedChannel, User } from 'discord.js';
  * @param dqPlayerId - The player ID to disqualify
  * @param reason - Reason for DQ
  * @param adminId - Discord ID of admin performing the action (optional)
- * @param discordClient - Discord client for sending notifications (optional)
  */
 export async function dqPlayer(
   matchId: string,
   dqPlayerId: string,
   reason: string,
-  adminId?: string,
-  discordClient?: Client
+  adminId?: string
 ): Promise<{ success: boolean; message: string }> {
   // Fetch match with players
   const match = await prisma.match.findUnique({
     where: { id: matchId },
-    select: {
-      id: true,
-      startggSetId: true,
-      identifier: true,
-      state: true,
+    include: {
       players: {
         include: { user: true },
         orderBy: { id: 'asc' },
@@ -43,7 +35,7 @@ export async function dqPlayer(
   }
 
   // Validate match is not already completed
-  if (!match.state || match.state === MatchState.COMPLETED || match.state === MatchState.DQ) {
+  if (match.state === MatchState.COMPLETED || match.state === MatchState.DQ) {
     return { success: false, message: 'Match is already completed.' };
   }
 
@@ -145,66 +137,60 @@ export async function dqPlayer(
     throw error;
   }
 
-  // Sync DQ to Start.gg
-  if (match.startggSetId && opponent.startggEntrantId) {
-    try {
-      const apiKey = process.env.STARTGG_API_KEY;
-      if (apiKey) {
-        const startggClient = new StartGGClient({ apiKey });
-        await startggClient.dqEntrant(match.startggSetId, opponent.startggEntrantId);
-        console.log(`[DQ] Synced DQ to Start.gg for set ${match.startggSetId}`);
-      }
-    } catch (err) {
-      console.error(`[DQ] Failed to sync to Start.gg:`, err);
-    }
-  }
+  // Sync to Start.gg
+  const syncResult = await syncDQToStartGG(
+    match.startggSetId,
+    opponent.startggEntrantId,
+    dqPlayer.playerName,
+    opponent.playerName
+  );
 
-  // Notify players via Discord DM
-  if (discordClient) {
-    try {
-      // Notify the DQ'd player
-      if (dqPlayer.user?.discordId) {
-        const dqUser = await discordClient.users.fetch(dqPlayer.user.discordId);
-        if (dqUser) {
-          await dqUser.send({
-            embeds: [
-              {
-                title: 'Disqualification Notice',
-                description: `You have been disqualified from match **${match.identifier}**`,
-                fields: [
-                  { name: 'Reason', value: reason },
-                  { name: 'Opponent', value: opponent.playerName },
-                ],
-                color: 0xff0000,
-              },
-            ],
-          });
-        }
-      }
-
-      // Notify the opponent (winner by default)
-      if (opponent.user?.discordId) {
-        const winnerUser = await discordClient.users.fetch(opponent.user.discordId);
-        if (winnerUser) {
-          await winnerUser.send({
-            embeds: [
-              {
-                title: 'Match Result - Victory by Disqualification',
-                description: `Your opponent **${dqPlayer.playerName}** has been disqualified in match **${match.identifier}**`,
-                fields: [{ name: 'Result', value: 'You win by default!' }],
-                color: 0x00ff00,
-              },
-            ],
-          });
-        }
-      }
-    } catch (err) {
-      console.error(`[DQ] Failed to send player notifications:`, err);
-    }
+  if (!syncResult.success) {
+    console.error(`[DQ] Failed to sync DQ to Start.gg for match ${match.identifier}:`, syncResult.error);
+    // Don't fail the operation - the DQ was recorded locally
   }
 
   return {
     success: true,
     message: `${dqPlayer.playerName} has been disqualified. ${opponent.playerName} wins by default.`,
   };
+}
+
+/**
+ * Sync DQ result to Start.gg.
+ * Reports the match with the non-DQ'd player as winner.
+ */
+async function syncDQToStartGG(
+  setId: string,
+  winnerEntrantId: string | null,
+  dqPlayerName: string,
+  winnerName: string
+): Promise<{ success: boolean; error?: string }> {
+  // Validate we have the required Start.gg IDs
+  if (!setId) {
+    return { success: false, error: 'No Start.gg set ID found' };
+  }
+
+  if (!winnerEntrantId) {
+    return { success: false, error: 'No Start.gg entrant ID for winner' };
+  }
+
+  // Import StartGGClient dynamically to avoid circular deps
+  const { StartGGClient } = await import('@fightrise/startgg-client');
+
+  const apiKey = process.env.STARTGG_API_KEY;
+  if (!apiKey) {
+    return { success: false, error: 'STARTGG_API_KEY not configured' };
+  }
+
+  try {
+    const client = new StartGGClient(apiKey);
+    await client.dqEntrant(setId, winnerEntrantId);
+
+    console.log(`[DQ] Successfully synced DQ to Start.gg: ${dqPlayerName} DQ'd, ${winnerName} wins`);
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: errorMessage };
+  }
 }
