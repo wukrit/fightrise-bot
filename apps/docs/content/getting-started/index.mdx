@@ -1,27 +1,51 @@
 ---
 layout: default
-title: "Welcome"
+title: "Getting Started"
 ---
 
-# FightRise Wiki
+# Getting Started with FightRise
 
-Welcome to the FightRise documentation wiki. FightRise is a Discord bot and web portal for running Start.gg fighting game tournaments entirely within Discord.
+FightRise is a Discord bot and web portal for running Start.gg fighting game tournaments entirely within Discord.
 
-## Getting Started
+## Three Ways to Get Started
 
-Use the sidebar to navigate through the documentation:
+| I'm a... | Guide | Time |
+|----------|-------|------|
+| Tournament organizer | [TO Quickstart](../guides/to-quickstart/) | 10-15 min |
+| Player | [Player Quickstart](../guides/player-quickstart/) | 5 min |
+| Developer | [Architecture](../reference/architecture/) | — |
 
-| Guide | Description |
-|-------|-------------|
-| [Discord Setup](/fightrise-bot/guides/discord-setup/) | Configure the Discord bot |
-| [Start.gg Setup](/fightrise-bot/guides/startgg-setup/) | Set up Start.gg API access |
-| [Tunnel Setup](/fightrise-bot/guides/tunnel-setup/) | Configure Cloudflare Tunnel for OAuth |
-| [TO Quickstart](/fightrise-bot/guides/to-quickstart/) | Tournament organizer guide |
-| [Player Quickstart](/fightrise-bot/guides/player-quickstart/) | Player guide |
-| [Architecture](/fightrise-bot/reference/architecture/) | System architecture overview |
-| [API Reference](/fightrise-bot/reference/api-reference/) | Web API documentation |
+## How FightRise Works
 
-## Quick Links
+1. Tournament organizer links Start.gg tournament to Discord
+2. Players register via `/register`
+3. Bot creates match threads when matches are ready
+4. Players check in via buttons in the thread
+5. Winner reports score, loser confirms
+6. Results sync to Start.gg automatically
 
-- [GitHub Repository](https://github.com/wukrit/fightrise-bot)
-- [Report an Issue](https://github.com/wukrit/issues)
+## First Time Setup
+
+### For tournament organizers
+
+1. [Set up Discord](../guides/discord-setup/)
+2. [Configure Start.gg](../guides/startgg-setup/)
+3. [Set up Cloudflare Tunnel](../guides/tunnel-setup/) (for OAuth)
+4. [Run your first tournament](../guides/to-quickstart/)
+
+### For players
+
+1. [Link your Start.gg account](../guides/player-quickstart/#linking-accounts)
+2. [Register for a tournament](../guides/player-quickstart/#registering)
+3. [Check in and play](../guides/player-quickstart/#checking-in)
+
+## Troubleshooting
+
+See the [Troubleshooting](./troubleshooting/) guide for common problems and solutions.
+
+## Need Help?
+
+- [Tournament Organizer Guide](../guides/to-quickstart/)
+- [Player Guide](../guides/player-quickstart/)
+- [Troubleshooting FAQ](./troubleshooting/)
+- [Report an issue](https://github.com/wukrit/issues)

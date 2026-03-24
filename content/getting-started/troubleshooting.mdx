@@ -1,0 +1,123 @@
+---
+title: Troubleshooting
+description: Common issues and solutions for FightRise
+---
+
+# Troubleshooting Guide
+
+Common issues and their solutions.
+
+## Before the Tournament
+
+### Bot not responding to commands
+
+1. Check bot is online (green status in Discord server)
+2. Verify commands deployed: try `/tournament status`
+3. Check bot has required permissions (Send Messages, Create Threads)
+
+### Can't invite bot to server
+
+- Generate invite URL in Discord Developer Portal
+- Ensure you have Manage Server permission
+- Check bot doesn't have server limit restrictions
+
+### Discord commands not showing
+
+- Commands may take up to an hour to appear after deployment
+- Try using the command with full path: `/tournament setup`
+- The bot may not have permission to read messages in that channel
+
+## Registration Problems
+
+### "Registration not open"
+
+- Tournament hasn't enabled registration
+- Contact the tournament organizer to open registration
+
+### "Already registered"
+
+- You're already registered for this tournament
+- Use `/my-matches` to check your registrations
+
+### "Start.gg account not linked"
+
+- Run `/link-startgg` first to connect your account
+- Complete the OAuth flow with Start.gg
+
+### Registration not appearing for TO
+
+- Player must complete `/link-startgg` before registering
+- Check player is not already registered
+- Verify Discord user ID matches correctly
+
+## Match Day Issues
+
+### Check-in button not working
+
+- Make sure you're clicking the button in the correct match thread
+- Try refreshing Discord (Ctrl+Shift+R or Cmd+Shift+R)
+- Check if the check-in deadline has passed
+
+### Match thread not created
+
+- Both players must have linked Start.gg accounts
+- Tournament must be in progress state on Start.gg
+- Bot needs thread creation permissions in the channel
+- Check the match isn't already completed or bye
+
+### Score reporting failed
+
+- Only the winner can report
+- Opponent must confirm for the report to submit
+- Check that bot has permissions to edit the thread
+
+### Opponent not confirming result
+
+- Result auto-confirms after five minutes
+- Contact a tournament organizer if urgent
+- Ping opponent in the thread
+
+### Disputed result
+
+- Contact tournament organizer immediately
+- Provide evidence of correct score
+- TO can override results via admin commands
+
+## OAuth Issues
+
+### "Link Start.gg failed"
+
+- Local dev: Ensure Cloudflare Tunnel is running
+- Check redirect URI matches exactly in Start.gg developer settings
+- Verify Start.gg OAuth is configured correctly
+
+### "OAuth callback error"
+
+- The redirect URI must be publicly accessible
+- For local development, use Cloudflare Tunnel
+- Check browser console for specific error details
+
+### Token expired
+
+- Run `/unlink-startgg` then `/link-startgg` to reconnect
+- This is normal after several weeks
+
+## Admin Issues
+
+### Can't access admin commands
+
+- You need to be set as a tournament admin
+- Contact the tournament owner to be added
+- Check you're using the correct server
+
+### Results not syncing to Start.gg
+
+- Verify bot has valid Start.gg API access
+- Check that bracket isn't locked on Start.gg
+- Look for error messages in bot logs
+
+## Getting More Help
+
+- [Discord Setup Guide](../guides/discord-setup/)
+- [Start.gg Setup Guide](../guides/startgg-setup/)
+- [Report an issue](https://github.com/wukrit/issues)
