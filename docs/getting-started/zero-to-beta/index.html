@@ -1,0 +1,279 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width"/><meta name="next-head-count" content="2"/><link rel="icon" href="/favicon.svg" type="image/svg+xml"/><link rel="preload" href="/fightrise-bot/_next/static/css/82e1fc5146201125.css" as="style"/><link rel="stylesheet" href="/fightrise-bot/_next/static/css/82e1fc5146201125.css" data-n-g=""/><noscript data-n-css=""></noscript><script defer="" nomodule="" src="/fightrise-bot/_next/static/chunks/polyfills-78c92fac7aa8fdd8.js"></script><script src="/fightrise-bot/_next/static/chunks/webpack-1a64f5c80bb82e92.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/framework-6dd3bf7463386647.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/main-31102c233e8a53a2.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/pages/_app-fd0e9306043423e9.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/485-e418f5496c8ebf60.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/pages/%5B%5B...slug%5D%5D-666b3ece48e01a70.js" defer=""></script><script src="/fightrise-bot/_next/static/qwY-w0ObRzDlz86_OEm5G/_buildManifest.js" defer=""></script><script src="/fightrise-bot/_next/static/qwY-w0ObRzDlz86_OEm5G/_ssgManifest.js" defer=""></script></head><body><script>(function(){var s=localStorage.getItem('fightrise-theme');var m=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=s||m;})();</script><div id="__next"><div class="docs-layout"><aside class="docs-sidebar"><div class="docs-sidebar-header"><h2 class="docs-logo"><a href="/fightrise-bot/">FightRise</a></h2><button class="theme-toggle" aria-label="Switch to dark mode" title="Switch to dark mode"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></button></div><nav class="docs-nav"><div class="docs-nav-section"><a class="docs-nav-link docs-nav-link--section" href="/fightrise-bot/">Getting Started</a></div><div class="docs-nav-section"><span class="docs-nav-section-label">Guides</span><a class="docs-nav-link" href="/fightrise-bot/guides/player-quickstart/">Player Quickstart</a><a class="docs-nav-link" href="/fightrise-bot/guides/to-quickstart/">TO Quickstart</a><a class="docs-nav-link" href="/fightrise-bot/guides/discord-setup/">Discord Setup</a><a class="docs-nav-link" href="/fightrise-bot/guides/startgg-setup/">Start.gg Setup</a><a class="docs-nav-link" href="/fightrise-bot/guides/tunnel-setup/">Tunnel Setup</a></div><div class="docs-nav-section"><span class="docs-nav-section-label">Reference</span><a class="docs-nav-link" href="/fightrise-bot/reference/architecture/">Architecture</a><a class="docs-nav-link" href="/fightrise-bot/reference/codebase-reference/">Codebase Reference</a><a class="docs-nav-link" href="/fightrise-bot/reference/api-reference/">API Reference</a></div></nav></aside><main class="docs-main"><article class="docs-content"><h1 id="zero-to-beta-complete-setup-guide">Zero to Beta: Complete Setup Guide</h1>
+<p>This comprehensive guide walks you through setting up FightRise from a fresh clone to a running tournament bot. Follow each step in order.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>Before you begin, ensure you have the following:</p>
+<table>
+<thead>
+<tr>
+<th>Requirement</th>
+<th>Description</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Node.js 22+</strong></td>
+<td>JavaScript runtime</td>
+<td>Check with <code>node --version</code></td>
+</tr>
+<tr>
+<td><strong>Docker &amp; Docker Compose</strong></td>
+<td>Container runtime</td>
+<td>Required for PostgreSQL &amp; Redis</td>
+</tr>
+<tr>
+<td><strong>Discord account</strong></td>
+<td>For bot authentication</td>
+<td>Must have server admin access</td>
+</tr>
+<tr>
+<td><strong>Start.gg account</strong></td>
+<td>Tournament management</td>
+<td>Required for bracket sync</td>
+</tr>
+<tr>
+<td><strong>Cloudflare account</strong></td>
+<td>For OAuth callbacks</td>
+<td>Needed for production OAuth</td>
+</tr>
+</tbody></table>
+<p><strong>Estimated time:</strong> 45-60 minutes for initial setup</p>
+<h2 id="steps-overview">Steps Overview</h2>
+<ol>
+<li>Clone and install dependencies</li>
+<li>Configure environment variables</li>
+<li>Set up Discord Developer Portal</li>
+<li>Set up Start.gg API</li>
+<li>Configure Cloudflare Tunnel (for OAuth)</li>
+<li>Start Docker infrastructure</li>
+<li>Set up database</li>
+<li>Deploy Discord commands</li>
+<li>Invite bot and test</li>
+</ol>
+<hr>
+<h2 id="step-1-clone-and-install">Step 1: Clone and Install</h2>
+<pre><code class="language-bash">git clone https://github.com/wukrit/fightrise-bot.git
+cd fightrise-bot
+npm install
+</code></pre>
+<p>This installs all dependencies including:</p>
+<ul>
+<li>Turborepo for monorepo management</li>
+<li>DMNO for environment management</li>
+<li>Prisma for database ORM</li>
+</ul>
+<h2 id="step-2-configure-environment-variables">Step 2: Configure Environment Variables</h2>
+<p>FightRise uses DMNO for environment management. Copy the example files:</p>
+<pre><code class="language-bash">cp .env.example .env
+cp .dmno.env.local.example .dmno.env.local
+</code></pre>
+<h3 id="generate-required-secrets">Generate Required Secrets</h3>
+<p>Generate a NextAuth secret for session encryption:</p>
+<pre><code class="language-bash">openssl rand -base64 32
+</code></pre>
+<p>Copy the output and add it to <code>.dmno.env.local</code>:</p>
+<pre><code class="language-bash"># .dmno.env.local
+NEXTAUTH_SECRET=paste_your_generated_secret_here
+DISCORD_TOKEN=your_discord_bot_token
+DISCORD_CLIENT_SECRET=your_discord_client_secret
+STARTGG_API_KEY=your_startgg_api_key
+</code></pre>
+<p>See the <a href="/fightrise-bot/guides/guides/dmno-setup/">DMNO Guide</a> for detailed environment configuration.</p>
+<h2 id="step-3-set-up-discord-developer-portal">Step 3: Set Up Discord Developer Portal</h2>
+<h3 id="create-application">Create Application</h3>
+<ol>
+<li>Go to <a href="https://discord.com/developers/applications">Discord Developer Portal</a></li>
+<li>Click &quot;New Application&quot; in top right</li>
+<li>Enter name (e.g., &quot;FightRise Bot&quot;)</li>
+<li>Click &quot;Create&quot;</li>
+</ol>
+<h3 id="configure-bot">Configure Bot</h3>
+<ol>
+<li>Go to <strong>Bot</strong> tab in left sidebar</li>
+<li>Click &quot;Reset Token&quot; - <strong>copy immediately</strong> (won&#39;t be shown again)</li>
+<li>Add to <code>.dmno.env.local</code>:<pre><code>DISCORD_TOKEN=your_token_here
+</code></pre>
+</li>
+<li>Scroll to &quot;Privileged Gateway Intents&quot;</li>
+<li>Enable <strong>Message Content Intent</strong> (required for slash commands)</li>
+<li>Save Changes</li>
+</ol>
+<h3 id="configure-oauth-redirects">Configure OAuth Redirects</h3>
+<ol>
+<li>Go to <strong>OAuth2</strong> &gt; <strong>General</strong></li>
+<li>Under &quot;Redirects&quot;, add:<ul>
+<li><code>http://localhost:4000/api/auth/callback/discord</code> (development)</li>
+</ul>
+</li>
+<li>Click &quot;Save Changes&quot;</li>
+</ol>
+<h3 id="get-application-id">Get Application ID</h3>
+<ol>
+<li>Go to <strong>General Information</strong></li>
+<li>Copy &quot;Application ID&quot;</li>
+<li>Add to <code>.dmno.env.local</code>:<pre><code>DISCORD_CLIENT_ID=your_application_id
+</code></pre>
+</li>
+</ol>
+<h3 id="generate-invite-url">Generate Invite URL</h3>
+<ol>
+<li>Go to <strong>OAuth2</strong> &gt; <strong>URL Generator</strong></li>
+<li>Select scopes:<ul>
+<li><code>bot</code></li>
+<li><code>identify</code></li>
+<li><code>guilds</code></li>
+</ul>
+</li>
+<li>Select permissions:<ul>
+<li><code>Manage Threads</code></li>
+<li><code>Send Messages</code></li>
+<li><code>Embed Links</code></li>
+<li><code>Use Slash Commands</code></li>
+</ul>
+</li>
+<li>Copy generated URL</li>
+<li>Open in browser and select your server</li>
+</ol>
+<p>See <a href="/fightrise-bot/guides/guides/discord-setup/">Discord Setup Guide</a> for detailed instructions.</p>
+<h2 id="step-4-set-up-startgg-api">Step 4: Set Up Start.gg API</h2>
+<ol>
+<li>Go to <a href="https://start.gg/admin/profile/developer">Start.gg Developer</a></li>
+<li>Go to Developer Settings</li>
+<li>Click &quot;Create new token&quot;</li>
+<li><strong>Copy immediately</strong> - token cannot be viewed again</li>
+<li>Add to <code>.dmno.env.local</code>:<pre><code>STARTGG_API_KEY=your_token_here
+</code></pre>
+</li>
+</ol>
+<p>See <a href="/fightrise-bot/guides/guides/startgg-setup/">Start.gg Setup Guide</a> for detailed instructions.</p>
+<h2 id="step-5-configure-cloudflare-tunnel-required-for-oauth">Step 5: Configure Cloudflare Tunnel (Required for OAuth)</h2>
+<p>OAuth requires publicly accessible callback URLs. For local development, use Cloudflare Tunnel.</p>
+<h3 id="install-cloudflared">Install cloudflared</h3>
+<pre><code class="language-bash"># macOS
+brew install cloudflared
+
+# Linux
+curl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared
+chmod +x /usr/local/bin/cloudflared
+</code></pre>
+<h3 id="create-tunnel">Create Tunnel</h3>
+<pre><code class="language-bash">cloudflared tunnel create fightrise-dev
+</code></pre>
+<h3 id="configure-dns">Configure DNS</h3>
+<pre><code class="language-bash"># Add a subdomain CNAME pointing to your tunnel
+cloudflared tunnel route dns fightrise-dev fightrise-dev.yourdomain.com
+</code></pre>
+<h3 id="create-tunnel-credentials-file">Create Tunnel Credentials File</h3>
+<p>Save the tunnel credentials JSON to <code>~/.cloudflared/credentials.json</code>.</p>
+<h3 id="update-environment">Update Environment</h3>
+<p>Add to <code>.dmno.env.local</code>:</p>
+<pre><code>NEXTAUTH_URL=https://fightrise-dev.yourdomain.com
+DISCORD_REDIRECT_URI=https://fightrise-dev.yourdomain.com/api/auth/callback/discord
+STARTGG_REDIRECT_URI=https://fightrise-dev.yourdomain.com/api/auth/callback/startgg
+</code></pre>
+<h3 id="start-tunnel">Start Tunnel</h3>
+<pre><code class="language-bash"># In a separate terminal
+cloudflared tunnel run fightrise-dev
+</code></pre>
+<p>See <a href="/fightrise-bot/guides/guides/tunnel-setup/">Tunnel Setup Guide</a> for detailed instructions.</p>
+<h2 id="step-6-start-docker-infrastructure">Step 6: Start Docker Infrastructure</h2>
+<p>FightRise requires PostgreSQL and Redis. Use Docker:</p>
+<pre><code class="language-bash">npm run docker:infra
+</code></pre>
+<p>This starts:</p>
+<ul>
+<li>PostgreSQL on <code>localhost:5432</code> (database: <code>fightrise</code>)</li>
+<li>Redis on <code>localhost:6379</code></li>
+</ul>
+<p>Verify containers are running:</p>
+<pre><code class="language-bash">docker ps
+</code></pre>
+<h2 id="step-7-set-up-database">Step 7: Set Up Database</h2>
+<h3 id="generate-prisma-client">Generate Prisma Client</h3>
+<pre><code class="language-bash">npm run docker:db:generate
+</code></pre>
+<p>This generates TypeScript types from the database schema.</p>
+<h3 id="push-database-schema">Push Database Schema</h3>
+<pre><code class="language-bash">npm run docker:db:push
+</code></pre>
+<p>This creates all tables and indexes in your PostgreSQL database.</p>
+<h2 id="step-8-deploy-discord-commands">Step 8: Deploy Discord Commands</h2>
+<p>Before running the bot, deploy slash commands to Discord:</p>
+<pre><code class="language-bash">npm run docker:deploy
+</code></pre>
+<p>This registers all commands:</p>
+<ul>
+<li><code>/tournament</code> - Tournament management</li>
+<li><code>/register</code> - Player registration</li>
+<li><code>/checkin</code> - Match check-in</li>
+<li><code>/report</code> - Score reporting</li>
+<li><code>/my-matches</code> - View your matches</li>
+<li><code>/link-startgg</code> - Link Start.gg account</li>
+<li><code>/unlink-startgg</code> - Unlink Start.gg account</li>
+<li><code>/admin</code> - Admin operations</li>
+</ul>
+<h2 id="step-9-run-and-test">Step 9: Run and Test</h2>
+<h3 id="start-development-servers">Start Development Servers</h3>
+<pre><code class="language-bash">npm run dev
+</code></pre>
+<p>This starts:</p>
+<ul>
+<li>Bot on port 3001 (Discord client)</li>
+<li>Web portal on port 4000 (Next.js)</li>
+</ul>
+<h3 id="verify-bot-is-online">Verify Bot is Online</h3>
+<ol>
+<li>Check Discord server - bot should show as &quot;Online&quot;</li>
+<li>Type <code>/link-startgg</code> to link your Start.gg account</li>
+<li>Type <code>/tournament status</code> to see tournament info</li>
+</ol>
+<h3 id="test-tournament-flow">Test Tournament Flow</h3>
+<ol>
+<li>Use <code>/link-startgg</code> to connect your Start.gg account</li>
+<li>Use <code>/tournament setup</code> to configure a tournament</li>
+<li>Use <code>/register</code> to register for a tournament</li>
+</ol>
+<h2 id="verification-checklist">Verification Checklist</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Bot appears online in Discord</li>
+<li><input disabled="" type="checkbox"> Bot responds to <code>/link-startgg</code></li>
+<li><input disabled="" type="checkbox"> Bot responds to <code>/tournament status</code></li>
+<li><input disabled="" type="checkbox"> Database tables created (<code>npm run docker:db:push</code>)</li>
+<li><input disabled="" type="checkbox"> Commands deployed (<code>npm run docker:deploy</code>)</li>
+</ul>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="bot-not-responding-to-commands">Bot not responding to commands</h3>
+<ul>
+<li>Ensure commands were deployed: <code>npm run docker:deploy</code></li>
+<li>Check bot has correct permissions in Discord server settings</li>
+<li>Verify Message Content Intent is enabled in Developer Portal</li>
+</ul>
+<h3 id="database-connection-errors">Database connection errors</h3>
+<ul>
+<li>Verify Docker is running: <code>docker ps</code></li>
+<li>Check DATABASE_URL in .env matches your Docker setup</li>
+<li>Ensure PostgreSQL container is healthy</li>
+</ul>
+<h3 id="redis-connection-errors">Redis connection errors</h3>
+<ul>
+<li>Verify Redis is running: <code>docker ps</code></li>
+<li>Check REDIS_URL in .env</li>
+<li>Ensure Redis container is healthy</li>
+</ul>
+<h3 id="oauth-errors-in-production">OAuth errors in production</h3>
+<ul>
+<li>Verify Cloudflare Tunnel is running</li>
+<li>Check redirect URIs match exactly in Developer Portal</li>
+<li>Ensure NEXTAUTH_URL is set correctly</li>
+</ul>
+<h3 id="missing-variable-errors">"Missing variable" errors</h3>
+<ul>
+<li>Ensure <code>.dmno.env.local</code> exists with all required values</li>
+<li>Run <code>npm run docker:db:push</code> to verify database connection</li>
+</ul>
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li>Configure tournament channels with <code>/tournament setup</code></li>
+<li>Learn about <a href="/fightrise-bot/guides/guides/to-quickstart/">Tournament Organizer workflows</a></li>
+<li>Review <a href="/fightrise-bot/guides/reference/architecture/">Architecture Reference</a></li>
+</ul>
+</article></main></div></div><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"content":"\u003ch1 id=\"zero-to-beta-complete-setup-guide\"\u003eZero to Beta: Complete Setup Guide\u003c/h1\u003e\n\u003cp\u003eThis comprehensive guide walks you through setting up FightRise from a fresh clone to a running tournament bot. Follow each step in order.\u003c/p\u003e\n\u003ch2 id=\"prerequisites\"\u003ePrerequisites\u003c/h2\u003e\n\u003cp\u003eBefore you begin, ensure you have the following:\u003c/p\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eRequirement\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003cth\u003eNotes\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003e\u003cstrong\u003eNode.js 22+\u003c/strong\u003e\u003c/td\u003e\n\u003ctd\u003eJavaScript runtime\u003c/td\u003e\n\u003ctd\u003eCheck with \u003ccode\u003enode --version\u003c/code\u003e\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003cstrong\u003eDocker \u0026amp; Docker Compose\u003c/strong\u003e\u003c/td\u003e\n\u003ctd\u003eContainer runtime\u003c/td\u003e\n\u003ctd\u003eRequired for PostgreSQL \u0026amp; Redis\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003cstrong\u003eDiscord account\u003c/strong\u003e\u003c/td\u003e\n\u003ctd\u003eFor bot authentication\u003c/td\u003e\n\u003ctd\u003eMust have server admin access\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003cstrong\u003eStart.gg account\u003c/strong\u003e\u003c/td\u003e\n\u003ctd\u003eTournament management\u003c/td\u003e\n\u003ctd\u003eRequired for bracket sync\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003cstrong\u003eCloudflare account\u003c/strong\u003e\u003c/td\u003e\n\u003ctd\u003eFor OAuth callbacks\u003c/td\u003e\n\u003ctd\u003eNeeded for production OAuth\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003cp\u003e\u003cstrong\u003eEstimated time:\u003c/strong\u003e 45-60 minutes for initial setup\u003c/p\u003e\n\u003ch2 id=\"steps-overview\"\u003eSteps Overview\u003c/h2\u003e\n\u003col\u003e\n\u003cli\u003eClone and install dependencies\u003c/li\u003e\n\u003cli\u003eConfigure environment variables\u003c/li\u003e\n\u003cli\u003eSet up Discord Developer Portal\u003c/li\u003e\n\u003cli\u003eSet up Start.gg API\u003c/li\u003e\n\u003cli\u003eConfigure Cloudflare Tunnel (for OAuth)\u003c/li\u003e\n\u003cli\u003eStart Docker infrastructure\u003c/li\u003e\n\u003cli\u003eSet up database\u003c/li\u003e\n\u003cli\u003eDeploy Discord commands\u003c/li\u003e\n\u003cli\u003eInvite bot and test\u003c/li\u003e\n\u003c/ol\u003e\n\u003chr\u003e\n\u003ch2 id=\"step-1-clone-and-install\"\u003eStep 1: Clone and Install\u003c/h2\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003egit clone https://github.com/wukrit/fightrise-bot.git\ncd fightrise-bot\nnpm install\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eThis installs all dependencies including:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eTurborepo for monorepo management\u003c/li\u003e\n\u003cli\u003eDMNO for environment management\u003c/li\u003e\n\u003cli\u003ePrisma for database ORM\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch2 id=\"step-2-configure-environment-variables\"\u003eStep 2: Configure Environment Variables\u003c/h2\u003e\n\u003cp\u003eFightRise uses DMNO for environment management. Copy the example files:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003ecp .env.example .env\ncp .dmno.env.local.example .dmno.env.local\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3 id=\"generate-required-secrets\"\u003eGenerate Required Secrets\u003c/h3\u003e\n\u003cp\u003eGenerate a NextAuth secret for session encryption:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003eopenssl rand -base64 32\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eCopy the output and add it to \u003ccode\u003e.dmno.env.local\u003c/code\u003e:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003e# .dmno.env.local\nNEXTAUTH_SECRET=paste_your_generated_secret_here\nDISCORD_TOKEN=your_discord_bot_token\nDISCORD_CLIENT_SECRET=your_discord_client_secret\nSTARTGG_API_KEY=your_startgg_api_key\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eSee the \u003ca href=\"/fightrise-bot/guides/guides/dmno-setup/\"\u003eDMNO Guide\u003c/a\u003e for detailed environment configuration.\u003c/p\u003e\n\u003ch2 id=\"step-3-set-up-discord-developer-portal\"\u003eStep 3: Set Up Discord Developer Portal\u003c/h2\u003e\n\u003ch3 id=\"create-application\"\u003eCreate Application\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003eGo to \u003ca href=\"https://discord.com/developers/applications\"\u003eDiscord Developer Portal\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003eClick \u0026quot;New Application\u0026quot; in top right\u003c/li\u003e\n\u003cli\u003eEnter name (e.g., \u0026quot;FightRise Bot\u0026quot;)\u003c/li\u003e\n\u003cli\u003eClick \u0026quot;Create\u0026quot;\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3 id=\"configure-bot\"\u003eConfigure Bot\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003eGo to \u003cstrong\u003eBot\u003c/strong\u003e tab in left sidebar\u003c/li\u003e\n\u003cli\u003eClick \u0026quot;Reset Token\u0026quot; - \u003cstrong\u003ecopy immediately\u003c/strong\u003e (won\u0026#39;t be shown again)\u003c/li\u003e\n\u003cli\u003eAdd to \u003ccode\u003e.dmno.env.local\u003c/code\u003e:\u003cpre\u003e\u003ccode\u003eDISCORD_TOKEN=your_token_here\n\u003c/code\u003e\u003c/pre\u003e\n\u003c/li\u003e\n\u003cli\u003eScroll to \u0026quot;Privileged Gateway Intents\u0026quot;\u003c/li\u003e\n\u003cli\u003eEnable \u003cstrong\u003eMessage Content Intent\u003c/strong\u003e (required for slash commands)\u003c/li\u003e\n\u003cli\u003eSave Changes\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3 id=\"configure-oauth-redirects\"\u003eConfigure OAuth Redirects\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003eGo to \u003cstrong\u003eOAuth2\u003c/strong\u003e \u0026gt; \u003cstrong\u003eGeneral\u003c/strong\u003e\u003c/li\u003e\n\u003cli\u003eUnder \u0026quot;Redirects\u0026quot;, add:\u003cul\u003e\n\u003cli\u003e\u003ccode\u003ehttp://localhost:4000/api/auth/callback/discord\u003c/code\u003e (development)\u003c/li\u003e\n\u003c/ul\u003e\n\u003c/li\u003e\n\u003cli\u003eClick \u0026quot;Save Changes\u0026quot;\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3 id=\"get-application-id\"\u003eGet Application ID\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003eGo to \u003cstrong\u003eGeneral Information\u003c/strong\u003e\u003c/li\u003e\n\u003cli\u003eCopy \u0026quot;Application ID\u0026quot;\u003c/li\u003e\n\u003cli\u003eAdd to \u003ccode\u003e.dmno.env.local\u003c/code\u003e:\u003cpre\u003e\u003ccode\u003eDISCORD_CLIENT_ID=your_application_id\n\u003c/code\u003e\u003c/pre\u003e\n\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3 id=\"generate-invite-url\"\u003eGenerate Invite URL\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003eGo to \u003cstrong\u003eOAuth2\u003c/strong\u003e \u0026gt; \u003cstrong\u003eURL Generator\u003c/strong\u003e\u003c/li\u003e\n\u003cli\u003eSelect scopes:\u003cul\u003e\n\u003cli\u003e\u003ccode\u003ebot\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eidentify\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eguilds\u003c/code\u003e\u003c/li\u003e\n\u003c/ul\u003e\n\u003c/li\u003e\n\u003cli\u003eSelect permissions:\u003cul\u003e\n\u003cli\u003e\u003ccode\u003eManage Threads\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eSend Messages\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eEmbed Links\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003eUse Slash Commands\u003c/code\u003e\u003c/li\u003e\n\u003c/ul\u003e\n\u003c/li\u003e\n\u003cli\u003eCopy generated URL\u003c/li\u003e\n\u003cli\u003eOpen in browser and select your server\u003c/li\u003e\n\u003c/ol\u003e\n\u003cp\u003eSee \u003ca href=\"/fightrise-bot/guides/guides/discord-setup/\"\u003eDiscord Setup Guide\u003c/a\u003e for detailed instructions.\u003c/p\u003e\n\u003ch2 id=\"step-4-set-up-startgg-api\"\u003eStep 4: Set Up Start.gg API\u003c/h2\u003e\n\u003col\u003e\n\u003cli\u003eGo to \u003ca href=\"https://start.gg/admin/profile/developer\"\u003eStart.gg Developer\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003eGo to Developer Settings\u003c/li\u003e\n\u003cli\u003eClick \u0026quot;Create new token\u0026quot;\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eCopy immediately\u003c/strong\u003e - token cannot be viewed again\u003c/li\u003e\n\u003cli\u003eAdd to \u003ccode\u003e.dmno.env.local\u003c/code\u003e:\u003cpre\u003e\u003ccode\u003eSTARTGG_API_KEY=your_token_here\n\u003c/code\u003e\u003c/pre\u003e\n\u003c/li\u003e\n\u003c/ol\u003e\n\u003cp\u003eSee \u003ca href=\"/fightrise-bot/guides/guides/startgg-setup/\"\u003eStart.gg Setup Guide\u003c/a\u003e for detailed instructions.\u003c/p\u003e\n\u003ch2 id=\"step-5-configure-cloudflare-tunnel-required-for-oauth\"\u003eStep 5: Configure Cloudflare Tunnel (Required for OAuth)\u003c/h2\u003e\n\u003cp\u003eOAuth requires publicly accessible callback URLs. For local development, use Cloudflare Tunnel.\u003c/p\u003e\n\u003ch3 id=\"install-cloudflared\"\u003eInstall cloudflared\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003e# macOS\nbrew install cloudflared\n\n# Linux\ncurl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared\nchmod +x /usr/local/bin/cloudflared\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3 id=\"create-tunnel\"\u003eCreate Tunnel\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003ecloudflared tunnel create fightrise-dev\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3 id=\"configure-dns\"\u003eConfigure DNS\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003e# Add a subdomain CNAME pointing to your tunnel\ncloudflared tunnel route dns fightrise-dev fightrise-dev.yourdomain.com\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3 id=\"create-tunnel-credentials-file\"\u003eCreate Tunnel Credentials File\u003c/h3\u003e\n\u003cp\u003eSave the tunnel credentials JSON to \u003ccode\u003e~/.cloudflared/credentials.json\u003c/code\u003e.\u003c/p\u003e\n\u003ch3 id=\"update-environment\"\u003eUpdate Environment\u003c/h3\u003e\n\u003cp\u003eAdd to \u003ccode\u003e.dmno.env.local\u003c/code\u003e:\u003c/p\u003e\n\u003cpre\u003e\u003ccode\u003eNEXTAUTH_URL=https://fightrise-dev.yourdomain.com\nDISCORD_REDIRECT_URI=https://fightrise-dev.yourdomain.com/api/auth/callback/discord\nSTARTGG_REDIRECT_URI=https://fightrise-dev.yourdomain.com/api/auth/callback/startgg\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3 id=\"start-tunnel\"\u003eStart Tunnel\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003e# In a separate terminal\ncloudflared tunnel run fightrise-dev\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eSee \u003ca href=\"/fightrise-bot/guides/guides/tunnel-setup/\"\u003eTunnel Setup Guide\u003c/a\u003e for detailed instructions.\u003c/p\u003e\n\u003ch2 id=\"step-6-start-docker-infrastructure\"\u003eStep 6: Start Docker Infrastructure\u003c/h2\u003e\n\u003cp\u003eFightRise requires PostgreSQL and Redis. Use Docker:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003enpm run docker:infra\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eThis starts:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003ePostgreSQL on \u003ccode\u003elocalhost:5432\u003c/code\u003e (database: \u003ccode\u003efightrise\u003c/code\u003e)\u003c/li\u003e\n\u003cli\u003eRedis on \u003ccode\u003elocalhost:6379\u003c/code\u003e\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003eVerify containers are running:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003edocker ps\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch2 id=\"step-7-set-up-database\"\u003eStep 7: Set Up Database\u003c/h2\u003e\n\u003ch3 id=\"generate-prisma-client\"\u003eGenerate Prisma Client\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003enpm run docker:db:generate\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eThis generates TypeScript types from the database schema.\u003c/p\u003e\n\u003ch3 id=\"push-database-schema\"\u003ePush Database Schema\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003enpm run docker:db:push\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eThis creates all tables and indexes in your PostgreSQL database.\u003c/p\u003e\n\u003ch2 id=\"step-8-deploy-discord-commands\"\u003eStep 8: Deploy Discord Commands\u003c/h2\u003e\n\u003cp\u003eBefore running the bot, deploy slash commands to Discord:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003enpm run docker:deploy\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eThis registers all commands:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e\u003ccode\u003e/tournament\u003c/code\u003e - Tournament management\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003e/register\u003c/code\u003e - Player registration\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003e/checkin\u003c/code\u003e - Match check-in\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003e/report\u003c/code\u003e - Score reporting\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003e/my-matches\u003c/code\u003e - View your matches\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003e/link-startgg\u003c/code\u003e - Link Start.gg account\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003e/unlink-startgg\u003c/code\u003e - Unlink Start.gg account\u003c/li\u003e\n\u003cli\u003e\u003ccode\u003e/admin\u003c/code\u003e - Admin operations\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch2 id=\"step-9-run-and-test\"\u003eStep 9: Run and Test\u003c/h2\u003e\n\u003ch3 id=\"start-development-servers\"\u003eStart Development Servers\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003enpm run dev\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eThis starts:\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003eBot on port 3001 (Discord client)\u003c/li\u003e\n\u003cli\u003eWeb portal on port 4000 (Next.js)\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3 id=\"verify-bot-is-online\"\u003eVerify Bot is Online\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003eCheck Discord server - bot should show as \u0026quot;Online\u0026quot;\u003c/li\u003e\n\u003cli\u003eType \u003ccode\u003e/link-startgg\u003c/code\u003e to link your Start.gg account\u003c/li\u003e\n\u003cli\u003eType \u003ccode\u003e/tournament status\u003c/code\u003e to see tournament info\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3 id=\"test-tournament-flow\"\u003eTest Tournament Flow\u003c/h3\u003e\n\u003col\u003e\n\u003cli\u003eUse \u003ccode\u003e/link-startgg\u003c/code\u003e to connect your Start.gg account\u003c/li\u003e\n\u003cli\u003eUse \u003ccode\u003e/tournament setup\u003c/code\u003e to configure a tournament\u003c/li\u003e\n\u003cli\u003eUse \u003ccode\u003e/register\u003c/code\u003e to register for a tournament\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch2 id=\"verification-checklist\"\u003eVerification Checklist\u003c/h2\u003e\n\u003cul\u003e\n\u003cli\u003e\u003cinput disabled=\"\" type=\"checkbox\"\u003e Bot appears online in Discord\u003c/li\u003e\n\u003cli\u003e\u003cinput disabled=\"\" type=\"checkbox\"\u003e Bot responds to \u003ccode\u003e/link-startgg\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003cinput disabled=\"\" type=\"checkbox\"\u003e Bot responds to \u003ccode\u003e/tournament status\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003cinput disabled=\"\" type=\"checkbox\"\u003e Database tables created (\u003ccode\u003enpm run docker:db:push\u003c/code\u003e)\u003c/li\u003e\n\u003cli\u003e\u003cinput disabled=\"\" type=\"checkbox\"\u003e Commands deployed (\u003ccode\u003enpm run docker:deploy\u003c/code\u003e)\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch2 id=\"troubleshooting\"\u003eTroubleshooting\u003c/h2\u003e\n\u003ch3 id=\"bot-not-responding-to-commands\"\u003eBot not responding to commands\u003c/h3\u003e\n\u003cul\u003e\n\u003cli\u003eEnsure commands were deployed: \u003ccode\u003enpm run docker:deploy\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003eCheck bot has correct permissions in Discord server settings\u003c/li\u003e\n\u003cli\u003eVerify Message Content Intent is enabled in Developer Portal\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3 id=\"database-connection-errors\"\u003eDatabase connection errors\u003c/h3\u003e\n\u003cul\u003e\n\u003cli\u003eVerify Docker is running: \u003ccode\u003edocker ps\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003eCheck DATABASE_URL in .env matches your Docker setup\u003c/li\u003e\n\u003cli\u003eEnsure PostgreSQL container is healthy\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3 id=\"redis-connection-errors\"\u003eRedis connection errors\u003c/h3\u003e\n\u003cul\u003e\n\u003cli\u003eVerify Redis is running: \u003ccode\u003edocker ps\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003eCheck REDIS_URL in .env\u003c/li\u003e\n\u003cli\u003eEnsure Redis container is healthy\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3 id=\"oauth-errors-in-production\"\u003eOAuth errors in production\u003c/h3\u003e\n\u003cul\u003e\n\u003cli\u003eVerify Cloudflare Tunnel is running\u003c/li\u003e\n\u003cli\u003eCheck redirect URIs match exactly in Developer Portal\u003c/li\u003e\n\u003cli\u003eEnsure NEXTAUTH_URL is set correctly\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3 id=\"missing-variable-errors\"\u003e\"Missing variable\" errors\u003c/h3\u003e\n\u003cul\u003e\n\u003cli\u003eEnsure \u003ccode\u003e.dmno.env.local\u003c/code\u003e exists with all required values\u003c/li\u003e\n\u003cli\u003eRun \u003ccode\u003enpm run docker:db:push\u003c/code\u003e to verify database connection\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch2 id=\"next-steps\"\u003eNext Steps\u003c/h2\u003e\n\u003cul\u003e\n\u003cli\u003eConfigure tournament channels with \u003ccode\u003e/tournament setup\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003eLearn about \u003ca href=\"/fightrise-bot/guides/guides/to-quickstart/\"\u003eTournament Organizer workflows\u003c/a\u003e\u003c/li\u003e\n\u003cli\u003eReview \u003ca href=\"/fightrise-bot/guides/reference/architecture/\"\u003eArchitecture Reference\u003c/a\u003e\u003c/li\u003e\n\u003c/ul\u003e\n","slug":"getting-started/zero-to-beta"},"__N_SSG":true},"page":"/[[...slug]]","query":{"slug":["getting-started","zero-to-beta"]},"buildId":"qwY-w0ObRzDlz86_OEm5G","assetPrefix":"/fightrise-bot","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>
