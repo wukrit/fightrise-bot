@@ -1,0 +1,200 @@
+---
+title: Beta Environment Setup
+description: Set up the FightRise beta environment for testing with real tournaments
+---
+
+# Beta Environment Setup
+
+This guide explains how to set up and run the FightRise beta environment for testing with real tournaments without affecting production.
+
+## Prerequisites
+
+- Docker and Docker Compose installed
+- Access to Discord Developer Portal
+- Node.js 22+ (for local development if needed)
+
+## Overview
+
+The beta environment uses separate ports and resources from development:
+
+| Service | Development | Beta |
+|---------|-------------|------|
+| PostgreSQL | 5432 | 5433 |
+| Redis | 6379 | 6380 |
+| Web Portal | 4000 | 4001 |
+| Bot | 3001 | 3001 |
+
+## Step 1: Create Beta Discord Application
+
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Click **New Application** in the top right
+3. Enter name: `FightRise Beta`
+4. Click **Create**
+
+### Configure Bot
+
+1. Go to **Bot** tab in the left sidebar
+2. Click **Reset Token** and copy the token immediately
+3. Add to your `.env.beta` file:
+   ```
+   DISCORD_TOKEN=your_beta_bot_token
+   ```
+4. Scroll to **Privileged Gateway Intents**
+5. Enable **Message Content Intent** (required for slash commands)
+6. Save Changes
+
+### Get Application ID
+
+1. Go to **General Information**
+2. Copy **Application ID**
+3. Add to `.env.beta`:
+   ```
+   DISCORD_CLIENT_ID=your_application_id
+   ```
+
+### Get Client Secret
+
+1. Go to **OAuth2** > **General**
+2. Under **Client Secret**, click **Reset Secret** if needed
+3. Copy the secret
+4. Add to `.env.beta`:
+   ```
+   DISCORD_CLIENT_SECRET=your_client_secret
+   ```
+
+### Configure OAuth Redirects
+
+1. Go to **OAuth2** > **General**
+2. Under **Redirects**, add:
+   - `http://localhost:4001/api/auth/callback/discord`
+   - `http://localhost:4001/api/auth/callback/startgg`
+3. Click **Save Changes**
+
+### Generate Invite URL
+
+1. Go to **OAuth2** > **URL Generator**
+2. Select scopes:
+   - `bot`
+   - `identify`
+   - `guilds`
+3. Select permissions:
+   - `Manage Threads`
+   - `Send Messages`
+   - `Embed Links`
+   - `Use Slash Commands`
+4. Copy the generated URL and open it in your browser
+5. Select your test server
+
+## Step 2: Set Up Environment File
+
+1. Copy the template:
+   ```bash
+   cp .env.beta.example .env.beta
+   ```
+
+2. Fill in the values in `.env.beta`:
+   - `DISCORD_TOKEN` - from Discord Developer Portal
+   - `DISCORD_CLIENT_ID` - from Discord Developer Portal
+   - `DISCORD_CLIENT_SECRET` - from Discord Developer Portal
+   - `STARTGG_API_KEY` - can reuse production key or create new
+   - `NEXTAUTH_SECRET` - generate with: `openssl rand -base64 32`
+
+## Step 3: Generate Secrets
+
+If you don't have a NextAuth secret, generate one:
+
+```bash
+openssl rand -base64 32
+```
+
+Copy the output and add it to `.env.beta`:
+
+```
+NEXTAUTH_SECRET=paste_generated_secret_here
+```
+
+## Step 4: Start the Beta Environment
+
+```bash
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.beta.yml --env-file .env.beta up
+```
+
+This starts:
+- PostgreSQL on port 5433
+- Redis on port 6380
+- Bot service (Discord client)
+- Web portal on port 4001
+
+## Step 5: Deploy Beta Bot Commands
+
+In a separate terminal:
+
+```bash
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.beta.yml --env-file .env.beta exec bot npm run deploy
+```
+
+## Step 6: Verify Beta Bot is Online
+
+1. Check your Discord server - the beta bot should show as "Online"
+2. The bot should have a different name or avatar to distinguish from production
+3. Test with `/tournament status` - should respond (may show no tournaments)
+
+## Beta Testing Workflow
+
+### For Tournament Organizers
+
+1. Invite the beta bot to your test server using the invite URL
+2. Use `/tournament setup` to link a tournament
+3. Configure channels with `/tournament link-discord`
+4. Open registration with `/admin registrations`
+
+### For Players
+
+1. Find the beta bot in Discord (different name from production)
+2. Use `/link-startgg` to connect your account
+3. Register for tournaments using `/register`
+
+## Stopping the Beta Environment
+
+```bash
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.beta.yml --env-file .env.beta down
+```
+
+To also remove data volumes:
+
+```bash
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.beta.yml --env-file .env.beta down -v
+```
+
+## Troubleshooting
+
+### Bot not responding
+
+1. Check bot token is correct in `.env.beta`
+2. Verify Message Content Intent is enabled in Discord Developer Portal
+3. Check logs: `docker compose -f docker/docker-compose.yml -f docker/docker-compose.beta.yml --env-file .env.beta logs bot`
+
+### Database connection errors
+
+1. Verify PostgreSQL is running on port 5433
+2. Check `DATABASE_URL` in `.env.beta`
+3. Ensure database `fightrise_beta` exists
+
+### OAuth errors
+
+1. Verify redirect URIs match exactly in Discord Developer Portal
+2. Ensure `NEXTAUTH_URL=http://localhost:4001` is set
+
+## Switching Between Environments
+
+| Environment | Command |
+|-------------|---------|
+| Development | `npm run docker:dev` |
+| Beta | `docker compose -f docker/docker-compose.yml -f docker/docker-compose.beta.yml --env-file .env.beta up` |
+| Production | (deployment-specific) |
+
+## File Locations
+
+- `.env.beta` - Beta secrets (gitignored, never commit)
+- `.env.beta.example` - Template for beta environment
+- `docker/docker-compose.beta.yml` - Beta Docker configuration

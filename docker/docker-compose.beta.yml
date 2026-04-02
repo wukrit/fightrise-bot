@@ -29,12 +29,16 @@ services:
       DATABASE_URL: postgresql://fightrise_beta:betapassword@postgres:5432/fightrise_beta
       REDIS_URL: redis://redis:6379
       NODE_ENV: beta
+      DISCORD_TOKEN: ${BETA_DISCORD_TOKEN}
+      DISCORD_CLIENT_ID: ${BETA_DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${BETA_DISCORD_CLIENT_SECRET}
 
   web:
     environment:
       DATABASE_URL: postgresql://fightrise_beta:betapassword@postgres:5432/fightrise_beta
       REDIS_URL: redis://redis:6379
       NODE_ENV: beta
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:4001}
     ports:
       - "4001:4000"  # Different from dev (4000)
 

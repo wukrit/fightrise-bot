@@ -1,0 +1,147 @@
+---
+title: DMNO Environment Management
+description: How FightRise manages environment variables using DMNO
+---
+
+# DMNO Environment Management
+
+FightRise uses [DMNO](https://dmno.dev/) for environment variable management. DMNO provides type-safe environment configuration with built-in support for secrets management.
+
+## Why DMNO?
+
+- **Type safety**: Environment variables are validated at runtime
+- **Secrets management**: Sensitive values are stored separately from configuration
+- **IDE support**: Auto-completion for environment variables
+- **Interpolation**: References between config values
+
+## File Structure
+
+```
+.env                    # Public configuration (git-tracked)
+.dmno.env.local         # Local secrets (git-ignored)
+.dmno.env.{env}.local   # Environment-specific secrets
+```
+
+## Required Files
+
+### .env (Public Configuration)
+
+This file contains non-sensitive defaults and is tracked in git:
+
+```bash
+# Database
+DATABASE_URL="postgresql://fightrise:devpassword@localhost:5432/fightrise"
+
+# Redis
+REDIS_URL="redis://localhost:6379"
+
+# URLs
+NEXTAUTH_URL="http://localhost:4000"
+DISCORD_REDIRECT_URI="http://localhost:4000/api/auth/callback/discord"
+STARTGG_REDIRECT_URI="http://localhost:4000/api/auth/callback/startgg"
+```
+
+### .dmno.env.local (Local Secrets)
+
+This file contains sensitive values and is git-ignored:
+
+```bash
+# Discord Bot
+DISCORD_TOKEN=your_bot_token_here
+DISCORD_CLIENT_SECRET=your_client_secret_here
+
+# Start.gg API
+STARTGG_API_KEY=your_startgg_api_key_here
+
+# NextAuth
+NEXTAUTH_SECRET=your_generated_secret_here
+```
+
+## Generating Secrets
+
+### NextAuth Secret
+
+```bash
+openssl rand -base64 32
+```
+
+Or use Node.js:
+
+```node
+console.log(require('crypto').randomBytes(32).toString('base64'));
+```
+
+## Environment Variables Reference
+
+### Database
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
+
+### Redis
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `REDIS_URL` | Redis connection string | `redis://localhost:6379` |
+| `BULLMQ_CONCURRENCY` | Job worker concurrency | `1` |
+
+### Discord Bot
+
+| Variable | Description | Where to Find |
+|----------|-------------|---------------|
+| `DISCORD_TOKEN` | Bot token | Discord Developer Portal > Bot > Token |
+| `DISCORD_CLIENT_ID` | Application ID | Discord Developer Portal > General Information |
+| `DISCORD_CLIENT_SECRET` | OAuth secret | Discord Developer Portal > OAuth2 |
+
+### Start.gg
+
+| Variable | Description | Where to Find |
+|----------|-------------|---------------|
+| `STARTGG_API_KEY` | API token | Start.gg Developer > API Tokens |
+
+### NextAuth
+
+| Variable | Description | How to Generate |
+|----------|-------------|-----------------|
+| `NEXTAUTH_SECRET` | Session encryption | `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | App URL | Your deployment URL |
+
+## Using DMNO
+
+DMNO is automatically integrated with npm scripts. Commands like `npm run dev` automatically load your environment.
+
+### Running with Custom Env
+
+```bash
+# Load a specific env file
+DMNO_ENV=staging npm run dev
+```
+
+### Checking Config
+
+```bash
+# View current configuration
+npx dmno config
+```
+
+## Security Best Practices
+
+1. **Never commit secrets**: Always use `.dmno.env.local` for sensitive values
+2. **Use strong secrets**: Generate secrets with `openssl rand -base64 32`
+3. **Rotate secrets**: Update API keys and tokens periodically
+4. **Use different values per environment**: Don't reuse production secrets in development
+
+## Troubleshooting
+
+### "Missing required config" errors
+
+Check that `.dmno.env.local` exists and contains all required variables.
+
+### "Invalid config" errors
+
+Ensure values match expected types (e.g., URLs must be valid URIs).
+
+### Config not loading
+
+Make sure you're running commands from the project root where `.dmno.env.local` exists.
