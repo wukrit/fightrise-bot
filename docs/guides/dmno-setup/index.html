@@ -1,0 +1,168 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width"/><meta name="next-head-count" content="2"/><link rel="icon" href="/favicon.svg" type="image/svg+xml"/><link rel="preload" href="/fightrise-bot/_next/static/css/82e1fc5146201125.css" as="style"/><link rel="stylesheet" href="/fightrise-bot/_next/static/css/82e1fc5146201125.css" data-n-g=""/><noscript data-n-css=""></noscript><script defer="" nomodule="" src="/fightrise-bot/_next/static/chunks/polyfills-78c92fac7aa8fdd8.js"></script><script src="/fightrise-bot/_next/static/chunks/webpack-1a64f5c80bb82e92.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/framework-6dd3bf7463386647.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/main-31102c233e8a53a2.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/pages/_app-fd0e9306043423e9.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/485-e418f5496c8ebf60.js" defer=""></script><script src="/fightrise-bot/_next/static/chunks/pages/%5B%5B...slug%5D%5D-666b3ece48e01a70.js" defer=""></script><script src="/fightrise-bot/_next/static/gXQvEUuarwPA2XKPUS9Ez/_buildManifest.js" defer=""></script><script src="/fightrise-bot/_next/static/gXQvEUuarwPA2XKPUS9Ez/_ssgManifest.js" defer=""></script></head><body><script>(function(){var s=localStorage.getItem('fightrise-theme');var m=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=s||m;})();</script><div id="__next"><div class="docs-layout"><aside class="docs-sidebar"><div class="docs-sidebar-header"><h2 class="docs-logo"><a href="/fightrise-bot/">FightRise</a></h2><button class="theme-toggle" aria-label="Switch to dark mode" title="Switch to dark mode"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></button></div><nav class="docs-nav"><div class="docs-nav-section"><a class="docs-nav-link docs-nav-link--section" href="/fightrise-bot/">Getting Started</a></div><div class="docs-nav-section"><span class="docs-nav-section-label">Guides</span><a class="docs-nav-link" href="/fightrise-bot/guides/player-quickstart/">Player Quickstart</a><a class="docs-nav-link" href="/fightrise-bot/guides/to-quickstart/">TO Quickstart</a><a class="docs-nav-link" href="/fightrise-bot/guides/discord-setup/">Discord Setup</a><a class="docs-nav-link" href="/fightrise-bot/guides/startgg-setup/">Start.gg Setup</a><a class="docs-nav-link" href="/fightrise-bot/guides/tunnel-setup/">Tunnel Setup</a></div><div class="docs-nav-section"><span class="docs-nav-section-label">Reference</span><a class="docs-nav-link" href="/fightrise-bot/reference/architecture/">Architecture</a><a class="docs-nav-link" href="/fightrise-bot/reference/codebase-reference/">Codebase Reference</a><a class="docs-nav-link" href="/fightrise-bot/reference/api-reference/">API Reference</a></div></nav></aside><main class="docs-main"><article class="docs-content"><h1 id="dmno-environment-management">DMNO Environment Management</h1>
+<p>FightRise uses <a href="https://dmno.dev/">DMNO</a> for environment variable management. DMNO provides type-safe environment configuration with built-in support for secrets management.</p>
+<h2 id="why-dmno">Why DMNO?</h2>
+<ul>
+<li><strong>Type safety</strong>: Environment variables are validated at runtime</li>
+<li><strong>Secrets management</strong>: Sensitive values are stored separately from configuration</li>
+<li><strong>IDE support</strong>: Auto-completion for environment variables</li>
+<li><strong>Interpolation</strong>: References between config values</li>
+</ul>
+<h2 id="file-structure">File Structure</h2>
+<pre><code>.env                    # Public configuration (git-tracked)
+.dmno.env.local         # Local secrets (git-ignored)
+.dmno.env.{env}.local   # Environment-specific secrets
+</code></pre>
+<h2 id="required-files">Required Files</h2>
+<h3 id="env-public-configuration">.env (Public Configuration)</h3>
+<p>This file contains non-sensitive defaults and is tracked in git:</p>
+<pre><code class="language-bash"># Database
+DATABASE_URL=&quot;postgresql://fightrise:devpassword@localhost:5432/fightrise&quot;
+
+# Redis
+REDIS_URL=&quot;redis://localhost:6379&quot;
+
+# URLs
+NEXTAUTH_URL=&quot;http://localhost:4000&quot;
+DISCORD_REDIRECT_URI=&quot;http://localhost:4000/api/auth/callback/discord&quot;
+STARTGG_REDIRECT_URI=&quot;http://localhost:4000/api/auth/callback/startgg&quot;
+</code></pre>
+<h3 id="dmnoenvlocal-local-secrets">.dmno.env.local (Local Secrets)</h3>
+<p>This file contains sensitive values and is git-ignored:</p>
+<pre><code class="language-bash"># Discord Bot
+DISCORD_TOKEN=your_bot_token_here
+DISCORD_CLIENT_SECRET=your_client_secret_here
+
+# Start.gg API
+STARTGG_API_KEY=your_startgg_api_key_here
+
+# NextAuth
+NEXTAUTH_SECRET=your_generated_secret_here
+</code></pre>
+<h2 id="generating-secrets">Generating Secrets</h2>
+<h3 id="nextauth-secret">NextAuth Secret</h3>
+<pre><code class="language-bash">openssl rand -base64 32
+</code></pre>
+<p>Or use Node.js:</p>
+<pre><code class="language-node">console.log(require(&#39;crypto&#39;).randomBytes(32).toString(&#39;base64&#39;));
+</code></pre>
+<h2 id="environment-variables-reference">Environment Variables Reference</h2>
+<h3 id="database">Database</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>DATABASE_URL</code></td>
+<td>PostgreSQL connection string</td>
+<td><code>postgresql://user:pass@host:5432/db</code></td>
+</tr>
+</tbody></table>
+<h3 id="redis">Redis</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>REDIS_URL</code></td>
+<td>Redis connection string</td>
+<td><code>redis://localhost:6379</code></td>
+</tr>
+<tr>
+<td><code>BULLMQ_CONCURRENCY</code></td>
+<td>Job worker concurrency</td>
+<td><code>1</code></td>
+</tr>
+</tbody></table>
+<h3 id="discord-bot">Discord Bot</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+<th>Where to Find</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>DISCORD_TOKEN</code></td>
+<td>Bot token</td>
+<td>Discord Developer Portal &gt; Bot &gt; Token</td>
+</tr>
+<tr>
+<td><code>DISCORD_CLIENT_ID</code></td>
+<td>Application ID</td>
+<td>Discord Developer Portal &gt; General Information</td>
+</tr>
+<tr>
+<td><code>DISCORD_CLIENT_SECRET</code></td>
+<td>OAuth secret</td>
+<td>Discord Developer Portal &gt; OAuth2</td>
+</tr>
+</tbody></table>
+<h3 id="startgg">Start.gg</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+<th>Where to Find</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>STARTGG_API_KEY</code></td>
+<td>API token</td>
+<td>Start.gg Developer &gt; API Tokens</td>
+</tr>
+</tbody></table>
+<h3 id="nextauth">NextAuth</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+<th>How to Generate</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>NEXTAUTH_SECRET</code></td>
+<td>Session encryption</td>
+<td><code>openssl rand -base64 32</code></td>
+</tr>
+<tr>
+<td><code>NEXTAUTH_URL</code></td>
+<td>App URL</td>
+<td>Your deployment URL</td>
+</tr>
+</tbody></table>
+<h2 id="using-dmno">Using DMNO</h2>
+<p>DMNO is automatically integrated with npm scripts. Commands like <code>npm run dev</code> automatically load your environment.</p>
+<h3 id="running-with-custom-env">Running with Custom Env</h3>
+<pre><code class="language-bash"># Load a specific env file
+DMNO_ENV=staging npm run dev
+</code></pre>
+<h3 id="checking-config">Checking Config</h3>
+<pre><code class="language-bash"># View current configuration
+npx dmno config
+</code></pre>
+<h2 id="security-best-practices">Security Best Practices</h2>
+<ol>
+<li><strong>Never commit secrets</strong>: Always use <code>.dmno.env.local</code> for sensitive values</li>
+<li><strong>Use strong secrets</strong>: Generate secrets with <code>openssl rand -base64 32</code></li>
+<li><strong>Rotate secrets</strong>: Update API keys and tokens periodically</li>
+<li><strong>Use different values per environment</strong>: Don&#39;t reuse production secrets in development</li>
+</ol>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="missing-required-config-errors">"Missing required config" errors</h3>
+<p>Check that <code>.dmno.env.local</code> exists and contains all required variables.</p>
+<h3 id="invalid-config-errors">"Invalid config" errors</h3>
+<p>Ensure values match expected types (e.g., URLs must be valid URIs).</p>
+<h3 id="config-not-loading">Config not loading</h3>
+<p>Make sure you&#39;re running commands from the project root where <code>.dmno.env.local</code> exists.</p>
+</article></main></div></div><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"content":"\u003ch1 id=\"dmno-environment-management\"\u003eDMNO Environment Management\u003c/h1\u003e\n\u003cp\u003eFightRise uses \u003ca href=\"https://dmno.dev/\"\u003eDMNO\u003c/a\u003e for environment variable management. DMNO provides type-safe environment configuration with built-in support for secrets management.\u003c/p\u003e\n\u003ch2 id=\"why-dmno\"\u003eWhy DMNO?\u003c/h2\u003e\n\u003cul\u003e\n\u003cli\u003e\u003cstrong\u003eType safety\u003c/strong\u003e: Environment variables are validated at runtime\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eSecrets management\u003c/strong\u003e: Sensitive values are stored separately from configuration\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eIDE support\u003c/strong\u003e: Auto-completion for environment variables\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eInterpolation\u003c/strong\u003e: References between config values\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch2 id=\"file-structure\"\u003eFile Structure\u003c/h2\u003e\n\u003cpre\u003e\u003ccode\u003e.env                    # Public configuration (git-tracked)\n.dmno.env.local         # Local secrets (git-ignored)\n.dmno.env.{env}.local   # Environment-specific secrets\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch2 id=\"required-files\"\u003eRequired Files\u003c/h2\u003e\n\u003ch3 id=\"env-public-configuration\"\u003e.env (Public Configuration)\u003c/h3\u003e\n\u003cp\u003eThis file contains non-sensitive defaults and is tracked in git:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003e# Database\nDATABASE_URL=\u0026quot;postgresql://fightrise:devpassword@localhost:5432/fightrise\u0026quot;\n\n# Redis\nREDIS_URL=\u0026quot;redis://localhost:6379\u0026quot;\n\n# URLs\nNEXTAUTH_URL=\u0026quot;http://localhost:4000\u0026quot;\nDISCORD_REDIRECT_URI=\u0026quot;http://localhost:4000/api/auth/callback/discord\u0026quot;\nSTARTGG_REDIRECT_URI=\u0026quot;http://localhost:4000/api/auth/callback/startgg\u0026quot;\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3 id=\"dmnoenvlocal-local-secrets\"\u003e.dmno.env.local (Local Secrets)\u003c/h3\u003e\n\u003cp\u003eThis file contains sensitive values and is git-ignored:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003e# Discord Bot\nDISCORD_TOKEN=your_bot_token_here\nDISCORD_CLIENT_SECRET=your_client_secret_here\n\n# Start.gg API\nSTARTGG_API_KEY=your_startgg_api_key_here\n\n# NextAuth\nNEXTAUTH_SECRET=your_generated_secret_here\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch2 id=\"generating-secrets\"\u003eGenerating Secrets\u003c/h2\u003e\n\u003ch3 id=\"nextauth-secret\"\u003eNextAuth Secret\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003eopenssl rand -base64 32\n\u003c/code\u003e\u003c/pre\u003e\n\u003cp\u003eOr use Node.js:\u003c/p\u003e\n\u003cpre\u003e\u003ccode class=\"language-node\"\u003econsole.log(require(\u0026#39;crypto\u0026#39;).randomBytes(32).toString(\u0026#39;base64\u0026#39;));\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch2 id=\"environment-variables-reference\"\u003eEnvironment Variables Reference\u003c/h2\u003e\n\u003ch3 id=\"database\"\u003eDatabase\u003c/h3\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eVariable\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003cth\u003eExample\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003eDATABASE_URL\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003ePostgreSQL connection string\u003c/td\u003e\n\u003ctd\u003e\u003ccode\u003epostgresql://user:pass@host:5432/db\u003c/code\u003e\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003ch3 id=\"redis\"\u003eRedis\u003c/h3\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eVariable\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003cth\u003eExample\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003eREDIS_URL\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eRedis connection string\u003c/td\u003e\n\u003ctd\u003e\u003ccode\u003eredis://localhost:6379\u003c/code\u003e\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003eBULLMQ_CONCURRENCY\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eJob worker concurrency\u003c/td\u003e\n\u003ctd\u003e\u003ccode\u003e1\u003c/code\u003e\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003ch3 id=\"discord-bot\"\u003eDiscord Bot\u003c/h3\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eVariable\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003cth\u003eWhere to Find\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003eDISCORD_TOKEN\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eBot token\u003c/td\u003e\n\u003ctd\u003eDiscord Developer Portal \u0026gt; Bot \u0026gt; Token\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003eDISCORD_CLIENT_ID\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eApplication ID\u003c/td\u003e\n\u003ctd\u003eDiscord Developer Portal \u0026gt; General Information\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003eDISCORD_CLIENT_SECRET\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eOAuth secret\u003c/td\u003e\n\u003ctd\u003eDiscord Developer Portal \u0026gt; OAuth2\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003ch3 id=\"startgg\"\u003eStart.gg\u003c/h3\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eVariable\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003cth\u003eWhere to Find\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003eSTARTGG_API_KEY\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eAPI token\u003c/td\u003e\n\u003ctd\u003eStart.gg Developer \u0026gt; API Tokens\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003ch3 id=\"nextauth\"\u003eNextAuth\u003c/h3\u003e\n\u003ctable\u003e\n\u003cthead\u003e\n\u003ctr\u003e\n\u003cth\u003eVariable\u003c/th\u003e\n\u003cth\u003eDescription\u003c/th\u003e\n\u003cth\u003eHow to Generate\u003c/th\u003e\n\u003c/tr\u003e\n\u003c/thead\u003e\n\u003ctbody\u003e\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003eNEXTAUTH_SECRET\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eSession encryption\u003c/td\u003e\n\u003ctd\u003e\u003ccode\u003eopenssl rand -base64 32\u003c/code\u003e\u003c/td\u003e\n\u003c/tr\u003e\n\u003ctr\u003e\n\u003ctd\u003e\u003ccode\u003eNEXTAUTH_URL\u003c/code\u003e\u003c/td\u003e\n\u003ctd\u003eApp URL\u003c/td\u003e\n\u003ctd\u003eYour deployment URL\u003c/td\u003e\n\u003c/tr\u003e\n\u003c/tbody\u003e\u003c/table\u003e\n\u003ch2 id=\"using-dmno\"\u003eUsing DMNO\u003c/h2\u003e\n\u003cp\u003eDMNO is automatically integrated with npm scripts. Commands like \u003ccode\u003enpm run dev\u003c/code\u003e automatically load your environment.\u003c/p\u003e\n\u003ch3 id=\"running-with-custom-env\"\u003eRunning with Custom Env\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003e# Load a specific env file\nDMNO_ENV=staging npm run dev\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch3 id=\"checking-config\"\u003eChecking Config\u003c/h3\u003e\n\u003cpre\u003e\u003ccode class=\"language-bash\"\u003e# View current configuration\nnpx dmno config\n\u003c/code\u003e\u003c/pre\u003e\n\u003ch2 id=\"security-best-practices\"\u003eSecurity Best Practices\u003c/h2\u003e\n\u003col\u003e\n\u003cli\u003e\u003cstrong\u003eNever commit secrets\u003c/strong\u003e: Always use \u003ccode\u003e.dmno.env.local\u003c/code\u003e for sensitive values\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eUse strong secrets\u003c/strong\u003e: Generate secrets with \u003ccode\u003eopenssl rand -base64 32\u003c/code\u003e\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eRotate secrets\u003c/strong\u003e: Update API keys and tokens periodically\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eUse different values per environment\u003c/strong\u003e: Don\u0026#39;t reuse production secrets in development\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch2 id=\"troubleshooting\"\u003eTroubleshooting\u003c/h2\u003e\n\u003ch3 id=\"missing-required-config-errors\"\u003e\"Missing required config\" errors\u003c/h3\u003e\n\u003cp\u003eCheck that \u003ccode\u003e.dmno.env.local\u003c/code\u003e exists and contains all required variables.\u003c/p\u003e\n\u003ch3 id=\"invalid-config-errors\"\u003e\"Invalid config\" errors\u003c/h3\u003e\n\u003cp\u003eEnsure values match expected types (e.g., URLs must be valid URIs).\u003c/p\u003e\n\u003ch3 id=\"config-not-loading\"\u003eConfig not loading\u003c/h3\u003e\n\u003cp\u003eMake sure you\u0026#39;re running commands from the project root where \u003ccode\u003e.dmno.env.local\u003c/code\u003e exists.\u003c/p\u003e\n","slug":"guides/dmno-setup"},"__N_SSG":true},"page":"/[[...slug]]","query":{"slug":["guides","dmno-setup"]},"buildId":"gXQvEUuarwPA2XKPUS9Ez","assetPrefix":"/fightrise-bot","isFallback":false,"gsp":true,"scriptLoader":[]}</script></body></html>
